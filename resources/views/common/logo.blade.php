@@ -1,0 +1,23 @@
+@php
+    $variant = $variant ?? 'dark';
+    $class = $class ?? 'w-16 h-16';
+    $colors = $variant === 'light' 
+        ? ['primary' => '#fbc101', 'secondary' => '#dba800', 'tertiary' => '#aa8301']
+        : ['primary' => '#111', 'secondary' => '#333', 'tertiary' => '#111'];
+@endphp
+
+<svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 190.29 219.65" 
+    shape-rendering="geometricPrecision" 
+    text-rendering="geometricPrecision" 
+    image-rendering="optimizeQuality" 
+    fill-rule="evenodd" 
+    clip-rule="evenodd" 
+    class="{{ $class }}"
+>
+    <path d="M99.24 2.36l43.45 25.09h.03l47.57 27.46v109.82l-47.57 27.47h-.03l-47.54 27.45-47.54-27.45h-.04L0 164.73V54.91l47.57-27.46h.04L95.15 0l4.09 2.36zm35.24 39.31L95.15 18.96 55.81 41.67l.01.01-39.33 22.71v90.87l39.33 22.71-.01.01 39.34 22.71 39.33-22.71v-.01l39.32-22.71V64.39l-39.32-22.71v-.01z" fill="{{ $colors['primary'] }}" fill-rule="nonzero" />
+    <path fill="{{ $colors['secondary'] }}" d="M152.52 142.95V76.7L95.15 43.58v66.24l28.68 16.57z" />
+    <path fill="{{ $colors['tertiary'] }}" d="M123.83 159.51V93.26L66.46 60.14v66.25l28.69 16.56z" />
+    <path fill="{{ $colors['secondary'] }}" d="M95.15 176.07v-66.25L37.77 76.7v66.25l28.69 16.56z" />
+</svg>

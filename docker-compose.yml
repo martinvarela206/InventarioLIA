@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  php:
+    build:
+      context: .
+    image: laravel-sqlite-apache
+    container_name: laravel_app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - db
+
+  vite:
+    image: node:18-bullseye
+    container_name: vite_dev
+    working_dir: /app
+    volumes:
+      - ./:/app
+    ports:
+      - "5173:5173"
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: laravel
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
