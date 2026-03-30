@@ -10,6 +10,7 @@ use App\Models\Elemento;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Estado;
+use Faker\Factory as Faker;
 
 class ElementoSeeder extends Seeder
 {
@@ -23,6 +24,7 @@ class ElementoSeeder extends Seeder
         Movimiento::truncate();
         Elemento::truncate();
         Schema::enableForeignKeyConstraints();
+        $faker = Faker::create();
 
         $types = [
             'cpu' => [
@@ -131,14 +133,14 @@ class ElementoSeeder extends Seeder
                 $nro_unsj = (rand(0, 1) === 1) ? 'UNSJ' . str_pad($counter, 4, '0', STR_PAD_LEFT) : null;
 
                 // Date logic
-                $isExpired = fake()->boolean();
+                $isExpired = $faker->boolean();
                 if ($isExpired) {
                     // Generate dates up to 6 years ago to test obsolete CPUs
-                    $fechaAdquisicion = fake()->dateTimeBetween('-6 years', '-13 months');
+                    $fechaAdquisicion = $faker->dateTimeBetween('-6 years', '-13 months');
                 } else {
-                    $fechaAdquisicion = fake()->dateTimeBetween('-3 months', 'now');
+                    $fechaAdquisicion = $faker->dateTimeBetween('-3 months', 'now');
                 }
-                $mesesGarantia = fake()->randomElement([3, 6, 12]);
+                $mesesGarantia = $faker->randomElement([3, 6, 12]);
                 $fechaVencimiento = (clone $fechaAdquisicion)->modify("+{$mesesGarantia} months");
 
                 $elementos[] = [
@@ -219,7 +221,7 @@ class ElementoSeeder extends Seeder
                 } else {
                     // Para otros estados, usar ubicación aleatoria
                     $ubicacionId = $ubicacionIds[$ubicacionNames[array_rand($ubicacionNames)]];
-                    $comentario = fake()->optional(0.7)->sentence(6);
+                    $comentario = $faker->optional(0.7)->sentence(6);
                 }
                 
                 $movimientos[] = [
