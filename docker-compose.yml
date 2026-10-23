@@ -1,12 +1,52 @@
 version: '3.8'
+
 services:
+  # Contenedor 1: Aplicación Laravel (PHP + Apache + Vite assets)
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: inventario-lia-app:latest
     container_name: laravel_prod
-    ports:
-      - "8080:80" # Accederás por el puerto 8080
     restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
     volumes:
-      # IMPORTANTE: Mapeamos solo la base de datos para no perder datos al reiniciar
-      - ./database/database.sqlite:/var/www/html/database/database.sqlite
+      - storage_uploads:/var/www/html/storage/app/public
+    networks:
+      - app_network
+
+  # Contenedor 2: Base de Datos Relacional (MariaDB)
+  db:
+    image: mariadb:11.4
+    container_name: mariadb_prod
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secret}
+      MYSQL_DATABASE: ${DB_DATABASE:-inventario_lia}
+      MYSQL_USER: ${DB_USERNAME:-inventario_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret_password}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  mariadb_data:
+    driver: local
+  storage_uploads:
+    driver: local
