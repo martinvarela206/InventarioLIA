@@ -866,6 +866,49 @@ class InventarioDevTest extends TestCase
         // 4. La suma de los cuatro estados debe igualar el 100% de los elementos
         $this->assertEquals($totalElementos, $totalOperativos + $totalPrestados + $totalEnReparacion + $totalObsoletos);
     }
+
+    public function test_busqueda_rapida_de_movimientos_encuentra_codigo_lia_y_unsj(): void
+    {
+        $tecnico = Usuario::create([
+            'nombre' => 'Tecnico Test Search',
+            'email' => 'tecnico_search@test.com',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $tecnico->roles()->attach(Rol::where('rol', 'tec')->first()->id);
+
+        $tipo = Tipo::first();
+        $ubicacion = Ubicacion::first();
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'LIA-SEARCH-99',
+            'nro_unsj' => '02-09999',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Bangho Pro',
+            'modelo' => 'Ultra 2026',
+        ]);
+
+        Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $tecnico->id,
+            'fecha' => now(),
+        ]);
+
+        // Búsqueda por Nro UNSJ
+        $responseUnsj = $this->actingAs($tecnico)->getJson(route('movimientos.buscar-rapido', ['q' => '02-09999']));
+        $responseUnsj->assertStatus(200);
+        $dataUnsj = $responseUnsj->json();
+        $this->assertNotEmpty($dataUnsj);
+        $this->assertEquals($elemento->id, $dataUnsj[0]['id']);
+
+        // Búsqueda por Nro LIA
+        $responseLia = $this->actingAs($tecnico)->getJson(route('movimientos.buscar-rapido', ['q' => 'LIA-SEARCH-99']));
+        $responseLia->assertStatus(200);
+        $dataLia = $responseLia->json();
+        $this->assertNotEmpty($dataLia);
+        $this->assertEquals($elemento->id, $dataLia[0]['id']);
+    }
 }
 
 

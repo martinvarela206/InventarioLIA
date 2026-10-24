@@ -77,7 +77,7 @@ Route::middleware('auth')->group(function () {
         // Gestión Operativa de Movimientos y Préstamos (exclusivo tec)
         Route::middleware('role:tec')->group(function () {
             Route::get('/movimientos/rapido', [MovimientoController::class, 'rapido'])->name('movimientos.rapido');
-            Route::get('/api/elementos/buscar-rapido', [MovimientoController::class, 'apiBuscar'])->name('api.elementos.buscar');
+            Route::get('/movimientos/buscar-rapido', [MovimientoController::class, 'apiBuscar'])->name('movimientos.buscar-rapido');
             Route::post('/movimientos', [MovimientoController::class, 'store'])->name('movimientos.store');
             Route::post('/movimientos/{movimiento}/devolucion', [MovimientoController::class, 'devolucion'])->name('movimientos.devolucion');
             Route::post('/movimientos/{movimiento}/correccion', [MovimientoController::class, 'storeCorreccion'])->name('movimientos.correccion');

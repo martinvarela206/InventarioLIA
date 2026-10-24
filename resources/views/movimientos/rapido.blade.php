@@ -179,6 +179,17 @@
 
 <script>
     let timerBusqueda = null;
+    window.itemsBusqueda = [];
+    const urlBusqueda = '{{ route('movimientos.buscar-rapido') }}';
+
+    document.getElementById('buscar-input')?.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (window.itemsBusqueda && window.itemsBusqueda.length > 0) {
+                seleccionarActivo(window.itemsBusqueda[0]);
+            }
+        }
+    });
 
     document.getElementById('buscar-input')?.addEventListener('input', function(e) {
         clearTimeout(timerBusqueda);
@@ -189,33 +200,41 @@
         if (query.length < 2) {
             dropdown.classList.add('hidden');
             dropdown.innerHTML = '';
+            window.itemsBusqueda = [];
             return;
         }
 
         spinner.classList.remove('hidden');
 
         timerBusqueda = setTimeout(() => {
-            fetch(`/api/elementos/buscar-rapido?q=${encodeURIComponent(query)}`)
-                .then(res => res.json())
+            fetch(`${urlBusqueda}?q=${encodeURIComponent(query)}`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Error en consulta');
+                    return res.json();
+                })
                 .then(items => {
                     spinner.classList.add('hidden');
-                    if (items.length === 0) {
-                        dropdown.innerHTML = '<div class="p-4 text-center text-gray-400 text-xs">No se encontraron activos con ese identificador.</div>';
+                    window.itemsBusqueda = items;
+
+                    if (!items || items.length === 0) {
+                        dropdown.innerHTML = '<div class="p-4 text-center text-gray-400 text-xs">No se encontraron activos con ese identificador (código LIA, UNSJ o modelo).</div>';
                         dropdown.classList.remove('hidden');
                         return;
                     }
 
                     let html = '';
-                    items.forEach(item => {
+                    items.forEach((item, index) => {
+                        const badgeClase = item.es_prestamo_activo ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+                        const badgeTexto = item.es_prestamo_activo ? 'Prestado' : 'En Sala';
                         html += `
-                            <div onclick='seleccionarActivo(${JSON.stringify(item)})' class="p-3 hover:bg-amber-50 cursor-pointer flex items-center justify-between text-sm transition-colors">
+                            <div onclick="seleccionarActivoIndex(${index})" class="p-3 hover:bg-amber-50 cursor-pointer flex items-center justify-between text-sm transition-colors">
                                 <div>
                                     <span class="font-mono font-bold text-gray-900">LIA: ${item.nro_lia} | UNSJ: ${item.nro_unsj}</span>
                                     <div class="text-xs text-gray-600">${item.tipo.toUpperCase()} - ${item.marca || ''} ${item.modelo || ''}</div>
                                 </div>
                                 <div class="text-right">
-                                    <span class="text-xs font-semibold px-2 py-0.5 rounded ${item.es_prestamo_activo ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}">
-                                        ${item.es_prestamo_activo ? 'Prestado' : item.estado_actual}
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded ${badgeClase}">
+                                        ${badgeTexto}
                                     </span>
                                     <div class="text-[11px] text-gray-400">${item.ubicacion_actual}</div>
                                 </div>
@@ -225,9 +244,19 @@
                     dropdown.innerHTML = html;
                     dropdown.classList.remove('hidden');
                 })
-                .catch(() => spinner.classList.add('hidden'));
+                .catch(err => {
+                    spinner.classList.add('hidden');
+                    dropdown.innerHTML = '<div class="p-4 text-center text-red-400 text-xs">Error al consultar el servidor. Intenta nuevamente.</div>';
+                    dropdown.classList.remove('hidden');
+                });
         }, 250);
     });
+
+    function seleccionarActivoIndex(index) {
+        if (window.itemsBusqueda && window.itemsBusqueda[index]) {
+            seleccionarActivo(window.itemsBusqueda[index]);
+        }
+    }
 
     function seleccionarActivo(item) {
         document.getElementById('resultados-dropdown').classList.add('hidden');
