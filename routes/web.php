@@ -55,8 +55,8 @@ Route::middleware('auth')->group(function () {
     // API de Atributos por Tipo
     Route::get('/api/tipos/{tipo}/atributos', [\App\Http\Controllers\TipoController::class, 'apiAtributosPorTipo'])->name('api.tipos.atributos');
 
-    // Gestión de Tipos de Activos y Atributos Técnicos (item_admin y user_admin)
-    Route::middleware('role:item_admin,user_admin')->group(function () {
+    // Gestión de Tipos de Activos y Atributos Técnicos (exclusivo item_admin)
+    Route::middleware('role:item_admin')->group(function () {
         Route::resource('tipos', \App\Http\Controllers\TipoController::class)->except(['show']);
         Route::post('/atributos', [\App\Http\Controllers\TipoController::class, 'storeAtributo'])->name('atributos.store');
     });

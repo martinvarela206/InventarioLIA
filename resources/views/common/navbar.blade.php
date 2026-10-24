@@ -32,7 +32,7 @@
                                 Movimiento Rápido
                             </a>
                             <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('reportes.*') ? 'bg-amber-400/90 shadow-sm' : '' }}">Reportes</a>
-                            @if(Auth::user()->hasRole(['item_admin', 'user_admin']))
+                            @if(Auth::user()->hasRole('item_admin'))
                                 <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('tipos.*') ? 'bg-amber-400/90 shadow-sm' : '' }}">Tipos</a>
                             @endif
                             @if(Auth::user()->isAdmin())
@@ -75,7 +75,7 @@
                     <a href="{{ route('movimientos.rapido') }}" class="text-[#111] font-semibold py-2 px-3 rounded bg-amber-500/40">⚡ Movimiento Rápido (Móvil)</a>
                     <a href="{{ route('movimientos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Historial de Movimientos</a>
                     <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Reportes Oficiales</a>
-                    @if(Auth::user()->hasRole(['item_admin', 'user_admin']))
+                    @if(Auth::user()->hasRole('item_admin'))
                         <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Tipos de Hardware</a>
                     @endif
                     @if(Auth::user()->isAdmin())

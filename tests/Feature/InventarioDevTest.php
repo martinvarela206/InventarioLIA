@@ -339,6 +339,30 @@ class InventarioDevTest extends TestCase
 
         $tipoCreado = Tipo::where('nombre', 'instrumento de medicion')->first();
         $this->assertCount(2, $tipoCreado->atributos);
+
+        // Verificar que item_admin ve el enlace a Tipos en navbar
+        $responseNav = $this->actingAs($admin)->get(route('dashboard.index'));
+        $responseNav->assertSee(route('tipos.index'));
+
+        // Verificar que user_admin NO tiene acceso a tipos (403 Forbidden) y no ve el botón en navbar
+        $userAdmin = Usuario::create([
+            'nombre' => 'User Admin Only',
+            'email' => 'user_admin_only@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $userAdmin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+
+        $forbiddenIndex = $this->actingAs($userAdmin)->get(route('tipos.index'));
+        $forbiddenIndex->assertStatus(403);
+
+        $forbiddenPost = $this->actingAs($userAdmin)->post(route('tipos.store'), [
+            'nombre' => 'Intento No Autorizado',
+        ]);
+        $forbiddenPost->assertStatus(403);
+
+        $responseNavUserAdmin = $this->actingAs($userAdmin)->get(route('dashboard.index'));
+        $responseNavUserAdmin->assertDontSee(route('tipos.index'));
     }
 
     public function test_creacion_de_elemento_persiste_atributos_en_tabla_pivot(): void

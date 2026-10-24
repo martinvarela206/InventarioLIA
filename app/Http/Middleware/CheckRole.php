@@ -25,11 +25,6 @@ class CheckRole
             $roles = explode(',', $roles[0]);
         }
 
-        // Si es user_admin, tiene acceso maestro
-        if ($user->isAdmin()) {
-            return $next($request);
-        }
-
         // Comprobar si el usuario posee alguno de los roles requeridos
         if ($user->hasRole($roles)) {
             return $next($request);
