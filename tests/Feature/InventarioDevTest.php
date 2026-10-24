@@ -286,4 +286,23 @@ class InventarioDevTest extends TestCase
         // El email debe permanecer inalterado
         $this->assertEquals('docente@test.com', $usuarioComun->email);
     }
+
+    public function test_login_y_render_dashboard_ultra_rapido(): void
+    {
+        $admin = Usuario::create([
+            'nombre' => 'Admin Speed',
+            'email' => 'admin_speed@test.com',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $admin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+
+        $t0 = microtime(true);
+        $response = $this->actingAs($admin)->get(route('dashboard.index'));
+        $elapsed = microtime(true) - $t0;
+
+        $response->assertStatus(200);
+        $response->assertSee('Préstamos Externos Activos');
+        $this->assertLessThan(2.0, $elapsed, "El dashboard debe cargar en menos de 2 segundos, tardó {$elapsed}s");
+    }
 }

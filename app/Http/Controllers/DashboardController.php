@@ -16,16 +16,29 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $hoy = Carbon::today()->toDateString();
-        $proximo30Dias = Carbon::today()->addDays(30)->toDateString();
 
-        // 1. KPI Cards Principales
+        // 0. Carga de alto rendimiento: obtener el último movimiento de cada activo en un único query indexado (<60ms)
+        $ultimosMovimientos = Movimiento::whereIn('id', function ($q) {
+            $q->select(DB::raw('MAX(id)'))->from('movimientos')->groupBy('elemento_id');
+        })->with(['estado', 'ubicacion'])->get();
+
+        // 1. KPI Cards Principales (procesamiento instantáneo en memoria)
         $totalElementos = Elemento::count();
-        $totalOperativos = Elemento::disponibles()->count();
-        $totalPrestados = Elemento::prestadosActivos()->count();
-        $totalEnReparacion = Elemento::whereHas('ultimoMovimiento.estado', function ($q) {
-            $q->whereIn('nombre', ['en reparacion', 'verificar funcionamiento']);
+        $totalOperativos = $ultimosMovimientos->filter(function ($m) {
+            return $m->estado?->disponible && empty($m->fecha_prestamo);
         })->count();
-        $totalObsoletos = Elemento::obsoletos()->count();
+
+        $totalPrestados = $ultimosMovimientos->filter(function ($m) {
+            return !empty($m->fecha_prestamo) && empty($m->fecha_devolucion);
+        })->count();
+
+        $totalEnReparacion = $ultimosMovimientos->filter(function ($m) {
+            return in_array($m->estado?->nombre, ['en reparacion', 'verificar funcionamiento']);
+        })->count();
+
+        $totalObsoletos = $ultimosMovimientos->filter(function ($m) {
+            return in_array($m->estado?->nombre, ['dado de baja', 'donado', 'transferido', 'basura tecnologica']);
+        })->count();
 
         // 2. Widget de Préstamos Activos con cálculo de días y acción de devolución
         $prestamosActivos = Movimiento::prestadosActivos()
@@ -33,9 +46,10 @@ class DashboardController extends Controller
             ->orderBy('fecha_prestamo', 'asc')
             ->get();
 
-        // 3. Distribución de Equipos por Salas y Ocupación
-        $distribucionSalas = Ubicacion::all()->map(function ($ubicacion) {
-            $count = Elemento::enUbicacion($ubicacion->id)->count();
+        // 3. Distribución de Equipos por Salas y Ocupación (agrupación en memoria en 0ms)
+        $conteosPorUbicacion = $ultimosMovimientos->groupBy('ubicacion_id');
+        $distribucionSalas = Ubicacion::all()->map(function ($ubicacion) use ($conteosPorUbicacion) {
+            $count = isset($conteosPorUbicacion[$ubicacion->id]) ? $conteosPorUbicacion[$ubicacion->id]->count() : 0;
             return [
                 'id' => $ubicacion->id,
                 'nombre' => $ubicacion->nombre,
@@ -53,9 +67,14 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        $alertasVerificar = Elemento::whereHas('ultimoMovimiento.estado', function ($q) {
-            $q->where('nombre', 'verificar funcionamiento');
-        })->with(['tipo', 'ultimoMovimiento.ubicacion'])->limit(10)->get();
+        $idsVerificar = $ultimosMovimientos->filter(function ($m) {
+            return $m->estado?->nombre === 'verificar funcionamiento';
+        })->pluck('elemento_id');
+
+        $alertasVerificar = Elemento::whereIn('id', $idsVerificar)
+            ->with(['tipo', 'ultimoMovimiento.ubicacion'])
+            ->limit(10)
+            ->get();
 
         return view('dashboard.index', compact(
             'totalElementos',

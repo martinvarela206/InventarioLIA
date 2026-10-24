@@ -64,7 +64,7 @@ class Elemento extends Model
 
     public function ultimoMovimiento()
     {
-        return $this->hasOne(Movimiento::class, 'elemento_id')->latestOfMany('fecha');
+        return $this->hasOne(Movimiento::class, 'elemento_id')->latestOfMany('id');
     }
 
     public function presenter(): ElementoPresenter
