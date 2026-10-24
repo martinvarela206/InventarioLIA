@@ -23,42 +23,57 @@
     <!-- 1. 5 KPI CARDS -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <!-- Total Activos -->
-        <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm relative overflow-hidden">
-            <div class="absolute right-3 top-3 text-gray-100 -z-0">
+        <a href="{{ route('reportes.show', 'inventario-completo') }}" title="Ver reporte digital de todos los activos" class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm relative overflow-hidden block hover:-translate-y-1 hover:shadow-md hover:border-gray-400 transition-all group cursor-pointer">
+            <div class="absolute right-3 top-3 text-gray-100 group-hover:text-amber-100 transition-colors -z-0">
                 <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
             </div>
-            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block relative z-10">Total Activos</span>
+            <div class="flex items-center justify-between relative z-10">
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block">Total Activos</span>
+                <span class="text-xs font-semibold text-gray-400 group-hover:text-amber-600 transition-colors flex items-center gap-0.5">Reporte <span class="group-hover:translate-x-0.5 transition-transform">→</span></span>
+            </div>
             <div class="text-3xl font-black text-gray-900 mt-2 relative z-10">{{ number_format($totalElementos) }}</div>
             <span class="text-xs text-gray-400 mt-1 block relative z-10">Relevamiento ODS</span>
-        </div>
+        </a>
 
         <!-- Operativos -->
-        <div class="bg-white rounded-2xl p-5 border border-emerald-200/80 shadow-sm relative overflow-hidden bg-gradient-to-b from-white to-emerald-50/20">
-            <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider block">Operativos en Salas</span>
+        <a href="{{ route('reportes.show', 'operativos') }}" title="Ver reporte digital de activos operativos en salas" class="bg-white rounded-2xl p-5 border border-emerald-200/80 shadow-sm relative overflow-hidden bg-gradient-to-b from-white to-emerald-50/20 block hover:-translate-y-1 hover:shadow-md hover:border-emerald-400 transition-all group cursor-pointer">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider block">Operativos en Salas</span>
+                <span class="text-xs font-semibold text-emerald-600 group-hover:text-emerald-800 transition-colors flex items-center gap-0.5">Reporte <span class="group-hover:translate-x-0.5 transition-transform">→</span></span>
+            </div>
             <div class="text-3xl font-black text-emerald-700 mt-2">{{ number_format($totalOperativos) }}</div>
             <span class="text-xs text-emerald-600 mt-1 block">En uso y disponibles</span>
-        </div>
+        </a>
 
         <!-- Prestados Activos -->
-        <div class="bg-white rounded-2xl p-5 border border-amber-300 shadow-sm relative overflow-hidden bg-gradient-to-b from-white to-amber-50/40">
-            <span class="text-xs font-bold text-amber-900 uppercase tracking-wider block">Prestados a Cátedras</span>
+        <a href="{{ route('reportes.show', 'prestados') }}" title="Ver reporte digital de equipos prestados a cátedras" class="bg-white rounded-2xl p-5 border border-amber-300 shadow-sm relative overflow-hidden bg-gradient-to-b from-white to-amber-50/40 block hover:-translate-y-1 hover:shadow-md hover:border-amber-400 transition-all group cursor-pointer">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-amber-900 uppercase tracking-wider block">Prestados a Cátedras</span>
+                <span class="text-xs font-semibold text-amber-700 group-hover:text-amber-900 transition-colors flex items-center gap-0.5">Reporte <span class="group-hover:translate-x-0.5 transition-transform">→</span></span>
+            </div>
             <div class="text-3xl font-black text-amber-600 mt-2">{{ number_format($totalPrestados) }}</div>
             <span class="text-xs text-amber-700 mt-1 block">Fuera del laboratorio</span>
-        </div>
+        </a>
 
         <!-- En Reparación -->
-        <div class="bg-white rounded-2xl p-5 border border-sky-200 shadow-sm relative overflow-hidden">
-            <span class="text-xs font-bold text-sky-800 uppercase tracking-wider block">En Verificación / Taller</span>
+        <a href="{{ route('reportes.show', 'en-taller') }}" title="Ver reporte digital de equipos en taller y verificación" class="bg-white rounded-2xl p-5 border border-sky-200 shadow-sm relative overflow-hidden block hover:-translate-y-1 hover:shadow-md hover:border-sky-400 transition-all group cursor-pointer">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-sky-800 uppercase tracking-wider block">En Verificación / Taller</span>
+                <span class="text-xs font-semibold text-sky-600 group-hover:text-sky-800 transition-colors flex items-center gap-0.5">Reporte <span class="group-hover:translate-x-0.5 transition-transform">→</span></span>
+            </div>
             <div class="text-3xl font-black text-sky-700 mt-2">{{ number_format($totalEnReparacion) }}</div>
             <span class="text-xs text-sky-600 mt-1 block">Intervención técnica</span>
-        </div>
+        </a>
 
         <!-- Obsoletos / Bajas -->
-        <div class="bg-white rounded-2xl p-5 border border-rose-200 shadow-sm relative overflow-hidden">
-            <span class="text-xs font-bold text-rose-800 uppercase tracking-wider block">Bajas y Basura Tec.</span>
+        <a href="{{ route('reportes.show', 'bajas-basura') }}" title="Ver reporte digital de bajas y basura tecnológica" class="bg-white rounded-2xl p-5 border border-rose-200 shadow-sm relative overflow-hidden block hover:-translate-y-1 hover:shadow-md hover:border-rose-400 transition-all group cursor-pointer">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-rose-800 uppercase tracking-wider block">Bajas y Basura Tec.</span>
+                <span class="text-xs font-semibold text-rose-600 group-hover:text-rose-800 transition-colors flex items-center gap-0.5">Reporte <span class="group-hover:translate-x-0.5 transition-transform">→</span></span>
+            </div>
             <div class="text-3xl font-black text-rose-700 mt-2">{{ number_format($totalObsoletos) }}</div>
             <span class="text-xs text-rose-600 mt-1 block">Descarte institucional</span>
-        </div>
+        </a>
     </div>
 
     <!-- 2. WIDGET DE PRÉSTAMOS ACTIVOS CON DEVOLUCIÓN DIRECTA -->

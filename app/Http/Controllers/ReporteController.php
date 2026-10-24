@@ -134,6 +134,133 @@ class ReporteController extends Controller
                     'total' => $items->count(),
                 ];
 
+            case 'operativos':
+                $query = Elemento::disponibles()->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.estado']);
+                if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
+                if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+
+                $items = $query->orderBy('id', 'asc')->get();
+                $filas = $items->map(function ($el) {
+                    $u = $el->ultimoMovimiento;
+                    return [
+                        $el->tipo?->nombre ?? 'N/A',
+                        $el->nro_lia ?? '-',
+                        $el->nro_unsj ?? '-',
+                        $el->marca ?? '-',
+                        $el->modelo ?? '-',
+                        $u?->ubicacion?->nombre ?? 'Sin asignar',
+                        $u?->puesto ?: ($el->puesto ?? '-'),
+                        $u?->estado?->nombre ?? 'Operativo',
+                        $u?->solicitante ?? '-',
+                        $el->observaciones ?: ($el->descripcion_texto ?? '-'),
+                    ];
+                });
+
+                return [
+                    'titulo' => 'Activos Operativos en Salas',
+                    'subtitulo' => 'Equipos disponibles y en funcionamiento dentro de las instalaciones del LIA',
+                    'columnas' => $columnasStandard,
+                    'filas' => $filas,
+                    'total' => $items->count(),
+                ];
+
+            case 'prestados':
+                $query = Elemento::prestadosActivos()->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.estado', 'ultimoMovimiento.usuario']);
+                if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
+
+                $items = $query->orderBy('id', 'asc')->get();
+                $filas = $items->map(function ($el) {
+                    $u = $el->ultimoMovimiento;
+                    $fechaSalida = $u?->fecha_prestamo ? Carbon::parse($u->fecha_prestamo)->format('d/m/Y') : '-';
+                    $dias = $u?->fecha_prestamo ? Carbon::parse($u->fecha_prestamo)->diffInDays(now()) . ' días' : '-';
+                    return [
+                        $el->tipo?->nombre ?? 'N/A',
+                        $el->nro_lia ?? '-',
+                        $el->nro_unsj ?? '-',
+                        $el->marca ?? '-',
+                        $el->modelo ?? '-',
+                        $u?->ubicacion?->nombre ?? 'Préstamo Externo',
+                        $u?->puesto ?: ($el->puesto ?? '-'),
+                        $u?->estado?->nombre ?? 'Prestado',
+                        $u?->solicitante ? "{$u->solicitante} (Salida: {$fechaSalida} - {$dias})" : '-',
+                        $u?->comentario ?: ($el->observaciones ?: ($el->descripcion_texto ?? '-')),
+                    ];
+                });
+
+                return [
+                    'titulo' => 'Equipos en Préstamo Externo a Cátedras / Docentes',
+                    'subtitulo' => 'Activos patrimoniales actualmente fuera del laboratorio bajo préstamo docente',
+                    'columnas' => $columnasStandard,
+                    'filas' => $filas,
+                    'total' => $items->count(),
+                ];
+
+            case 'en-taller':
+            case 'en-reparacion':
+                $query = Elemento::whereHas('ultimoMovimiento.estado', function ($q) {
+                    $q->whereIn('nombre', ['en reparacion', 'verificar funcionamiento']);
+                })->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.estado', 'ultimoMovimiento.usuario']);
+
+                if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
+
+                $items = $query->orderBy('id', 'asc')->get();
+                $filas = $items->map(function ($el) {
+                    $u = $el->ultimoMovimiento;
+                    return [
+                        $el->tipo?->nombre ?? 'N/A',
+                        $el->nro_lia ?? '-',
+                        $el->nro_unsj ?? '-',
+                        $el->marca ?? '-',
+                        $el->modelo ?? '-',
+                        $u?->ubicacion?->nombre ?? 'Taller / Soporte',
+                        $u?->puesto ?: ($el->puesto ?? '-'),
+                        $u?->estado?->nombre ?? 'En Taller',
+                        $u?->usuario?->nombre ? "Técnico: {$u->usuario->nombre}" : '-',
+                        $u?->comentario ?: ($el->observaciones ?: ($el->descripcion_texto ?? '-')),
+                    ];
+                });
+
+                return [
+                    'titulo' => 'Equipos en Verificación Técnica y Taller',
+                    'subtitulo' => 'Activos en proceso de diagnóstico, reparación o mantenimiento técnico',
+                    'columnas' => $columnasStandard,
+                    'filas' => $filas,
+                    'total' => $items->count(),
+                ];
+
+            case 'bajas-basura':
+            case 'bajas':
+                $query = Elemento::whereHas('ultimoMovimiento.estado', function ($q) {
+                    $q->whereIn('nombre', ['dado de baja', 'donado', 'transferido', 'basura tecnologica']);
+                })->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.estado', 'ultimoMovimiento.usuario']);
+
+                if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
+
+                $items = $query->orderBy('id', 'asc')->get();
+                $filas = $items->map(function ($el) {
+                    $u = $el->ultimoMovimiento;
+                    return [
+                        $el->tipo?->nombre ?? 'N/A',
+                        $el->nro_lia ?? '-',
+                        $el->nro_unsj ?? '-',
+                        $el->marca ?? '-',
+                        $el->modelo ?? '-',
+                        $u?->ubicacion?->nombre ?? 'Depósito / Descarte',
+                        $u?->puesto ?: ($el->puesto ?? '-'),
+                        $u?->estado?->nombre ?? 'Baja / Basura Tec.',
+                        $u?->usuario?->nombre ? "Registrado por: {$u->usuario->nombre}" : '-',
+                        $u?->comentario ?: ($el->observaciones ?: ($el->descripcion_texto ?? '-')),
+                    ];
+                });
+
+                return [
+                    'titulo' => 'Activos Dados de Baja y Basura Tecnológica',
+                    'subtitulo' => 'Equipos obsoletos, donados, transferidos o descartados patrimonialmente',
+                    'columnas' => $columnasStandard,
+                    'filas' => $filas,
+                    'total' => $items->count(),
+                ];
+
             case 'auditoria-sala':
                 $ubicacionId = $request->ubicacion_id;
                 $ubicacion = Ubicacion::find($ubicacionId) ?? Ubicacion::first();

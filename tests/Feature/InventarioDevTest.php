@@ -171,6 +171,31 @@ class InventarioDevTest extends TestCase
         $responseShow->assertStatus(200);
         $responseShow->assertSee('Listado de Inventario Completo');
 
+        // Reportes específicos vinculados a KPI cards del dashboard
+        $responseOp = $this->actingAs($admin)->get(route('reportes.show', 'operativos'));
+        $responseOp->assertStatus(200);
+        $responseOp->assertSee('Activos Operativos en Salas');
+
+        $responsePrest = $this->actingAs($admin)->get(route('reportes.show', 'prestados'));
+        $responsePrest->assertStatus(200);
+        $responsePrest->assertSee('Equipos en Préstamo Externo');
+
+        $responseTaller = $this->actingAs($admin)->get(route('reportes.show', 'en-taller'));
+        $responseTaller->assertStatus(200);
+        $responseTaller->assertSee('Equipos en Verificación Técnica y Taller');
+
+        $responseBajas = $this->actingAs($admin)->get(route('reportes.show', 'bajas-basura'));
+        $responseBajas->assertStatus(200);
+        $responseBajas->assertSee('Activos Dados de Baja y Basura Tecnológica');
+
+        // Dashboard contiene los enlaces directos a los reportes
+        $responseDash = $this->actingAs($admin)->get(route('dashboard.index'));
+        $responseDash->assertSee(route('reportes.show', 'inventario-completo'));
+        $responseDash->assertSee(route('reportes.show', 'operativos'));
+        $responseDash->assertSee(route('reportes.show', 'prestados'));
+        $responseDash->assertSee(route('reportes.show', 'en-taller'));
+        $responseDash->assertSee(route('reportes.show', 'bajas-basura'));
+
         // Export CSV
         $responseCsv = $this->actingAs($admin)->get(route('reportes.exportCsv', 'inventario-completo'));
         $responseCsv->assertStatus(200);
