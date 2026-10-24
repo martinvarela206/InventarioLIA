@@ -47,8 +47,8 @@
                     Buscar
                 </button>
                 @if(request()->hasAny(['search', 'tipo', 'ubicacion', 'gb', 'garantia']))
-                    <a href="{{ route('elementos.index') }}" class="text-sm font-semibold text-gray-500 hover:text-black px-2 py-2 inline-flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <a href="{{ route('elementos.index') }}" class="inline-flex items-center gap-1.5 px-3 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs shadow-xs transition-colors">
+                        <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         Limpiar filtros
                     </a>
                 @endif

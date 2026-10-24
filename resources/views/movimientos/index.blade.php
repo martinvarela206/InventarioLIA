@@ -38,11 +38,15 @@
                         class="w-full rounded-xl border border-gray-300 pl-10 pr-4 py-2 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
                     <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
-                <button type="submit" class="bg-amber-400 hover:bg-amber-500 text-black font-bold px-4 py-2 rounded-xl text-sm transition-colors">
+                <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl shadow-xs text-sm transition-all active:scale-[0.98]">
+                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     Buscar
                 </button>
                 @if(request()->hasAny(['search', 'tipo_movimiento', 'ubicacion_id']))
-                    <a href="{{ route('movimientos.index') }}" class="text-xs text-gray-500 hover:text-black self-center px-2">Limpiar</a>
+                    <a href="{{ route('movimientos.index') }}" class="inline-flex items-center gap-1 px-3 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs shadow-xs transition-colors">
+                        <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        Limpiar
+                    </a>
                 @endif
             </div>
 

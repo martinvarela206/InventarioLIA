@@ -1,138 +1,156 @@
-<header style="background:#fbc101;" class="w-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] sticky top-0 z-50">
-    <div class="mx-auto max-w-[1240px] w-full px-4 lg:px-8 py-3">
-        <div class="flex justify-between items-center">
-            <a href="{{ url('/') }}" class="flex items-center gap-3 hover:text-[#111]">
-                @include('common.logo', ['variant' => 'dark', 'class' => 'w-10 h-10'])
-                <span class="text-2xl font-bold text-[#111] tracking-tight">Nexo LIA</span>
+<header style="background:#fbc101;" class="w-full shadow-[0_2px_8px_rgba(0,0,0,0.12)] sticky top-0 z-50">
+    <div class="mx-auto max-w-[1360px] w-full px-4 lg:px-6 py-2.5">
+        <div class="flex justify-between items-center gap-3">
+            <!-- Brand Logo -->
+            <a href="{{ url('/') }}" class="flex items-center gap-2.5 hover:opacity-90 transition-opacity shrink-0">
+                @include('common.logo', ['variant' => 'dark', 'class' => 'w-9 h-9'])
+                <span class="text-xl font-black text-black tracking-tight">Nexo LIA</span>
             </a>
 
             <!-- Mobile Menu Button -->
-            <button id="mobile-menu-btn" class="lg:hidden p-2 text-[#111] hover:bg-amber-400 rounded transition-colors" aria-label="Abrir menú">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-7 h-7">
+            <button id="mobile-menu-btn" class="lg:hidden p-2 text-black hover:bg-black/10 rounded-xl transition-colors" aria-label="Abrir menú">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
             </button>
 
             <!-- Desktop Menu -->
-            <div class="hidden lg:flex items-center gap-6">
+            <div class="hidden lg:flex items-center justify-between flex-1 gap-2 xl:gap-4 ml-2 xl:ml-6">
                 @if(Request::is('/'))
-                    <nav class="flex items-center gap-6">
-                        <a href="#inicio" class="text-[#111] font-semibold text-sm border-b-2 border-transparent hover:border-[#111] transition-colors">Inicio</a>
-                        <a href="#sistema-lia" class="text-[#111] font-semibold text-sm border-b-2 border-transparent hover:border-[#111] transition-colors">Funcionalidades</a>
-                        <a href="#espacios-lia" class="text-[#111] font-semibold text-sm border-b-2 border-transparent hover:border-[#111] transition-colors">Espacios</a>
-                        <a href="#personal-lia" class="text-[#111] font-semibold text-sm border-b-2 border-transparent hover:border-[#111] transition-colors">Personal</a>
-                        <a href="#actividades-lia" class="text-[#111] font-semibold text-sm border-b-2 border-transparent hover:border-[#111] transition-colors">Actividades</a>
+                    <nav class="flex items-center gap-5 xl:gap-6">
+                        <a href="#inicio" class="text-black/80 hover:text-black font-bold text-sm border-b-2 border-transparent hover:border-black transition-colors">Inicio</a>
+                        <a href="#sistema-lia" class="text-black/80 hover:text-black font-bold text-sm border-b-2 border-transparent hover:border-black transition-colors">Funcionalidades</a>
+                        <a href="#espacios-lia" class="text-black/80 hover:text-black font-bold text-sm border-b-2 border-transparent hover:border-black transition-colors">Espacios</a>
+                        <a href="#personal-lia" class="text-black/80 hover:text-black font-bold text-sm border-b-2 border-transparent hover:border-black transition-colors">Personal</a>
+                        <a href="#actividades-lia" class="text-black/80 hover:text-black font-bold text-sm border-b-2 border-transparent hover:border-black transition-colors">Actividades</a>
                     </nav>
 
-                    <div class="flex items-center gap-3 pl-4 border-l border-amber-600/40">
+                    <div class="flex items-center gap-3 pl-4 border-l border-black/15 shrink-0">
                         @auth
-                            <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="text-[#111] font-bold text-sm px-4 py-2 rounded-xl bg-black/10 hover:bg-black/15 transition-all">
+                            <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="text-black font-extrabold text-sm px-4 py-2 rounded-xl bg-black/10 hover:bg-black/15 transition-all">
                                 Ir al Panel
                             </a>
                         @else
-                            <a href="{{ route('login') }}" class="text-[#111] hover:text-black font-bold text-sm px-3.5 py-2 rounded-xl hover:bg-black/10 transition-all">
+                            <a href="{{ route('login') }}" class="text-black hover:bg-black/10 font-bold text-sm px-3.5 py-2 rounded-xl transition-all">
                                 Iniciar Sesión
                             </a>
-                            <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] hover:bg-black/85 font-extrabold text-sm px-4 py-2 rounded-xl transition-all shadow-sm border border-black/20">
+                            <a href="{{ route('register') }}" class="bg-black text-[#fbc101] hover:bg-black/85 font-extrabold text-sm px-4 py-2 rounded-xl transition-all shadow-sm">
                                 Registrarse
                             </a>
                         @endauth
                     </div>
                 @else
-                    <nav class="flex items-center gap-1.5">
+                    @php
+                        $navItemClass = function($isActive) {
+                            return $isActive 
+                                ? 'bg-black text-[#fbc101] font-black text-xs xl:text-sm px-3 py-2 rounded-xl shadow-sm inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all'
+                                : 'text-black hover:text-black hover:bg-black/10 font-bold text-xs xl:text-sm px-2.5 py-2 rounded-xl inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all';
+                        };
+                    @endphp
+
+                    <nav class="flex items-center gap-1 xl:gap-1.5 overflow-x-auto no-scrollbar py-1">
                         @auth
                             @if(Auth::user()->hasActivePermissions())
-                                <a href="{{ route('dashboard.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('dashboard.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">
-                                    <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <a href="{{ route('dashboard.index') }}" class="{{ $navItemClass(Request::routeIs('dashboard.*')) }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                                     </svg>
-                                    Dashboard
+                                    <span>Dashboard</span>
                                 </a>
-                                <a href="{{ route('elementos.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('elementos.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">
-                                    <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+
+                                <a href="{{ route('elementos.index') }}" class="{{ $navItemClass(Request::routeIs('elementos.*')) }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                                     </svg>
-                                    Inventario
+                                    <span>Inventario</span>
                                 </a>
+
                                 @if(Auth::user()->canManageMovimientos())
-                                    <a href="{{ route('movimientos.rapido') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg bg-amber-500/50 hover:bg-amber-500/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('movimientos.rapido') ? 'ring-2 ring-amber-800 font-bold' : '' }}">
-                                        <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <a href="{{ route('movimientos.rapido') }}" class="{{ $navItemClass(Request::routeIs('movimientos.rapido')) }}">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                         </svg>
-                                        Mov. Rápido
+                                        <span>Mov. Rápido</span>
                                     </a>
                                 @endif
+
                                 @if(Auth::user()->hasRole('rev'))
-                                    <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('reportes.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">
-                                        <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <a href="{{ route('reportes.index') }}" class="{{ $navItemClass(Request::routeIs('reportes.*')) }}">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                         </svg>
-                                        Reportes
+                                        <span>Reportes</span>
                                     </a>
                                 @endif
+
                                 @if(Auth::user()->hasRole('item_admin'))
-                                    <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('tipos.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">
-                                        <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <a href="{{ route('tipos.index') }}" class="{{ $navItemClass(Request::routeIs('tipos.*')) }}">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                                         </svg>
-                                        Tipos
+                                        <span>Tipos</span>
                                     </a>
-                                    <a href="{{ route('ubicaciones.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('ubicaciones.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">
-                                        <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+
+                                    <a href="{{ route('ubicaciones.index') }}" class="{{ $navItemClass(Request::routeIs('ubicaciones.*')) }}">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                                         </svg>
-                                        Salas
+                                        <span>Salas</span>
                                     </a>
                                 @endif
+
                                 @if(Auth::user()->isAppAdmin())
-                                    <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg bg-amber-500/30 hover:bg-amber-500/60 transition-colors flex items-center gap-1.5 {{ Request::routeIs('app_admin.*') ? 'bg-amber-500 shadow-sm font-bold' : '' }}">
-                                        <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <a href="{{ route('app_admin.index') }}" class="{{ $navItemClass(Request::routeIs('app_admin.*')) }}">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        Gestión App
+                                        <span>Gestión App</span>
                                     </a>
                                 @endif
+
                                 @if(Auth::user()->isAdmin())
-                                    <a href="{{ route('users.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('users.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">
-                                        <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <a href="{{ route('users.index') }}" class="{{ $navItemClass(Request::routeIs('users.*')) }}">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                         </svg>
-                                        Usuarios
+                                        <span>Usuarios</span>
                                     </a>
                                 @endif
                             @endif
                         @endauth
                     </nav>
 
-                    <div class="flex items-center gap-3 pl-4 border-l border-amber-500/40">
+                    <!-- User Profile & Logout -->
+                    <div class="flex items-center gap-1.5 pl-3 xl:pl-4 border-l border-black/15 shrink-0">
                         @auth
                             @if(Auth::user()->hasRole('registered'))
-                                <a href="{{ route('profile.edit') }}" class="text-[#111] font-medium text-sm px-3 py-1.5 rounded-lg bg-black/5 hover:bg-black/10 transition-all flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
-                                    <svg class="w-3.5 h-3.5 text-gray-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <a href="{{ route('profile.edit') }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-black/10 text-black font-extrabold text-xs xl:text-sm transition-all whitespace-nowrap" title="Mi perfil de usuario">
+                                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
-                                    {{ Auth::user()->nombre }}
+                                    <span>{{ Auth::user()->nombre }}</span>
                                 </a>
                             @else
-                                <span class="text-[#111] font-medium text-sm px-3 py-1.5 rounded-lg bg-black/5 flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-gray-600"></span>
-                                    <svg class="w-3.5 h-3.5 text-gray-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <span class="inline-flex items-center gap-2 px-3 py-2 text-black font-extrabold text-xs xl:text-sm whitespace-nowrap">
+                                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
-                                    {{ Auth::user()->nombre }}
+                                    <span>{{ Auth::user()->nombre }}</span>
                                 </span>
                             @endif
+
                             <form action="{{ route('logout') }}" method="POST" class="inline">
                                 @csrf
-                                <button type="submit" class="flex items-center justify-center w-9 h-9 bg-[#c62828] text-white rounded-full hover:bg-[#8e1c1c] transition-colors shadow-sm" title="Cerrar sesión">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                <button type="submit" class="inline-flex items-center justify-center p-2 rounded-xl text-black/75 hover:text-rose-800 hover:bg-black/10 transition-all" title="Cerrar sesión">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1"/>
+                                    </svg>
                                 </button>
                             </form>
                         @else
-                            <a href="{{ route('login') }}" class="text-[#111] hover:text-black font-bold text-sm px-3.5 py-2 rounded-xl hover:bg-black/10 transition-all">Iniciar Sesión</a>
-                            <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] hover:bg-black/85 font-extrabold text-sm px-4 py-2 rounded-xl transition-all shadow-sm border border-black/20">Registrarse</a>
+                            <a href="{{ route('login') }}" class="text-black hover:bg-black/10 font-bold text-xs xl:text-sm px-3.5 py-2 rounded-xl transition-all whitespace-nowrap">Iniciar Sesión</a>
+                            <a href="{{ route('register') }}" class="bg-black text-[#fbc101] hover:bg-black/85 font-extrabold text-xs xl:text-sm px-4 py-2 rounded-xl transition-all shadow-sm whitespace-nowrap">Registrarse</a>
                         @endauth
                     </div>
                 @endif
@@ -140,107 +158,125 @@
         </div>
 
         <!-- Mobile Menu (Hidden by default) -->
-        <div id="mobile-menu" class="hidden lg:hidden flex flex-col gap-2 mt-4 pb-2 border-t border-amber-600/30 pt-3">
+        <div id="mobile-menu" class="hidden lg:hidden flex flex-col gap-1.5 mt-3 pb-2 border-t border-black/15 pt-3">
             @if(Request::is('/'))
-                <a href="#inicio" class="text-[#111] font-semibold py-1.5 px-3 rounded-lg hover:bg-amber-400">Inicio</a>
-                <a href="#sistema-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded-lg hover:bg-amber-400">Funcionalidades</a>
-                <a href="#espacios-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded-lg hover:bg-amber-400">Espacios</a>
-                <a href="#personal-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded-lg hover:bg-amber-400">Personal</a>
-                <a href="#actividades-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded-lg hover:bg-amber-400">Actividades</a>
-                <div class="h-px bg-amber-600/40 my-2"></div>
+                <a href="#inicio" class="text-black font-bold py-2 px-3 rounded-xl hover:bg-black/10 text-sm">Inicio</a>
+                <a href="#sistema-lia" class="text-black font-bold py-2 px-3 rounded-xl hover:bg-black/10 text-sm">Funcionalidades</a>
+                <a href="#espacios-lia" class="text-black font-bold py-2 px-3 rounded-xl hover:bg-black/10 text-sm">Espacios</a>
+                <a href="#personal-lia" class="text-black font-bold py-2 px-3 rounded-xl hover:bg-black/10 text-sm">Personal</a>
+                <a href="#actividades-lia" class="text-black font-bold py-2 px-3 rounded-xl hover:bg-black/10 text-sm">Actividades</a>
+                <div class="h-px bg-black/15 my-2"></div>
                 @auth
-                    <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="text-[#111] font-bold py-2 px-3 rounded-xl bg-amber-400 text-center">Ir al Panel</a>
+                    <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="text-black font-black py-2.5 px-3 rounded-xl bg-black/10 text-center text-sm">Ir al Panel</a>
                 @else
                     <div class="flex items-center gap-2 px-1 py-1">
-                        <a href="{{ route('login') }}" class="text-[#111] font-bold py-2 px-3 rounded-xl bg-amber-400/80 hover:bg-amber-400 flex-1 text-center text-sm">Iniciar Sesión</a>
-                        <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] hover:bg-black/85 font-extrabold py-2 px-3 rounded-xl flex-1 text-center text-sm shadow-sm border border-black/20">Registrarse</a>
+                        <a href="{{ route('login') }}" class="text-black font-bold py-2 px-3 rounded-xl hover:bg-black/10 flex-1 text-center text-sm">Iniciar Sesión</a>
+                        <a href="{{ route('register') }}" class="bg-black text-[#fbc101] hover:bg-black/85 font-extrabold py-2 px-3 rounded-xl flex-1 text-center text-sm shadow-sm">Registrarse</a>
                     </div>
                 @endauth
             @else
+                @php
+                    $navMobileClass = function($isActive) {
+                        return $isActive
+                            ? 'bg-black text-[#fbc101] font-black py-2 px-3.5 rounded-xl flex items-center gap-2.5 text-sm shadow-sm transition-all'
+                            : 'text-black font-bold py-2 px-3.5 rounded-xl hover:bg-black/10 flex items-center gap-2.5 text-sm transition-all';
+                    };
+                @endphp
+
                 @auth
                     @if(Auth::user()->hasActivePermissions())
-                        <a href="{{ route('dashboard.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <a href="{{ route('dashboard.index') }}" class="{{ $navMobileClass(Request::routeIs('dashboard.*')) }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                             </svg>
                             <span>Dashboard</span>
                         </a>
-                        <a href="{{ route('elementos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+
+                        <a href="{{ route('elementos.index') }}" class="{{ $navMobileClass(Request::routeIs('elementos.*')) }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                             </svg>
-                            <span>Inventario Completo</span>
+                            <span>Inventario</span>
                         </a>
+
                         @if(Auth::user()->canManageMovimientos())
-                            <a href="{{ route('movimientos.rapido') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg bg-amber-500/40 flex items-center gap-2">
-                                <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <a href="{{ route('movimientos.rapido') }}" class="{{ $navMobileClass(Request::routeIs('movimientos.rapido')) }}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                 </svg>
-                                <span>Movimiento Rápido (Móvil)</span>
+                                <span>Movimiento Rápido</span>
                             </a>
                         @endif
-                        <a href="{{ route('movimientos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span>Historial de Movimientos</span>
-                        </a>
+
                         @if(Auth::user()->hasRole('rev'))
-                            <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
-                                <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <a href="{{ route('reportes.index') }}" class="{{ $navMobileClass(Request::routeIs('reportes.*')) }}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
-                                <span>Reportes Oficiales</span>
+                                <span>Reportes</span>
                             </a>
                         @endif
+
                         @if(Auth::user()->hasRole('item_admin'))
-                            <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
-                                <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <a href="{{ route('tipos.index') }}" class="{{ $navMobileClass(Request::routeIs('tipos.*')) }}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                                 </svg>
                                 <span>Tipos de Hardware</span>
                             </a>
-                            <a href="{{ route('ubicaciones.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
-                                <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+
+                            <a href="{{ route('ubicaciones.index') }}" class="{{ $navMobileClass(Request::routeIs('ubicaciones.*')) }}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                                 </svg>
                                 <span>Salas y Espacios</span>
                             </a>
                         @endif
+
                         @if(Auth::user()->isAppAdmin())
-                            <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg bg-amber-400/60 font-bold flex items-center gap-2">
-                                <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <a href="{{ route('app_admin.index') }}" class="{{ $navMobileClass(Request::routeIs('app_admin.*')) }}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
                                 <span>Gestión App</span>
                             </a>
                         @endif
+
                         @if(Auth::user()->isAdmin())
-                            <a href="{{ route('users.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
-                                <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <a href="{{ route('users.index') }}" class="{{ $navMobileClass(Request::routeIs('users.*')) }}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                 </svg>
-                                <span>Administración de Usuarios</span>
+                                <span>Usuarios</span>
                             </a>
                         @endif
                     @endif
-                    <div class="h-px bg-amber-600/40 my-2"></div>
-                    <div class="flex items-center justify-between px-3 py-2">
+
+                    <div class="h-px bg-black/15 my-2"></div>
+                    <div class="flex items-center justify-between px-2 py-1">
                         @if(Auth::user()->hasRole('registered'))
-                            <a href="{{ route('profile.edit') }}" class="font-medium text-sm text-[#111]">Perfil: {{ Auth::user()->nombre }}</a>
+                            <a href="{{ route('profile.edit') }}" class="font-bold text-sm text-black flex items-center gap-2">
+                                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                <span>{{ Auth::user()->nombre }}</span>
+                            </a>
                         @else
-                            <span class="font-medium text-sm text-[#111]">Perfil: {{ Auth::user()->nombre }}</span>
+                            <span class="font-bold text-sm text-black flex items-center gap-2">
+                                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                <span>{{ Auth::user()->nombre }}</span>
+                            </span>
                         @endif
                         <form action="{{ route('logout') }}" method="POST" class="inline">
                             @csrf
-                            <button type="submit" class="text-xs bg-[#c62828] text-white px-3 py-1.5 rounded-lg font-bold">Cerrar Sesión</button>
+                            <button type="submit" class="text-xs bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3 py-1.5 rounded-xl shadow-xs transition-all">
+                                Cerrar Sesión
+                            </button>
                         </form>
                     </div>
                 @else
                     <div class="flex items-center gap-2 px-1 py-1">
-                        <a href="{{ route('login') }}" class="text-[#111] font-bold py-2 px-3 rounded-xl bg-amber-400/80 hover:bg-amber-400 flex-1 text-center text-sm">Iniciar Sesión</a>
-                        <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] hover:bg-black/85 font-extrabold py-2 px-3 rounded-xl flex-1 text-center text-sm shadow-sm border border-black/20">Registrarse</a>
+                        <a href="{{ route('login') }}" class="text-black font-bold py-2 px-3 rounded-xl hover:bg-black/10 flex-1 text-center text-sm">Iniciar Sesión</a>
+                        <a href="{{ route('register') }}" class="bg-black text-[#fbc101] hover:bg-black/85 font-extrabold py-2 px-3 rounded-xl flex-1 text-center text-sm shadow-sm">Registrarse</a>
                     </div>
                 @endauth
             @endif
