@@ -12,7 +12,12 @@
                 </span>
                 <span class="text-xs text-gray-500 font-semibold">item_admin</span>
             </div>
-            <h1 class="text-2xl font-black text-gray-900 mt-1">Salas, Laboratorios y Depósitos del LIA</h1>
+            <h1 class="text-2xl font-black text-gray-900 mt-1 flex items-center gap-2">
+                <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                <span>Salas, Laboratorios y Depósitos del LIA</span>
+            </h1>
             <p class="text-xs text-gray-500 mt-0.5">
                 Administra los espacios físicos donde se localizan y trasladan los activos patrimoniales.
             </p>
@@ -61,9 +66,19 @@
             <div class="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:border-amber-400 hover:shadow-md transition-all flex flex-col justify-between">
                 <div>
                     <div class="flex items-start justify-between gap-3 mb-2">
-                        <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full {{ $ub->total_activos > 0 ? 'bg-emerald-500' : 'bg-gray-300' }}"></span>
-                            <h3 class="font-extrabold text-gray-900 text-base leading-tight">{{ $ub->nombre }}</h3>
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-extrabold text-gray-900 text-base leading-tight">{{ $ub->nombre }}</h3>
+                                <div class="flex items-center gap-1.5 mt-0.5">
+                                    <span class="w-2 h-2 rounded-full {{ $ub->total_activos > 0 ? 'bg-emerald-500' : 'bg-gray-300' }}"></span>
+                                    <span class="text-[11px] text-gray-500">{{ $ub->total_activos > 0 ? 'Con activos asignados' : 'Vacío o sin activos' }}</span>
+                                </div>
+                            </div>
                         </div>
                         <span class="text-xs font-black px-2.5 py-1 rounded-full {{ $ub->total_activos > 0 ? 'bg-amber-100 text-amber-900' : 'bg-gray-100 text-gray-600' }}" title="Activos localizados aquí">
                             {{ $ub->total_activos }} {{ $ub->total_activos === 1 ? 'activo' : 'activos' }}

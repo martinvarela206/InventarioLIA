@@ -39,26 +39,53 @@
                         @endauth
                     </div>
                 @else
-                    <nav class="flex items-center gap-2">
+                    <nav class="flex items-center gap-1.5">
                         @auth
                             @if(Auth::user()->hasActivePermissions())
-                                <a href="{{ route('dashboard.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('dashboard.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Dashboard</a>
-                                <a href="{{ route('elementos.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('elementos.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Inventario</a>
+                                <a href="{{ route('dashboard.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('dashboard.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">
+                                    <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                                    </svg>
+                                    Dashboard
+                                </a>
+                                <a href="{{ route('elementos.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('elementos.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">
+                                    <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                    </svg>
+                                    Inventario
+                                </a>
                                 @if(Auth::user()->canManageMovimientos())
-                                    <a href="{{ route('movimientos.rapido') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg bg-amber-500/50 hover:bg-amber-500/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('movimientos.rapido') ? 'ring-2 ring-amber-800 font-bold' : '' }}">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                        Movimiento Rápido
+                                    <a href="{{ route('movimientos.rapido') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg bg-amber-500/50 hover:bg-amber-500/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('movimientos.rapido') ? 'ring-2 ring-amber-800 font-bold' : '' }}">
+                                        <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                        </svg>
+                                        Mov. Rápido
                                     </a>
                                 @endif
                                 @if(Auth::user()->hasRole('rev'))
-                                    <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('reportes.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Reportes</a>
+                                    <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('reportes.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">
+                                        <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        Reportes
+                                    </a>
                                 @endif
                                 @if(Auth::user()->hasRole('item_admin'))
-                                    <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('tipos.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Tipos</a>
-                                    <a href="{{ route('ubicaciones.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('ubicaciones.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Salas</a>
+                                    <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('tipos.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">
+                                        <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                        </svg>
+                                        Tipos
+                                    </a>
+                                    <a href="{{ route('ubicaciones.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('ubicaciones.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">
+                                        <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                        </svg>
+                                        Salas
+                                    </a>
                                 @endif
                                 @if(Auth::user()->isAppAdmin())
-                                    <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg bg-amber-500/30 hover:bg-amber-500/60 transition-colors flex items-center gap-1.5 {{ Request::routeIs('app_admin.*') ? 'bg-amber-500 shadow-sm font-bold' : '' }}">
+                                    <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg bg-amber-500/30 hover:bg-amber-500/60 transition-colors flex items-center gap-1.5 {{ Request::routeIs('app_admin.*') ? 'bg-amber-500 shadow-sm font-bold' : '' }}">
                                         <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -67,7 +94,12 @@
                                     </a>
                                 @endif
                                 @if(Auth::user()->isAdmin())
-                                    <a href="{{ route('users.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('users.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Usuarios</a>
+                                    <a href="{{ route('users.index') }}" class="text-[#111] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('users.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">
+                                        <svg class="w-4 h-4 text-[#111]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                        </svg>
+                                        Usuarios
+                                    </a>
                                 @endif
                             @endif
                         @endauth
@@ -78,11 +110,17 @@
                             @if(Auth::user()->hasRole('registered'))
                                 <a href="{{ route('profile.edit') }}" class="text-[#111] font-medium text-sm px-3 py-1.5 rounded-lg bg-black/5 hover:bg-black/10 transition-all flex items-center gap-2">
                                     <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                                    <svg class="w-3.5 h-3.5 text-gray-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
                                     {{ Auth::user()->nombre }}
                                 </a>
                             @else
                                 <span class="text-[#111] font-medium text-sm px-3 py-1.5 rounded-lg bg-black/5 flex items-center gap-2">
                                     <span class="w-2 h-2 rounded-full bg-gray-600"></span>
+                                    <svg class="w-3.5 h-3.5 text-gray-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
                                     {{ Auth::user()->nombre }}
                                 </span>
                             @endif
@@ -121,8 +159,18 @@
             @else
                 @auth
                     @if(Auth::user()->hasActivePermissions())
-                        <a href="{{ route('dashboard.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Dashboard</a>
-                        <a href="{{ route('elementos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Inventario Completo</a>
+                        <a href="{{ route('dashboard.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                            </svg>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ route('elementos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                            <span>Inventario Completo</span>
+                        </a>
                         @if(Auth::user()->canManageMovimientos())
                             <a href="{{ route('movimientos.rapido') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg bg-amber-500/40 flex items-center gap-2">
                                 <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -131,13 +179,33 @@
                                 <span>Movimiento Rápido (Móvil)</span>
                             </a>
                         @endif
-                        <a href="{{ route('movimientos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Historial de Movimientos</a>
+                        <a href="{{ route('movimientos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Historial de Movimientos</span>
+                        </a>
                         @if(Auth::user()->hasRole('rev'))
-                            <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Reportes Oficiales</a>
+                            <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <span>Reportes Oficiales</span>
+                            </a>
                         @endif
                         @if(Auth::user()->hasRole('item_admin'))
-                            <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Tipos de Hardware</a>
-                            <a href="{{ route('ubicaciones.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Salas y Espacios</a>
+                            <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                </svg>
+                                <span>Tipos de Hardware</span>
+                            </a>
+                            <a href="{{ route('ubicaciones.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                </svg>
+                                <span>Salas y Espacios</span>
+                            </a>
                         @endif
                         @if(Auth::user()->isAppAdmin())
                             <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg bg-amber-400/60 font-bold flex items-center gap-2">
@@ -149,7 +217,12 @@
                             </a>
                         @endif
                         @if(Auth::user()->isAdmin())
-                            <a href="{{ route('users.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Administración de Usuarios</a>
+                            <a href="{{ route('users.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-amber-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                                <span>Administración de Usuarios</span>
+                            </a>
                         @endif
                     @endif
                     <div class="h-px bg-amber-600/40 my-2"></div>

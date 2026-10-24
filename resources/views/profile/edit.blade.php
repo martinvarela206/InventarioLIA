@@ -4,7 +4,12 @@
 <div class="max-w-[750px] mx-auto py-6">
     <div class="mb-6 flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Mi Perfil de Usuario</h1>
+            <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span>Mi Perfil de Usuario</span>
+            </h1>
             <p class="text-sm text-gray-600 mt-0.5">Gestión de datos personales y seguridad de la cuenta institucional</p>
         </div>
         <a href="{{ route('dashboard.index') }}" class="text-xs font-semibold text-gray-600 hover:text-black">← Volver al Dashboard</a>

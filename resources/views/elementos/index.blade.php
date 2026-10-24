@@ -6,6 +6,9 @@
     <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
                 <span>Catálogo de Activos e Inventario LIA</span>
                 <span class="text-sm font-semibold bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-300">
                     {{ $elementos->total() }} registros
@@ -39,11 +42,13 @@
                         class="w-full rounded-xl border border-gray-300 pl-10 pr-4 py-2.5 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 font-medium" />
                     <svg class="w-5 h-5 text-gray-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
-                <button type="submit" class="bg-amber-400 hover:bg-amber-500 text-black font-bold py-2.5 px-5 rounded-xl shadow-sm transition-all text-sm">
+                <button type="submit" class="bg-amber-400 hover:bg-amber-500 text-black font-bold py-2.5 px-5 rounded-xl shadow-sm transition-all text-sm inline-flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     Buscar
                 </button>
                 @if(request()->hasAny(['search', 'tipo', 'ubicacion', 'gb', 'garantia']))
-                    <a href="{{ route('elementos.index') }}" class="text-sm font-semibold text-gray-500 hover:text-black px-2 py-2">
+                    <a href="{{ route('elementos.index') }}" class="text-sm font-semibold text-gray-500 hover:text-black px-2 py-2 inline-flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         Limpiar filtros
                     </a>
                 @endif
