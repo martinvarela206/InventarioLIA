@@ -28,4 +28,37 @@ class Estado extends Model
     {
         return $query->where('disponible', true);
     }
+
+    public static function firstOrCreateNormalizado(string $nombre): self
+    {
+        $raw = trim($nombre);
+        $clean = mb_strtolower($raw, 'UTF-8');
+
+        $map = [
+            'nuevo' => 'nuevo',
+            'bueno' => 'funcionando',
+            'funcionando' => 'funcionando',
+            'operativo' => 'funcionando',
+            'almacenado' => 'almacenado',
+            'en reparacion' => 'en reparacion',
+            'reparacion' => 'en reparacion',
+            'roto' => 'en reparacion',
+            'verificar' => 'verificar funcionamiento',
+            'verificar funcionamiento' => 'verificar funcionamiento',
+            'prestado' => 'prestado',
+            'dado de baja' => 'dado de baja',
+            'baja' => 'dado de baja',
+            'obsoleto' => 'obsoleto',
+            'basura tecnologica' => 'basura tecnologica',
+            'basura' => 'basura tecnologica',
+        ];
+
+        $nombreFinal = $map[$clean] ?? $clean;
+        $disponible = in_array($nombreFinal, ['nuevo', 'funcionando', 'almacenado']);
+
+        return static::firstOrCreate(
+            ['nombre' => $nombreFinal],
+            ['disponible' => $disponible, 'descripcion' => 'Estado operativo: ' . ucfirst($nombreFinal)]
+        );
+    }
 }
