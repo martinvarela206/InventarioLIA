@@ -160,10 +160,6 @@ class InventarioDevTest extends TestCase
         $responsePrest->assertStatus(200);
         $responsePrest->assertSee('Equipos en Préstamo Externo');
 
-        $responseTaller = $this->actingAs($admin)->get(route('reportes.show', 'en-taller'));
-        $responseTaller->assertStatus(200);
-        $responseTaller->assertSee('Equipos en Verificación Técnica y Taller');
-
         $responseBajas = $this->actingAs($admin)->get(route('reportes.show', 'bajas-basura'));
         $responseBajas->assertStatus(200);
         $responseBajas->assertSee('Activos Dados de Baja y Basura Tecnológica');
@@ -173,7 +169,6 @@ class InventarioDevTest extends TestCase
         $responseDash->assertSee(route('reportes.show', 'inventario-completo'));
         $responseDash->assertSee(route('reportes.show', 'operativos'));
         $responseDash->assertSee(route('reportes.show', 'prestados'));
-        $responseDash->assertSee(route('reportes.show', 'en-taller'));
         $responseDash->assertSee(route('reportes.show', 'bajas-basura'));
 
         // Export CSV
@@ -831,11 +826,11 @@ class InventarioDevTest extends TestCase
         $this->actingAs($sinRegistered)->get(route('profile.edit'))->assertStatus(403);
     }
 
-    public function test_dashboard_kpi_taller_coincide_con_reporte_en_taller(): void
+    public function test_dashboard_kpi_cards_y_reportes_consistentes(): void
     {
         $revisor = Usuario::create([
             'nombre' => 'Revisor Auditor',
-            'email' => 'auditor_taller@test.com',
+            'email' => 'auditor_kpi@test.com',
             'password' => bcrypt('password'),
             'activo' => true,
         ]);
@@ -847,24 +842,19 @@ class InventarioDevTest extends TestCase
         $totalElementos = $responseDashboard->viewData('totalElementos');
         $totalOperativos = $responseDashboard->viewData('totalOperativos');
         $totalPrestados = $responseDashboard->viewData('totalPrestados');
-        $totalEnReparacion = $responseDashboard->viewData('totalEnReparacion');
         $totalObsoletos = $responseDashboard->viewData('totalObsoletos');
 
-        // 1. El conteo de en reparación en el dashboard debe ser el número real de activos en taller
-        $esperadoEnTaller = Elemento::enTaller()->count();
-        $this->assertEquals($esperadoEnTaller, $totalEnReparacion);
-
-        // 2. Al ingresar al reporte 'en-taller', el total devuelto debe ser exactamente igual al KPI del dashboard
-        $responseReporte = $this->actingAs($revisor)->get(route('reportes.show', 'en-taller'));
-        $responseReporte->assertStatus(200);
-        $totalReporte = $responseReporte->viewData('total');
-        $this->assertEquals($totalEnReparacion, $totalReporte);
-
-        // 3. Operativos debe coincidir con Elemento::disponibles()
+        // 1. Operativos debe coincidir con Elemento::disponibles()
         $this->assertEquals(Elemento::disponibles()->count(), $totalOperativos);
 
-        // 4. La suma de los cuatro estados debe igualar el 100% de los elementos
-        $this->assertEquals($totalElementos, $totalOperativos + $totalPrestados + $totalEnReparacion + $totalObsoletos);
+        // 2. Prestados debe coincidir con Elemento::prestadosActivos()
+        $this->assertEquals(Elemento::prestadosActivos()->count(), $totalPrestados);
+
+        // 3. Obsoletos debe coincidir con Elemento::obsoletos()
+        $this->assertEquals(Elemento::obsoletos()->count(), $totalObsoletos);
+
+        // 4. La suma de los tres estados debe igualar el 100% de los elementos
+        $this->assertEquals($totalElementos, $totalOperativos + $totalPrestados + $totalObsoletos);
     }
 
     public function test_busqueda_rapida_de_movimientos_encuentra_codigo_lia_y_unsj(): void

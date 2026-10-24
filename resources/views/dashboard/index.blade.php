@@ -22,8 +22,8 @@
         </div>
     </div>
 
-    <!-- 1. 5 KPI CARDS -->
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+    <!-- 1. 4 KPI CARDS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Total Activos -->
         <a href="{{ route('reportes.show', 'inventario-completo') }}" title="Ver reporte digital de todos los activos" class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm relative overflow-hidden block hover:-translate-y-1 hover:shadow-md hover:border-gray-400 transition-all group cursor-pointer">
             <div class="absolute right-3 top-3 text-gray-100 group-hover:text-amber-100 transition-colors -z-0">
@@ -55,16 +55,6 @@
             </div>
             <div class="text-3xl font-black text-amber-600 mt-2">{{ number_format($totalPrestados) }}</div>
             <span class="text-xs text-amber-700 mt-1 block">Fuera del laboratorio</span>
-        </a>
-
-        <!-- En Reparación -->
-        <a href="{{ route('reportes.show', 'en-taller') }}" title="Ver reporte digital de equipos en taller y verificación" class="bg-white rounded-2xl p-5 border border-sky-200 shadow-sm relative overflow-hidden block hover:-translate-y-1 hover:shadow-md hover:border-sky-400 transition-all group cursor-pointer">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-sky-800 uppercase tracking-wider block">En Verificación / Taller</span>
-                <span class="text-xs font-semibold text-sky-600 group-hover:text-sky-800 transition-colors flex items-center gap-0.5">Reporte <span class="group-hover:translate-x-0.5 transition-transform">→</span></span>
-            </div>
-            <div class="text-3xl font-black text-sky-700 mt-2">{{ number_format($totalEnReparacion) }}</div>
-            <span class="text-xs text-sky-600 mt-1 block">Intervención técnica</span>
         </a>
 
         <!-- Obsoletos / Bajas -->

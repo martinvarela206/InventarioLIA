@@ -193,38 +193,6 @@ class ReporteController extends Controller
                     'total' => $items->count(),
                 ];
 
-            case 'en-taller':
-            case 'en-reparacion':
-                $query = Elemento::enTaller()
-                    ->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.usuario']);
-
-                if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
-
-                $items = $query->orderBy('id', 'asc')->get();
-                $filas = $items->map(function ($el) {
-                    $u = $el->ultimoMovimiento;
-                    return [
-                        $el->tipo?->nombre ?? 'N/A',
-                        $el->nro_lia ?? '-',
-                        $el->nro_unsj ?? '-',
-                        $el->marca ?? '-',
-                        $el->modelo ?? '-',
-                        $u?->ubicacion?->nombre ?? 'Taller / Soporte',
-                        $u?->puesto ?: ($el->puesto ?? '-'),
-                        'En Depósito / Soporte',
-                        $u?->usuario?->nombre ? "Técnico: {$u->usuario->nombre}" : '-',
-                        $u?->comentario ?: ($el->observaciones ?: ($el->descripcion_texto ?? '-')),
-                    ];
-                });
-
-                return [
-                    'titulo' => 'Equipos en Verificación Técnica y Taller',
-                    'subtitulo' => 'Activos en proceso de diagnóstico, reparación o mantenimiento técnico',
-                    'columnas' => $columnasStandard,
-                    'filas' => $filas,
-                    'total' => $items->count(),
-                ];
-
             case 'bajas-basura':
             case 'bajas':
                 $query = Elemento::whereHas('tipo', function ($q) {

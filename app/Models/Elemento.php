@@ -140,18 +140,7 @@ class Elemento extends Model
             $q->where(function ($sub) {
                 $sub->whereNull('fecha_prestamo')
                     ->orWhereNotNull('fecha_devolucion');
-            })->whereHas('ubicacion', function ($uq) {
-                $uq->where('nombre', 'not like', '%Armario de HW%')
-                   ->where('nombre', 'not like', '%Taller%');
             });
-        });
-    }
-
-    public function scopeEnTaller(Builder $query): Builder
-    {
-        return $query->whereHas('ultimoMovimiento.ubicacion', function ($q) {
-            $q->where('nombre', 'like', '%Armario de HW%')
-              ->orWhere('nombre', 'like', '%Taller%');
         });
     }
 
