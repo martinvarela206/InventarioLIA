@@ -35,12 +35,17 @@ Route::middleware('auth')->group(function () {
     // Catálogo de Elementos e Inspector Dual-Pane
     Route::resource('elementos', ElementoController::class);
 
-    // Movimientos y Préstamos
-    Route::get('/movimientos/rapido', [MovimientoController::class, 'rapido'])->name('movimientos.rapido');
-    Route::get('/api/elementos/buscar-rapido', [MovimientoController::class, 'apiBuscar'])->name('api.elementos.buscar');
-    Route::post('/movimientos/{movimiento}/devolucion', [MovimientoController::class, 'devolucion'])->name('movimientos.devolucion');
-    Route::post('/movimientos/{movimiento}/correccion', [MovimientoController::class, 'storeCorreccion'])->name('movimientos.correccion');
-    Route::resource('movimientos', MovimientoController::class)->except(['edit', 'update', 'destroy']);
+    // Historial y Consulta de Movimientos (Lectura general)
+    Route::get('/movimientos', [MovimientoController::class, 'index'])->name('movimientos.index');
+
+    // Gestión Operativa de Movimientos y Préstamos (exclusivo tec, item_admin, user_admin - NO rev)
+    Route::middleware('role:tec,item_admin,user_admin')->group(function () {
+        Route::get('/movimientos/rapido', [MovimientoController::class, 'rapido'])->name('movimientos.rapido');
+        Route::get('/api/elementos/buscar-rapido', [MovimientoController::class, 'apiBuscar'])->name('api.elementos.buscar');
+        Route::post('/movimientos', [MovimientoController::class, 'store'])->name('movimientos.store');
+        Route::post('/movimientos/{movimiento}/devolucion', [MovimientoController::class, 'devolucion'])->name('movimientos.devolucion');
+        Route::post('/movimientos/{movimiento}/correccion', [MovimientoController::class, 'storeCorreccion'])->name('movimientos.correccion');
+    });
 
     // Módulo de Reportes Oficiales y Auditoría
     Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');

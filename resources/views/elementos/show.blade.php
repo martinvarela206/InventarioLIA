@@ -10,10 +10,12 @@
             <span class="text-black font-semibold">{{ $elemento->presenter()->identificadorCompleto() }}</span>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('movimientos.rapido', ['elemento_id' => $elemento->id]) }}" class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-black font-bold py-2 px-4 rounded-lg shadow-sm transition-all text-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                Registrar Movimiento / Préstamo
-            </a>
+            @if(Auth::user()->canManageMovimientos())
+                <a href="{{ route('movimientos.rapido', ['elemento_id' => $elemento->id]) }}" class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-black font-bold py-2 px-4 rounded-lg shadow-sm transition-all text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Registrar Movimiento / Préstamo
+                </a>
+            @endif
             @if(Auth::user()->isItemAdmin() || Auth::user()->isAdmin())
                 <a href="{{ route('elementos.edit', $elemento->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-semibold py-2 px-3.5 rounded-lg shadow-sm text-sm transition-all">
                     <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>

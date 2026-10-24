@@ -75,6 +75,16 @@ class Usuario extends Authenticatable
         return $this->hasRole('rev');
     }
 
+    public function canManageMovimientos(): bool
+    {
+        return $this->hasRole(['tec', 'item_admin', 'user_admin']);
+    }
+
+    public function canManageElementos(): bool
+    {
+        return $this->hasRole(['item_admin', 'user_admin']);
+    }
+
     public function movimientos(): HasMany
     {
         return $this->hasMany(Movimiento::class, 'user_id');

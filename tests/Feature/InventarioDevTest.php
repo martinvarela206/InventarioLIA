@@ -484,5 +484,61 @@ class InventarioDevTest extends TestCase
         $responseRep->assertStatus(200);
         $responseRep->assertSee('7777');
     }
+
+    public function test_revisor_no_puede_hacer_movimientos_ni_ve_botones_de_movimiento_rapido(): void
+    {
+        $revisor = Usuario::create([
+            'nombre' => 'Auditor Revisor',
+            'email' => 'auditor_rev@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $revisor->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        $tipo = Tipo::first();
+        $el = Elemento::create([
+            'nro_lia' => 'LIA-REV-TEST',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+        ]);
+
+        // 1. En inventario: no ve el botón de Movimiento Rápido
+        $responseIndex = $this->actingAs($revisor)->get(route('elementos.index'));
+        $responseIndex->assertStatus(200);
+        $responseIndex->assertDontSee(route('movimientos.rapido'));
+
+        // 2. En navbar y dashboard: no ve el botón de Movimiento Rápido
+        $responseDash = $this->actingAs($revisor)->get(route('dashboard.index'));
+        $responseDash->assertStatus(200);
+        $responseDash->assertDontSee(route('movimientos.rapido'));
+
+        // 3. En la ficha de detalle de activo: no ve el botón de Registrar Movimiento
+        $responseShow = $this->actingAs($revisor)->get(route('elementos.show', $el->id));
+        $responseShow->assertStatus(200);
+        $responseShow->assertDontSee(route('movimientos.rapido', ['elemento_id' => $el->id]));
+
+        // 4. Intento de acceso directo por URL a /movimientos/rapido: 403 Forbidden
+        $forbiddenGet = $this->actingAs($revisor)->get(route('movimientos.rapido'));
+        $forbiddenGet->assertStatus(403);
+
+        // 5. Intento de POST directo a /movimientos: 403 Forbidden
+        $forbiddenPost = $this->actingAs($revisor)->post(route('movimientos.store'), [
+            'elemento_id' => $el->id,
+            'tipo_movimiento' => 'interno',
+        ]);
+        $forbiddenPost->assertStatus(403);
+
+        // 6. Verificar que un técnico (tec) SÍ tiene acceso a movimientos.rapido
+        $tecnico = Usuario::create([
+            'nombre' => 'Tecnico Habilitado',
+            'email' => 'tec_hab@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $tecnico->roles()->attach(Rol::where('rol', 'tec')->first());
+
+        $allowedGet = $this->actingAs($tecnico)->get(route('movimientos.rapido'));
+        $allowedGet->assertStatus(200);
+    }
 }
 

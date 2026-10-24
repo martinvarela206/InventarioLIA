@@ -9,10 +9,12 @@
             <p class="text-sm text-gray-600 mt-1">Métricas en tiempo real, trazabilidad de salas y préstamos activos</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('movimientos.rapido') }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                Nuevo Movimiento / Préstamo
-            </a>
+            @if(Auth::user()->canManageMovimientos())
+                <a href="{{ route('movimientos.rapido') }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Nuevo Movimiento / Préstamo
+                </a>
+            @endif
             <a href="{{ route('reportes.index') }}" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm">
                 <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Hub de Reportes
@@ -137,10 +139,14 @@
                                     </span>
                                 </td>
                                 <td class="py-3 px-4 text-right whitespace-nowrap">
-                                    <a href="{{ route('movimientos.rapido', ['elemento_id' => $p->elemento_id]) }}" class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-1.5 px-3 rounded-lg shadow-2xs transition-colors">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                        Registrar Devolución
-                                    </a>
+                                    @if(Auth::user()->canManageMovimientos())
+                                        <a href="{{ route('movimientos.rapido', ['elemento_id' => $p->elemento_id]) }}" class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-1.5 px-3 rounded-lg shadow-2xs transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                            Registrar Devolución
+                                        </a>
+                                    @else
+                                        <span class="text-xs text-gray-400 font-medium italic">En préstamo activo</span>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -231,9 +237,13 @@
                                 </a>
                                 <span class="text-gray-500 block">{{ $itemVerif->tipo?->nombre }} - {{ $itemVerif->marca }} {{ $itemVerif->modelo }}</span>
                             </div>
-                            <a href="{{ route('movimientos.rapido', ['elemento_id' => $itemVerif->id]) }}" class="px-2.5 py-1 bg-sky-100 text-sky-800 font-bold rounded hover:bg-sky-200">
-                                Diagnosticar
-                            </a>
+                            @if(Auth::user()->canManageMovimientos())
+                                <a href="{{ route('movimientos.rapido', ['elemento_id' => $itemVerif->id]) }}" class="px-2.5 py-1 bg-sky-100 text-sky-800 font-bold rounded hover:bg-sky-200">
+                                    Diagnosticar
+                                </a>
+                            @else
+                                <span class="text-xs text-sky-700 font-semibold">Pendiente revisión</span>
+                            @endif
                         </div>
                     @endforeach
                 </div>
