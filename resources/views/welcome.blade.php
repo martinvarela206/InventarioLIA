@@ -5,6 +5,7 @@
     @include('welcome.how')
     @include('welcome.lia')
     @include('welcome.cards')
+    @include('welcome.secciones-dinamicas')
     @include('common.footer')
     @include('common.scroll-to-top')
 @endsection

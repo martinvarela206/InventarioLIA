@@ -3,41 +3,54 @@
         <h2 class="text-[#dba800] text-xl">COMO FUNCIONA</h2>
         <h3 class="text-white font-black text-4xl max-w-[500px] mb-4">Sin complicaciones, solo resultados. ¡Gestión simple y control total!</h3>
         
-        <div class="flex flex-col md:flex-row justify-between gap-5 mt-8">
-            <!-- Step 1 -->
-            <div class="flex flex-col max-w-[260px] items-center gap-3 transition-transform duration-300 hover:scale-110">
-                <div class="bg-[#dba800] w-40 h-40 rounded-full flex justify-center items-center">
-                    <img src="/assets/user-gear.svg" alt="Usuario" class="w-16 h-16" />
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+            <!-- Paso 1: Ojo (Lo que ofrece el LIA y configuración para público externo) -->
+            <div class="flex flex-col items-center gap-3 transition-transform duration-300 hover:scale-105 bg-black/20 p-4 rounded-2xl border border-white/5">
+                <div class="bg-[#dba800] w-36 h-36 rounded-full flex justify-center items-center shadow-md">
+                    <img src="/assets/eye.svg" alt="Lo que ofrece el LIA" class="w-16 h-16" />
                 </div>
-                <h4 class="text-white text-center text-xl font-medium">Ingreso de Usuario</h4>
-                <p class="text-center px-4 text-white font-light">Accede al inventario fácilmente a través del sistema de usuarios para tener todo a la mano.</p>
+                <h4 class="text-white text-center text-lg font-bold">Lo que Ofrece el LIA</h4>
+                <p class="text-center px-2 text-white/80 font-light text-sm leading-relaxed">
+                    Conoce nuestros laboratorios, equipamiento y actividades institucionales. Información abierta y transparente para toda la comunidad académica y externa.
+                </p>
             </div>
 
-            <!-- Step 2 -->
-            <div class="flex flex-col max-w-[260px] items-center gap-3 transition-transform duration-300 hover:scale-110">
-                <div class="bg-[#dba800] w-40 h-40 rounded-full flex justify-center items-center">
-                    <img src="/assets/eye.svg" alt="Revisión" class="w-16 h-16" />
+            <!-- Paso 2: Usuarios (Gestión de usuarios y carreras) -->
+            <div class="flex flex-col items-center gap-3 transition-transform duration-300 hover:scale-105 bg-black/20 p-4 rounded-2xl border border-white/5">
+                <div class="bg-[#dba800] w-36 h-36 rounded-full flex justify-center items-center shadow-md">
+                    <img src="/assets/user-gear.svg" alt="Gestión de Usuarios" class="w-16 h-16" />
                 </div>
-                <h4 class="text-white text-center text-xl font-medium">Revisión de Tickets</h4>
-                <p class="text-center px-4 text-white font-light">Revisa los tickets de forma rápida y eficiente para organizar y planificar tus tareas diarias.</p>
+                <h4 class="text-white text-center text-lg font-bold">Gestión de Usuarios</h4>
+                <p class="text-center px-2 text-white/80 font-light text-sm leading-relaxed">
+                    Acceso institucional seguro según roles (Administración, Técnicos, Docentes y Alumnos) con selección de carrera universitaria e historial inmutable.
+                </p>
             </div>
 
-            <!-- Step 3 -->
-            <div class="flex flex-col max-w-[260px] items-center gap-3 transition-transform duration-300 hover:scale-110">
-                <div class="bg-[#dba800] w-40 h-40 rounded-full flex justify-center items-center">
-                    <img src="/assets/keyboard.svg" alt="Respuesta" class="w-16 h-16" />
+            <!-- Paso 3: Inventario (Control del inventario y trazabilidad) -->
+            <div class="flex flex-col items-center gap-3 transition-transform duration-300 hover:scale-105 bg-black/20 p-4 rounded-2xl border border-white/5">
+                <div class="bg-[#dba800] w-36 h-36 rounded-full flex justify-center items-center shadow-md">
+                    <img src="/assets/box-open.svg" alt="Control de Inventario" class="w-16 h-16" />
                 </div>
-                <h4 class="text-white text-center text-xl font-medium">Responder Tickets</h4>
-                <p class="text-center px-4 text-white font-light">Resuelve los problemas reportados y responde a los tickets con las soluciones implementadas.</p>
+                <h4 class="text-white text-center text-lg font-bold">Control del Inventario</h4>
+                <p class="text-center px-2 text-white/80 font-light text-sm leading-relaxed">
+                    Monitoreo en tiempo real de más de 1.100 activos, trazabilidad forense de traslados entre salas, préstamos a cátedras y auditorías físicas in situ.
+                </p>
             </div>
 
-            <!-- Step 4 -->
-            <div class="flex flex-col max-w-[260px] items-center gap-3 transition-transform duration-300 hover:scale-110">
-                <div class="bg-[#dba800] w-40 h-40 rounded-full flex justify-center items-center">
-                    <img src="/assets/box-open.svg" alt="Inventario" class="w-16 h-16" />
+            <!-- Paso 4: Tickets (Unificado con opacidad reducida y mensaje Proximamente) -->
+            <div class="flex flex-col items-center gap-3 transition-all duration-300 opacity-60 hover:opacity-90 bg-black/30 p-4 rounded-2xl border border-dashed border-amber-400/30 relative">
+                <div class="absolute -top-3 bg-amber-400 text-black text-[11px] font-black uppercase px-3 py-0.5 rounded-full shadow-sm tracking-wider">
+                    Próximamente
                 </div>
-                <h4 class="text-white text-center text-xl font-medium">Controlar el Inventario</h4>
-                <p class="text-center px-4 text-white font-light">Gestiona el inventario mediante solicitudes de componentes y equipos para solucionar problemas.</p>
+                <div class="bg-amber-400/80 w-36 h-36 rounded-full flex justify-center items-center shadow-md grayscale-[30%]">
+                    <img src="/assets/keyboard.svg" alt="Gestión de Tickets" class="w-16 h-16" />
+                </div>
+                <h4 class="text-white text-center text-lg font-bold flex items-center gap-1.5">
+                    <span>Gestión de Tickets</span>
+                </h4>
+                <p class="text-center px-2 text-white/70 font-light text-sm leading-relaxed">
+                    Revisión de solicitudes técnicas y respuesta coordinada a incidencias de hardware en salas. En desarrollo activo para la siguiente fase.
+                </p>
             </div>
         </div>
     </div>

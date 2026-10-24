@@ -40,10 +40,17 @@
                         <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="dni" type="text" name="dni" value="{{ old('dni') }}" placeholder="35123456">
                     </div>
                     <div>
-                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="carrera">
-                            Carrera
+                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="carrera_id">
+                            Carrera Universitaria
                         </label>
-                        <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="carrera" type="text" name="carrera" value="{{ old('carrera') }}" placeholder="Lic. en Sistemas">
+                        <select class="w-full border rounded-lg px-2.5 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium" id="carrera_id" name="carrera_id">
+                            <option value="">Selecciona tu carrera...</option>
+                            @foreach($carreras as $c)
+                                <option value="{{ $c->id }}" {{ old('carrera_id') == $c->id ? 'selected' : '' }}>
+                                    {{ $c->nombre }} {{ $c->codigo ? "({$c->codigo})" : '' }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
 

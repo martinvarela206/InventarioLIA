@@ -24,7 +24,16 @@ class UserSeeder extends Seeder
                 'dni' => '30111222',
                 'cargo_actual' => 'Director LIA',
                 'activo' => true,
-                'roles' => ['user_admin', 'item_admin', 'tec', 'rev'],
+                'roles' => ['user_admin', 'app_admin', 'item_admin', 'tec', 'rev'],
+            ],
+            [
+                'nombre' => 'Administrador de Aplicación',
+                'email' => 'app_admin@lia.unsj.edu.ar',
+                'password' => Hash::make('1234'),
+                'dni' => '31222333',
+                'cargo_actual' => 'Coordinador Web LIA',
+                'activo' => true,
+                'roles' => ['app_admin'],
             ],
             [
                 'nombre' => 'Encargado de Inventario',

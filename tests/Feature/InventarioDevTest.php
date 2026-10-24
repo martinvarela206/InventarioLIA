@@ -24,6 +24,7 @@ class InventarioDevTest extends TestCase
         $this->seed(\Database\Seeders\TipoSeeder::class);
         $this->seed(\Database\Seeders\AtributoSeeder::class);
         $this->seed(\Database\Seeders\UbicacionSeeder::class);
+        $this->seed(\Database\Seeders\AppAdminSeeder::class);
     }
 
     public function test_catalogo_tipos_posee_las_19_categorias(): void
@@ -34,9 +35,9 @@ class InventarioDevTest extends TestCase
         $this->assertNotNull(Tipo::where('nombre', 'punto de acceso')->first());
     }
 
-    public function test_catalogo_roles_contiene_los_5_roles_oficiales(): void
+    public function test_catalogo_roles_contiene_los_6_roles_oficiales(): void
     {
-        $rolesEsperados = ['user_admin', 'item_admin', 'tec', 'rev', 'registered'];
+        $rolesEsperados = ['user_admin', 'app_admin', 'item_admin', 'tec', 'rev', 'registered'];
         foreach ($rolesEsperados as $r) {
             $this->assertDatabaseHas('roles', ['rol' => $r]);
         }
@@ -589,6 +590,110 @@ class InventarioDevTest extends TestCase
         $nuevoUsuario = Usuario::where('email', 'nuevo_estudiante@exactas.unsj.edu.ar')->first();
         $this->assertNotNull($nuevoUsuario);
         $this->assertTrue($nuevoUsuario->hasRole('registered'));
+    }
+
+    public function test_app_admin_puede_gestionar_carreras_y_preservar_historial_inmutable(): void
+    {
+        $appAdmin = Usuario::create([
+            'nombre' => 'Admin App Test',
+            'email' => 'appadmin@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $appAdmin->roles()->attach(Rol::where('rol', 'app_admin')->first());
+
+        // 1. Acceder al módulo de carreras
+        $response = $this->actingAs($appAdmin)->get(route('app_admin.carreras'));
+        $response->assertStatus(200);
+        $response->assertSee('Carreras para Registro de Usuarios');
+
+        // 2. Crear una nueva carrera
+        $responseStore = $this->actingAs($appAdmin)->post(route('app_admin.carreras.store'), [
+            'nombre' => 'Ingeniería en Inteligencia Artificial',
+            'codigo' => 'IIA',
+            'activa' => 1,
+        ]);
+        $responseStore->assertRedirect(route('app_admin.carreras'));
+        $this->assertDatabaseHas('carreras', ['nombre' => 'Ingeniería en Inteligencia Artificial', 'activa' => true]);
+
+        $carrera = \App\Models\Carrera::where('nombre', 'Ingeniería en Inteligencia Artificial')->first();
+
+        // 3. Registrar un usuario asociado a dicha carrera
+        $alumno = Usuario::create([
+            'nombre' => 'Alumno IA',
+            'email' => 'alumno_ia@test.com',
+            'password' => bcrypt('password'),
+            'carrera_id' => $carrera->id,
+            'carrera' => $carrera->nombre,
+            'activo' => true,
+        ]);
+
+        // 4. Desactivar / Archivar la carrera (por ejemplo, deja de dictarse)
+        $responseToggle = $this->actingAs($appAdmin)->post(route('app_admin.carreras.toggle', $carrera->id));
+        $responseToggle->assertRedirect(route('app_admin.carreras'));
+        $carrera->refresh();
+        $this->assertFalse($carrera->activa);
+
+        // 5. La carrera NO debe figurar en el formulario de nuevos registros
+        $responseRegister = $this->get(route('register'));
+        $responseRegister->assertDontSee('Ingeniería en Inteligencia Artificial (IIA)');
+
+        // 6. Pero el alumno PRESERVA de forma inmutable su carrera histórica
+        $alumno->refresh();
+        $this->assertEquals($carrera->id, $alumno->carrera_id);
+        $this->assertEquals('Ingeniería en Inteligencia Artificial', $alumno->carrera_nombre);
+
+        // 7. Si se intenta eliminar físicamente, el sistema la desactiva y protege la asociación
+        $responseDestroy = $this->actingAs($appAdmin)->delete(route('app_admin.carreras.destroy', $carrera->id));
+        $this->assertDatabaseHas('carreras', ['id' => $carrera->id, 'activa' => false]);
+    }
+
+    public function test_app_admin_puede_publicar_actividades_tipo_instagram_en_el_feed(): void
+    {
+        $appAdmin = Usuario::create([
+            'nombre' => 'Admin Feed Test',
+            'email' => 'feedadmin@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $appAdmin->roles()->attach(Rol::where('rol', 'app_admin')->first());
+
+        // 1. Publicar una actividad con mensaje y título
+        $responsePost = $this->actingAs($appAdmin)->post(route('app_admin.actividades.store'), [
+            'titulo' => 'Concurso de Programación Competitiva LIA',
+            'contenido' => 'Inscripciones abiertas para estudiantes de computación y sistemas.',
+            'imagen_url' => '/assets/notebook-wide.png',
+        ]);
+
+        $responsePost->assertRedirect(route('app_admin.actividades'));
+        $this->assertDatabaseHas('actividades_lia', [
+            'titulo' => 'Concurso de Programación Competitiva LIA',
+        ]);
+
+        // 2. Verificar que se renderiza en la portada pública
+        $responseWelcome = $this->get('/');
+        $responseWelcome->assertStatus(200);
+        $responseWelcome->assertSee('Concurso de Programación Competitiva LIA');
+        $responseWelcome->assertSee('Lo que Ofrece el LIA');
+        $responseWelcome->assertSee('Gestión de Tickets');
+        $responseWelcome->assertSee('Próximamente');
+    }
+
+    public function test_usuario_sin_rol_app_admin_es_bloqueado_de_la_configuracion(): void
+    {
+        $revisor = Usuario::create([
+            'nombre' => 'Revisor Comun',
+            'email' => 'revisor_comun@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $revisor->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        $response = $this->actingAs($revisor)->get(route('app_admin.index'));
+        $response->assertStatus(403);
+
+        $responseCarreras = $this->actingAs($revisor)->get(route('app_admin.carreras'));
+        $responseCarreras->assertStatus(403);
     }
 }
 

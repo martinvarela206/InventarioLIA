@@ -22,6 +22,7 @@ class Usuario extends Authenticatable
         'dni',
         'fecha_nacimiento',
         'carrera',
+        'carrera_id',
         'cargo_actual',
         'whatsapp',
         'direccion',
@@ -44,6 +45,16 @@ class Usuario extends Authenticatable
         return $this->belongsToMany(Rol::class, 'usuario_roles', 'user_id', 'rol_id');
     }
 
+    public function carreraRelacion(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Carrera::class, 'carrera_id');
+    }
+
+    public function getCarreraNombreAttribute(): string
+    {
+        return $this->carreraRelacion?->nombre ?? $this->carrera ?? 'Sin carrera';
+    }
+
     public function trayectorias(): HasMany
     {
         return $this->hasMany(UsuarioTrayectoria::class, 'user_id')->orderBy('fecha_inicio', 'desc');
@@ -58,6 +69,11 @@ class Usuario extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->hasRole('user_admin');
+    }
+
+    public function isAppAdmin(): bool
+    {
+        return $this->hasRole(['app_admin', 'user_admin']);
     }
 
     public function isItemAdmin(): bool
@@ -87,7 +103,7 @@ class Usuario extends Authenticatable
 
     public function hasActivePermissions(): bool
     {
-        return $this->hasRole(['rev', 'tec', 'item_admin', 'user_admin']);
+        return $this->hasRole(['rev', 'tec', 'item_admin', 'user_admin', 'app_admin']);
     }
 
     public function movimientos(): HasMany

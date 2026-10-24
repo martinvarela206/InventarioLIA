@@ -10,6 +10,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RevisionController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\AppAdminController;
+use App\Models\EspacioLia;
+use App\Models\PersonalLia;
+use App\Models\ActividadLia;
 
 // Autenticación
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -19,9 +23,12 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('/register', [RegisterController::class, 'register']);
 
-// Portada / Welcome
+// Portada / Welcome (datos dinámicos administrados por app_admin)
 Route::get('/', function () {
-    return view('welcome');
+    $espacios = EspacioLia::activos()->get();
+    $personal = PersonalLia::activos()->get();
+    $actividades = ActividadLia::activos()->with('autor')->take(6)->get();
+    return view('welcome', compact('espacios', 'personal', 'actividades'));
 });
 
 // Rutas de revisión técnica / registro
@@ -84,6 +91,36 @@ Route::middleware('auth')->group(function () {
             Route::get('/users/{user}/trayectoria', [UserController::class, 'trayectoria'])->name('users.trayectoria');
             Route::post('/users/{user}/trayectoria', [UserController::class, 'storeTrayectoria'])->name('users.trayectoria.store');
             Route::delete('/trayectorias/{trayectoria}', [UserController::class, 'destroyTrayectoria'])->name('trayectorias.destroy');
+        });
+
+        // Configuración Institucional y Gestión de la App (app_admin, user_admin)
+        Route::middleware('app_admin')->group(function () {
+            Route::get('/app-admin', [AppAdminController::class, 'index'])->name('app_admin.index');
+
+            // Carreras (Registro con historial inmutable)
+            Route::get('/app-admin/carreras', [AppAdminController::class, 'carrerasIndex'])->name('app_admin.carreras');
+            Route::post('/app-admin/carreras', [AppAdminController::class, 'carreraStore'])->name('app_admin.carreras.store');
+            Route::put('/app-admin/carreras/{carrera}', [AppAdminController::class, 'carreraUpdate'])->name('app_admin.carreras.update');
+            Route::post('/app-admin/carreras/{carrera}/toggle', [AppAdminController::class, 'carreraToggle'])->name('app_admin.carreras.toggle');
+            Route::delete('/app-admin/carreras/{carrera}', [AppAdminController::class, 'carreraDestroy'])->name('app_admin.carreras.destroy');
+
+            // Espacios y Fotos de Laboratorios
+            Route::get('/app-admin/espacios', [AppAdminController::class, 'espaciosIndex'])->name('app_admin.espacios');
+            Route::post('/app-admin/espacios', [AppAdminController::class, 'espacioStore'])->name('app_admin.espacios.store');
+            Route::put('/app-admin/espacios/{espacio}', [AppAdminController::class, 'espacioUpdate'])->name('app_admin.espacios.update');
+            Route::delete('/app-admin/espacios/{espacio}', [AppAdminController::class, 'espacioDestroy'])->name('app_admin.espacios.destroy');
+
+            // Personal y Figuras Institucionales
+            Route::get('/app-admin/personal', [AppAdminController::class, 'personalIndex'])->name('app_admin.personal');
+            Route::post('/app-admin/personal', [AppAdminController::class, 'personalStore'])->name('app_admin.personal.store');
+            Route::put('/app-admin/personal/{personal}', [AppAdminController::class, 'personalUpdate'])->name('app_admin.personal.update');
+            Route::delete('/app-admin/personal/{personal}', [AppAdminController::class, 'personalDestroy'])->name('app_admin.personal.destroy');
+
+            // Actividades y Novedades (Feed / Instagram)
+            Route::get('/app-admin/actividades', [AppAdminController::class, 'actividadesIndex'])->name('app_admin.actividades');
+            Route::post('/app-admin/actividades', [AppAdminController::class, 'actividadStore'])->name('app_admin.actividades.store');
+            Route::put('/app-admin/actividades/{actividad}', [AppAdminController::class, 'actividadUpdate'])->name('app_admin.actividades.update');
+            Route::delete('/app-admin/actividades/{actividad}', [AppAdminController::class, 'actividadDestroy'])->name('app_admin.actividades.destroy');
         });
     });
 });

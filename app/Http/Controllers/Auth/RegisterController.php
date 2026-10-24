@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
 use App\Models\Rol;
+use App\Models\Carrera;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -13,7 +14,8 @@ class RegisterController extends Controller
 {
     public function showRegistrationForm()
     {
-        return view('auth.register');
+        $carreras = Carrera::activas()->get();
+        return view('auth.register', compact('carreras'));
     }
 
     public function register(Request $request)
@@ -22,15 +24,28 @@ class RegisterController extends Controller
             'nombre' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:150', 'unique:usuarios'],
             'dni' => ['nullable', 'string', 'max:15', 'unique:usuarios'],
+            'carrera_id' => ['nullable', 'exists:carreras,id'],
             'carrera' => ['nullable', 'string', 'max:100'],
             'password' => ['required', 'string', 'min:4', 'confirmed'],
         ]);
+
+        $carreraId = $request->input('carrera_id');
+        $carreraNombre = null;
+        if ($carreraId) {
+            $carreraObj = Carrera::find($carreraId);
+            $carreraNombre = $carreraObj?->nombre;
+        } elseif ($request->filled('carrera')) {
+            $carreraObj = Carrera::where('nombre', $request->input('carrera'))->first();
+            $carreraId = $carreraObj?->id;
+            $carreraNombre = $request->input('carrera');
+        }
 
         $user = Usuario::create([
             'nombre' => $request->nombre,
             'email' => $request->email,
             'dni' => $request->dni,
-            'carrera' => $request->carrera,
+            'carrera' => $carreraNombre,
+            'carrera_id' => $carreraId,
             'password' => Hash::make($request->password),
             'activo' => false, // Requiere aprobación de user_admin
         ]);

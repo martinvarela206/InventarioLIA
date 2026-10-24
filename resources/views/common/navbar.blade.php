@@ -16,11 +16,12 @@
             <!-- Desktop Menu -->
             <div class="hidden lg:flex items-center gap-6">
                 @if(Request::is('/'))
-                    <nav class="flex items-center gap-8">
-                        <a href="#inicio" class="text-[#111] font-medium border-b-2 border-transparent hover:border-[#111] transition-colors">Inicio</a>
-                        <a href="#sistema-lia" class="text-[#111] font-medium border-b-2 border-transparent hover:border-[#111] transition-colors">Sistema LIA</a>
-                        <a href="#lia1" class="text-[#111] font-medium border-b-2 border-transparent hover:border-[#111] transition-colors">LIA</a>
-                        <a href="#lia2" class="text-[#111] font-medium border-b-2 border-transparent hover:border-[#111] transition-colors">Personal</a>
+                    <nav class="flex items-center gap-6">
+                        <a href="#inicio" class="text-[#111] font-semibold text-sm border-b-2 border-transparent hover:border-[#111] transition-colors">Inicio</a>
+                        <a href="#sistema-lia" class="text-[#111] font-semibold text-sm border-b-2 border-transparent hover:border-[#111] transition-colors">Funcionalidades</a>
+                        <a href="#espacios-lia" class="text-[#111] font-semibold text-sm border-b-2 border-transparent hover:border-[#111] transition-colors">Espacios</a>
+                        <a href="#personal-lia" class="text-[#111] font-semibold text-sm border-b-2 border-transparent hover:border-[#111] transition-colors">Personal</a>
+                        <a href="#actividades-lia" class="text-[#111] font-semibold text-sm border-b-2 border-transparent hover:border-[#111] transition-colors">Actividades</a>
                     </nav>
 
                     <div class="flex items-center gap-3 pl-4 border-l border-amber-600/40">
@@ -53,6 +54,9 @@
                                 @if(Auth::user()->hasRole('item_admin'))
                                     <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('tipos.*') ? 'bg-amber-400/90 shadow-sm' : '' }}">Tipos</a>
                                 @endif
+                                @if(Auth::user()->isAppAdmin())
+                                    <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md bg-amber-500/30 hover:bg-amber-500/60 transition-colors {{ Request::routeIs('app_admin.*') ? 'bg-amber-500 shadow-sm font-bold' : '' }}">Gestión App</a>
+                                @endif
                                 @if(Auth::user()->isAdmin())
                                     <a href="{{ route('users.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('users.*') ? 'bg-amber-400/90 shadow-sm' : '' }}">Usuarios</a>
                                 @endif
@@ -84,10 +88,11 @@
         <!-- Mobile Menu (Hidden by default) -->
         <div id="mobile-menu" class="hidden lg:hidden flex flex-col gap-2 mt-4 pb-2 border-t border-amber-600/30 pt-3">
             @if(Request::is('/'))
-                <a href="#inicio" class="text-[#111] font-medium py-1.5 px-3 rounded hover:bg-amber-400">Inicio</a>
-                <a href="#sistema-lia" class="text-[#111] font-medium py-1.5 px-3 rounded hover:bg-amber-400">Sistema LIA</a>
-                <a href="#lia1" class="text-[#111] font-medium py-1.5 px-3 rounded hover:bg-amber-400">LIA</a>
-                <a href="#lia2" class="text-[#111] font-medium py-1.5 px-3 rounded hover:bg-amber-400">Personal</a>
+                <a href="#inicio" class="text-[#111] font-semibold py-1.5 px-3 rounded hover:bg-amber-400">Inicio</a>
+                <a href="#sistema-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded hover:bg-amber-400">Funcionalidades</a>
+                <a href="#espacios-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded hover:bg-amber-400">Espacios</a>
+                <a href="#personal-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded hover:bg-amber-400">Personal</a>
+                <a href="#actividades-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded hover:bg-amber-400">Actividades</a>
                 <div class="h-px bg-amber-600/40 my-2"></div>
                 @auth
                     <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="text-[#111] font-bold py-2 px-3 rounded bg-amber-400 text-center">Ir al Panel</a>
@@ -109,6 +114,9 @@
                         <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Reportes Oficiales</a>
                         @if(Auth::user()->hasRole('item_admin'))
                             <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Tipos de Hardware</a>
+                        @endif
+                        @if(Auth::user()->isAppAdmin())
+                            <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded bg-amber-400/60 font-bold">⚙️ Gestión App</a>
                         @endif
                         @if(Auth::user()->isAdmin())
                             <a href="{{ route('users.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Administración de Usuarios</a>
