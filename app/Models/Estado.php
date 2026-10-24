@@ -12,10 +12,20 @@ class Estado extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
+        'disponible',
+    ];
+
+    protected $casts = [
+        'disponible' => 'boolean',
     ];
 
     public function movimientos()
     {
         return $this->hasMany(Movimiento::class, 'estado_id');
+    }
+
+    public function scopeDisponibles($query)
+    {
+        return $query->where('disponible', true);
     }
 }

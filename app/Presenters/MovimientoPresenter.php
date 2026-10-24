@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Presenters;
+
+use App\Models\Movimiento;
+
+class MovimientoPresenter
+{
+    protected Movimiento $movimiento;
+
+    public function __construct(Movimiento $movimiento)
+    {
+        $this->movimiento = $movimiento;
+    }
+
+    public function tipoBadge(): string
+    {
+        if ($this->movimiento->esPrestamo()) {
+            return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">Préstamo Externo</span>';
+        }
+        return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">Movimiento Interno</span>';
+    }
+
+    public function destinoTexto(): string
+    {
+        $ubicacion = $this->movimiento->ubicacion?->nombre ?? 'N/A';
+        $puesto = $this->movimiento->puesto;
+        if ($puesto) {
+            return "{$ubicacion} ({$puesto})";
+        }
+        return $ubicacion;
+    }
+
+    public function solicitanteTexto(): string
+    {
+        if ($this->movimiento->esPrestamo()) {
+            return $this->movimiento->solicitante ?: 'No especificado';
+        }
+        return '-';
+    }
+
+    public function estadoBadge(): string
+    {
+        $estado = $this->movimiento->estado;
+        if (!$estado) {
+            return '-';
+        }
+
+        $nombre = mb_strtolower($estado->nombre);
+        if (in_array($nombre, ['funcionando', 'nuevo', 'almacenado'])) {
+            return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">' . ucfirst($nombre) . '</span>';
+        }
+        if (in_array($nombre, ['en reparacion', 'verificar funcionamiento'])) {
+            return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">' . ucfirst($nombre) . '</span>';
+        }
+        if (in_array($nombre, ['prestado'])) {
+            return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Prestado</span>';
+        }
+        return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800">' . ucfirst($nombre) . '</span>';
+    }
+}

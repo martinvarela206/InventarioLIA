@@ -154,10 +154,10 @@
             </thead>
             <tbody class="text-gray-900 text-sm font-medium block md:table-row-group">
                 @foreach($elementos as $elemento)
-                    <tr class="block md:table-row odd:bg-amber-50 even:bg-amber-100 border-b border-gray-300 hover:bg-amber-200 cursor-pointer mb-4 md:mb-0 rounded-lg shadow-sm md:shadow-none p-4 md:p-0" onclick="window.location='{{ route('elementos.show', $elemento->nro_lia) }}?from=revision'">
+                    <tr class="block md:table-row odd:bg-amber-50 even:bg-amber-100 border-b border-gray-300 hover:bg-amber-200 cursor-pointer mb-4 md:mb-0 rounded-lg shadow-sm md:shadow-none p-4 md:p-0" onclick="window.location='{{ route('elementos.show', $elemento->id) }}?from=revision'">
                         <td class="py-2 px-4 md:py-3 md:px-6 text-left whitespace-nowrap block md:table-cell flex justify-between md:block">
-                             <span class="font-bold md:hidden text-amber-900">Nro LIA:</span>
-                            {{ $elemento->nro_lia }}
+                             <span class="font-bold md:hidden text-amber-900">Identificador:</span>
+                            {{ $elemento->presenter()->identificadorCompleto() }}
                         </td>
                         <td class="py-2 px-4 md:py-3 md:px-6 text-left block md:table-cell">
                              <span class="font-bold md:hidden text-amber-900 block mb-1">Descripción:</span>

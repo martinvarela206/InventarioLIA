@@ -4,46 +4,75 @@
 <div class="min-h-[calc(100vh-64px)] flex flex-col justify-between">
     <div class="flex-grow flex items-center justify-center py-12">
         <div class="w-full max-w-md">
-            <form action="{{ route('register') }}" method="POST" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <form action="{{ route('register') }}" method="POST" class="bg-white shadow-md rounded-2xl px-8 pt-6 pb-8 mb-4 border border-gray-200">
                 @csrf
-                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Registro de Usuario</h2>
+                <div class="flex justify-center mb-4">
+                    @include('common.logo', ['variant' => 'dark', 'class' => 'w-16 h-16'])
+                </div>
+                <h2 class="text-2xl font-bold mb-2 text-center text-gray-900">Registro de Usuario</h2>
+                <p class="text-xs text-gray-500 text-center mb-6">Acceso institucional a la plataforma Nexo LIA</p>
                 
                 <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="nombre">
-                        Usuario
+                    <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="nombre">
+                        Nombre y Apellido *
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('nombre') border-red-500 @enderror" id="nombre" type="text" name="nombre" value="{{ old('nombre') }}" required autofocus placeholder="Nombre de usuario">
+                    <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 @error('nombre') border-red-500 @enderror" id="nombre" type="text" name="nombre" value="{{ old('nombre') }}" required autofocus placeholder="Ej. Juan Pérez">
                     @error('nombre')
-                        <p class="text-red-500 text-xs italic mt-2">{{ $message }}</p>
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
-                        Contraseña
+                    <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="email">
+                        Correo Institucional / Personal *
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline @error('password') border-red-500 @enderror" id="password" type="password" name="password" required placeholder="******************">
+                    <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 @error('email') border-red-500 @enderror" id="email" type="email" name="email" value="{{ old('email') }}" required placeholder="usuario@exactas.unsj.edu.ar">
+                    @error('email')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="dni">
+                            DNI (Opcional)
+                        </label>
+                        <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="dni" type="text" name="dni" value="{{ old('dni') }}" placeholder="35123456">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="carrera">
+                            Carrera
+                        </label>
+                        <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="carrera" type="text" name="carrera" value="{{ old('carrera') }}" placeholder="Lic. en Sistemas">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="password">
+                        Contraseña *
+                    </label>
+                    <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 @error('password') border-red-500 @enderror" id="password" type="password" name="password" required placeholder="Mínimo 4 caracteres">
                     @error('password')
-                        <p class="text-red-500 text-xs italic mt-2">{{ $message }}</p>
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="mb-6">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="password_confirmation">
-                        Confirmar Contraseña
+                    <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="password_confirmation">
+                        Confirmar Contraseña *
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline" id="password_confirmation" type="password" name="password_confirmation" required placeholder="******************">
+                    <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="password_confirmation" type="password" name="password_confirmation" required placeholder="Repita la contraseña">
                 </div>
 
-                <div class="flex items-center justify-between mb-4">
-                    <button class="bg-[#dba800] hover:bg-[#fbc101] text-[#111] font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full transition-colors duration-200" type="submit">
+                <div class="mb-4">
+                    <button class="bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow w-full transition-colors text-sm" type="submit">
                         Registrarse
                     </button>
                 </div>
                 
                 <div class="text-center">
-                    <a class="inline-block align-baseline font-bold text-sm text-[#dba800] hover:text-[#fbc101] transition-colors duration-200" href="{{ route('login') }}">
-                        ¿Ya tienes cuenta? Inicia sesión
+                    <a class="text-xs font-bold text-amber-700 hover:underline" href="{{ route('login') }}">
+                        ¿Ya tienes cuenta? Inicia sesión aquí
                     </a>
                 </div>
             </form>

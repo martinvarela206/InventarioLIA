@@ -13,21 +13,22 @@ class UbicacionSeeder extends Seeder
     public function run(): void
     {
         $ubicaciones = [
-            ['nombre' => 'LIA', 'descripcion' => 'Laboratorio de Informática Aplicada'],
-            ['nombre' => 'Lab FB', 'descripcion' => 'Laboratorio Facultad de Biología'],
-            ['nombre' => 'Lab PM', 'descripcion' => 'Laboratorio Planta de Minerales'],
-            ['nombre' => 'Lab B', 'descripcion' => 'Laboratorio B'],
-            ['nombre' => 'Lab C', 'descripcion' => 'Laboratorio C'],
-            ['nombre' => 'Lab Hardware', 'descripcion' => 'Laboratorio de Hardware'],
-            ['nombre' => 'Of Hardware', 'descripcion' => 'Oficina de Hardware'],
-            ['nombre' => 'Lab Redes', 'descripcion' => 'Laboratorio de Redes'],
-            ['nombre' => 'Administracion', 'descripcion' => 'Oficina de Administración'],
-            ['nombre' => 'Prestado', 'descripcion' => 'Elemento prestado a terceros'],
-            ['nombre' => 'Dado de baja', 'descripcion' => 'Elemento dado de baja'],
+            ['nombre' => 'Oficina A', 'descripcion' => 'Oficina A del LIA'],
+            ['nombre' => 'Oficina B', 'descripcion' => 'Oficina B del LIA'],
+            ['nombre' => 'Laboratorio Federico Sanchez', 'descripcion' => 'Laboratorio Principal Federico Sánchez'],
+            ['nombre' => 'Laboratorio Paola Moyano', 'descripcion' => 'Laboratorio Paola Moyano'],
+            ['nombre' => 'Laboratorio Redes', 'descripcion' => 'Laboratorio de Telecomunicaciones y Redes'],
+            ['nombre' => 'Armario de HW', 'descripcion' => 'Armario de almacenamiento de Hardware y Repuestos'],
+            ['nombre' => 'Administracion', 'descripcion' => 'Oficina de Administración y Secretaría'],
+            ['nombre' => 'Laboratorio B', 'descripcion' => 'Laboratorio de Computación B'],
+            ['nombre' => 'Laboratorio C', 'descripcion' => 'Laboratorio de Computación C'],
+            ['nombre' => 'Rack Administracion', 'descripcion' => 'Rack de servidores de Administración'],
+            ['nombre' => 'Rack Redes', 'descripcion' => 'Rack de equipamiento de Redes'],
+            ['nombre' => 'Oficina de Hardware', 'descripcion' => 'Taller y Oficina técnica de Hardware'],
         ];
 
         foreach ($ubicaciones as $ubicacion) {
-            Ubicacion::create($ubicacion);
+            Ubicacion::firstOrCreate(['nombre' => $ubicacion['nombre']], $ubicacion);
         }
     }
 }

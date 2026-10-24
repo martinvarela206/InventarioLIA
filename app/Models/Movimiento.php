@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
+use App\Presenters\MovimientoPresenter;
 
 class Movimiento extends Model
 {
@@ -13,17 +15,29 @@ class Movimiento extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'nro_lia',
-        'user_id',
-        'estado_id',
+        'elemento_id',
+        'tipo_movimiento',
         'ubicacion_id',
+        'puesto',
+        'estado_id',
+        'user_id',
         'fecha',
+        'solicitante',
+        'fecha_prestamo',
+        'fecha_devolucion',
         'comentario',
     ];
 
     protected $casts = [
         'fecha' => 'datetime',
+        'fecha_prestamo' => 'date',
+        'fecha_devolucion' => 'date',
     ];
+
+    public function elemento()
+    {
+        return $this->belongsTo(Elemento::class, 'elemento_id');
+    }
 
     public function ubicacion()
     {
@@ -35,13 +49,37 @@ class Movimiento extends Model
         return $this->belongsTo(Estado::class, 'estado_id');
     }
 
-    public function elemento()
-    {
-        return $this->belongsTo(Elemento::class, 'nro_lia', 'nro_lia');
-    }
-
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'user_id');
+    }
+
+    public function presenter(): MovimientoPresenter
+    {
+        return new MovimientoPresenter($this);
+    }
+
+    public function esPrestamo(): bool
+    {
+        return $this->tipo_movimiento === 'externo_prestamo' || !empty($this->fecha_prestamo);
+    }
+
+    public function diasPrestado(): ?int
+    {
+        if (!$this->fecha_prestamo) {
+            return null;
+        }
+        $fin = $this->fecha_devolucion ? Carbon::parse($this->fecha_devolucion) : Carbon::now();
+        return (int)Carbon::parse($this->fecha_prestamo)->diffInDays($fin);
+    }
+
+    public function scopePrestadosActivos($query)
+    {
+        return $query->whereNotNull('fecha_prestamo')->whereNull('fecha_devolucion');
+    }
+
+    public function scopeInternos($query)
+    {
+        return $query->where('tipo_movimiento', 'interno');
     }
 }

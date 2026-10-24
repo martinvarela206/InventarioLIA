@@ -15,20 +15,37 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'nombre' => ['required'],
-            'password' => ['required'],
-        ]);
+        $input = $request->input('login', $request->input('nombre', $request->input('email')));
+        $password = $request->input('password');
 
-        if (Auth::attempt($credentials)) {
+        if (empty($input) || empty($password)) {
+            return back()->withErrors([
+                'login' => 'Por favor ingrese su usuario o correo electrónico y contraseña.',
+            ])->withInput();
+        }
+
+        $field = filter_var($input, FILTER_VALIDATE_EMAIL) ? 'email' : 'nombre';
+        $credentials = [
+            $field => $input,
+            'password' => $password,
+        ];
+
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
-
             return redirect()->intended(route('dashboard.index'));
         }
 
+        // Si intentó con nombre pero falló, intentar con email por si acaso
+        if ($field === 'nombre') {
+            if (Auth::attempt(['email' => $input, 'password' => $password], $request->boolean('remember'))) {
+                $request->session()->regenerate();
+                return redirect()->intended(route('dashboard.index'));
+            }
+        }
+
         return back()->withErrors([
-            'nombre' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
-        ])->onlyInput('nombre');
+            'login' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
+        ])->withInput();
     }
 
     public function logout(Request $request)

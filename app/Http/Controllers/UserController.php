@@ -4,32 +4,47 @@ namespace App\Http\Controllers;
 
 use App\Models\Usuario;
 use App\Models\Rol;
+use App\Models\UsuarioTrayectoria;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $users = Usuario::with('roles')->get();
-        $roles = ['user_admin', 'coordinador', 'tecnico', 'revisor'];
+        $users = Usuario::with(['roles', 'trayectorias'])->paginate(15);
+        $roles = Rol::all();
         return view('users.index', compact('users', 'roles'));
     }
 
     public function edit(Usuario $user)
     {
-        return view('users.edit', compact('user'));
+        $roles = Rol::all();
+        return view('users.edit', compact('user', 'roles'));
     }
 
     public function update(Request $request, Usuario $user)
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:255',
-            // Add other fields validation as necessary
+            'nombre' => 'required|string|max:100',
+            'email' => 'required|email|max:150|unique:usuarios,email,' . $user->id,
+            'dni' => 'nullable|string|max:15|unique:usuarios,dni,' . $user->id,
+            'fecha_nacimiento' => 'nullable|date',
+            'carrera' => 'nullable|string|max:100',
+            'cargo_actual' => 'nullable|string|max:50',
+            'whatsapp' => 'nullable|string|max:30',
+            'direccion' => 'nullable|string|max:255',
+            'activo' => 'nullable|boolean',
         ]);
-        
+
+        $validated['activo'] = $request->has('activo');
+
         $user->update($validated);
 
-        return redirect()->route('users.index')->with('success', 'Usuario actualizado correctamente.');
+        if ($request->has('roles')) {
+            $user->roles()->sync($request->roles);
+        }
+
+        return redirect()->route('users.index')->with('success', 'Usuario y perfil actualizados correctamente.');
     }
 
     public function toggleRole(Request $request, Usuario $user)
@@ -41,16 +56,60 @@ class UserController extends Controller
         $roleName = $request->role;
         $role = Rol::where('rol', $roleName)->firstOrFail();
 
+        // Evitar que el administrador se auto-despoje del rol user_admin si es el único
+        if ($roleName === 'user_admin' && $user->id === auth()->id() && $user->hasRole('user_admin')) {
+            return response()->json(['message' => 'No puedes remover tu propio rol de user_admin.', 'status' => 'error'], 422);
+        }
+
         if ($user->hasRole($roleName)) {
             $user->roles()->detach($role->id);
-            $message = 'Rol removido correctamente.';
+            $message = "Rol {$roleName} removido correctamente.";
             $status = 'removed';
         } else {
             $user->roles()->attach($role->id);
-            $message = 'Rol asignado correctamente.';
+            $message = "Rol {$roleName} asignado correctamente.";
             $status = 'assigned';
         }
 
         return response()->json(['message' => $message, 'status' => $status]);
+    }
+
+    public function toggleActivo(Request $request, Usuario $user)
+    {
+        $user->activo = !$user->activo;
+        $user->save();
+
+        $estado = $user->activo ? 'activada' : 'desactivada';
+        return redirect()->route('users.index')->with('success', "Cuenta del usuario {$user->nombre} {$estado}.");
+    }
+
+    public function trayectoria(Usuario $user)
+    {
+        $user->load('trayectorias');
+        return view('users.trayectoria', compact('user'));
+    }
+
+    public function storeTrayectoria(Request $request, Usuario $user)
+    {
+        $validated = $request->validate([
+            'cargo' => 'required|string|max:100',
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            'notas' => 'nullable|string',
+        ]);
+
+        $user->trayectorias()->create($validated);
+
+        return redirect()->route('users.trayectoria', $user->id)
+            ->with('success', 'Periodo de trayectoria registrado con éxito.');
+    }
+
+    public function destroyTrayectoria(UsuarioTrayectoria $trayectoria)
+    {
+        $userId = $trayectoria->user_id;
+        $trayectoria->delete();
+
+        return redirect()->route('users.trayectoria', $userId)
+            ->with('success', 'Periodo de trayectoria eliminado.');
     }
 }

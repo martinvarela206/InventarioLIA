@@ -12,10 +12,13 @@
                 <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Iniciar Sesión</h2>
 
                 <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="nombre">
-                        Usuario
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="login">
+                        Usuario o Correo Electrónico
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('nombre') border-red-500 @enderror" id="nombre" type="text" name="nombre" value="{{ old('nombre') }}" required autofocus placeholder="Nombre de usuario">
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('login') border-red-500 @enderror @error('nombre') border-red-500 @enderror" id="login" type="text" name="login" value="{{ old('login', old('nombre')) }}" required autofocus placeholder="admin@lia.unsj.edu.ar o admin">
+                    @error('login')
+                        <p class="text-red-500 text-xs italic mt-2">{{ $message }}</p>
+                    @enderror
                     @error('nombre')
                         <p class="text-red-500 text-xs italic mt-2">{{ $message }}</p>
                     @enderror

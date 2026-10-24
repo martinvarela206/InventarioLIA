@@ -1,0 +1,128 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="max-w-[1300px] mx-auto px-2 print:p-0 print:m-0 print:max-w-none">
+    
+    <!-- BARRA SUPERIOR DE ACCIONES (Oculta al imprimir) -->
+    <div class="print:hidden flex flex-wrap items-center justify-between gap-4 mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <div class="flex items-center gap-2">
+            <a href="{{ route('reportes.index') }}" class="text-sm font-semibold text-gray-600 hover:text-black flex items-center gap-1">
+                ← Volver al Hub de Reportes
+            </a>
+            <span class="text-gray-300">|</span>
+            <span class="text-xs bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded">
+                Sin paginación ({{ count($filas) }} registros)
+            </span>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <!-- Botón Imprimir en Papel A4 -->
+            <button type="button" onclick="window.print()" class="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-black text-white font-bold px-4 py-2 rounded-lg text-xs shadow-sm transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                Imprimir en Papel A4
+            </button>
+
+            <!-- Botón Exportar CSV -->
+            <a href="{{ route('reportes.exportCsv', array_merge(['tipo' => $tipoReporte], request()->all())) }}" class="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 text-black font-extrabold px-4 py-2 rounded-lg text-xs shadow-sm transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Exportar CSV Completo
+            </a>
+        </div>
+    </div>
+
+    <!-- DOCUMENTO OFICIAL PARA PANTALLA E IMPRESIÓN -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8 print:p-0 print:border-none print:shadow-none">
+        
+        <!-- MEMBRETE INSTITUCIONAL OFICIAL (Visible siempre en papel) -->
+        <div class="border-b-2 border-gray-800 pb-4 mb-6 text-center">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-gray-500">
+                UNIVERSIDAD NACIONAL DE SAN JUAN — FACULTAD DE CIENCIAS EXACTAS, FÍSICAS Y NATURALES
+            </h2>
+            <h1 class="text-xl font-black text-gray-900 mt-1 uppercase">
+                Laboratorio de Informática Aplicada (LIA) — Nexo LIA
+            </h1>
+            <div class="mt-2 text-sm font-bold text-gray-800 bg-gray-50 py-1.5 px-4 rounded border border-gray-200 inline-block">
+                {{ $titulo }}
+            </div>
+            @if(isset($subtitulo))
+                <p class="text-xs text-gray-600 mt-1">{{ $subtitulo }}</p>
+            @endif
+            <div class="flex justify-between items-center text-[11px] text-gray-500 mt-3 px-2">
+                <span>Emitido por: <strong>{{ Auth::user()->nombre ?? 'Sistema LIA' }}</strong> ({{ Auth::user()->roles->pluck('rol')->implode(', ') }})</span>
+                <span>Fecha y hora de generación: <strong>{{ date('d/m/Y H:i:s') }}</strong></span>
+                <span>Total de Registros: <strong>{{ count($filas) }}</strong></span>
+            </div>
+        </div>
+
+        <!-- TABLA COMPLETA SIN PAGINAR (ESTILO PLANILLA DE CÁLCULO) -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs border border-gray-300">
+                <thead>
+                    <tr class="bg-gray-100 border-b border-gray-300 text-gray-800 uppercase font-extrabold print:bg-gray-200">
+                        <th class="py-2 px-2.5 border border-gray-300 w-8 text-center">#</th>
+                        @foreach($columnas as $col)
+                            <th class="py-2 px-2.5 border border-gray-300">{{ $col }}</th>
+                        @endforeach
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 text-gray-800">
+                    @forelse($filas as $idx => $fila)
+                        <tr class="odd:bg-white even:bg-gray-50/60 print:odd:bg-white print:even:bg-gray-100">
+                            <td class="py-1.5 px-2.5 border border-gray-300 text-center font-mono text-gray-400 font-semibold">{{ $idx + 1 }}</td>
+                            @foreach($fila as $celda)
+                                <td class="py-1.5 px-2.5 border border-gray-300 font-medium">
+                                    {{ $celda }}
+                                </td>
+                            @endforeach
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ count($columnas) + 1 }}" class="py-10 text-center text-gray-400 italic">
+                                No se encontraron registros para los parámetros seleccionados.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <!-- RECUADRO INFERIOR DE FIRMAS Y CONFORMIDAD (Para resguardo físico en bibliorato) -->
+        <div class="mt-12 pt-6 border-t border-gray-300 hidden print:grid grid-cols-2 gap-8 text-xs text-gray-700">
+            <div class="border-t border-gray-800 pt-2 text-center mt-12">
+                <span class="block font-bold">Firma del Revisor / Auditor</span>
+                <span class="block text-gray-500">Aclaración y DNI</span>
+            </div>
+            <div class="border-t border-gray-800 pt-2 text-center mt-12">
+                <span class="block font-bold">Firma del Director / Autoridad LIA</span>
+                <span class="block text-gray-500">Aclaración y Cargo</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    body {
+        background-color: #fff !important;
+        color: #000 !important;
+        font-size: 10pt;
+    }
+    header, footer, .print\:hidden {
+        display: none !important;
+    }
+    .print\:grid {
+        display: grid !important;
+    }
+    table {
+        page-break-inside: auto;
+    }
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+    thead {
+        display: table-header-group;
+    }
+}
+</style>
+@endsection

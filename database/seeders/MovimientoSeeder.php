@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Ubicacion;
 use App\Models\Estado;
+use App\Models\Usuario;
 use Carbon\Carbon;
 
 class MovimientoSeeder extends Seeder
@@ -18,80 +18,68 @@ class MovimientoSeeder extends Seeder
     public function run(): void
     {
         $elementos = Elemento::all();
-        $users = [1, 2]; // Admin, Coordinador (IDs asumidos de UserSeeder)
-        
-        // Get ubicacion and estado IDs from database
-        $ubicacionIds = Ubicacion::pluck('id', 'nombre')->toArray();
-        $locations = array_keys($ubicacionIds);
-        $estadoIds = Estado::pluck('id', 'nombre')->toArray();
+        $adminUser = Usuario::where('email', 'admin@lia.unsj.edu.ar')->first() ?? Usuario::first();
+        $tecUser = Usuario::where('email', 'tecnico@lia.unsj.edu.ar')->first() ?? $adminUser;
+
+        $estadoFuncionando = Estado::where('nombre', 'funcionando')->first();
+        $estadoAlmacenado = Estado::where('nombre', 'almacenado')->first();
+        $estadoPrestado = Estado::where('nombre', 'prestado')->first();
+        $estadoReparacion = Estado::where('nombre', 'en reparacion')->first();
+
+        $ubicacionFS = Ubicacion::where('nombre', 'Laboratorio Federico Sanchez')->first() ?? Ubicacion::first();
+        $ubicacionRedes = Ubicacion::where('nombre', 'Laboratorio Redes')->first() ?? Ubicacion::first();
+        $ubicacionArmario = Ubicacion::where('nombre', 'Armario de HW')->first() ?? Ubicacion::first();
 
         foreach ($elementos as $elemento) {
-            $movementsCount = rand(1, 5);
-            $currentDate = Carbon::now()->subMonths(rand(6, 24)); // Fecha de inicio aleatoria
-
-            // 1. Movimiento Inicial
-            $initialUser = $users[array_rand($users)];
+            // Movimiento base de ingreso
             Movimiento::create([
-                'nro_lia' => $elemento->nro_lia,
-                'user_id' => $initialUser,
-                'estado_id' => $estadoIds['ingresado'],
-                'ubicacion_id' => $ubicacionIds['LIA'],
-                'fecha' => $currentDate->copy(),
-                'comentario' => 'Ingreso inicial al sistema'
+                'elemento_id' => $elemento->id,
+                'tipo_movimiento' => 'interno',
+                'ubicacion_id' => $ubicacionArmario->id,
+                'puesto' => null,
+                'estado_id' => $estadoAlmacenado->id,
+                'user_id' => $adminUser->id,
+                'fecha' => Carbon::now()->subMonths(6),
+                'comentario' => 'Ingreso patrimonial y almacenamiento inicial en Armario de HW',
             ]);
 
-            // 2. Movimientos subsiguientes
-            for ($i = 1; $i < $movementsCount; $i++) {
-                $currentDate->addDays(rand(5, 60)); // Avanzar fecha
-                $user = $users[array_rand($users)];
-                
-                $estadoNombre = array_rand($estadoIds);
-                $location = 'LIA';
-                $comment = 'Movimiento registrado';
-
-                // Lógica específica por estado
-                if ($estadoNombre === 'dado de baja') {
-                    $location = $ubicacionIds['Dado de baja'];
-                    $comment = 'Dado de baja por resolución N° ' . rand(100, 999) . '/' . date('Y');
-                    
-                    Movimiento::create([
-                        'nro_lia' => $elemento->nro_lia,
-                        'user_id' => $user,
-                        'estado_id' => $estadoIds[$estadoNombre],
-                        'ubicacion_id' => $location,
-                        'fecha' => $currentDate->copy(),
-                        'comentario' => $comment
-                    ]);
-                    break; // Detener generación si se da de baja
-                } elseif ($estadoNombre === 'prestado') {
-                    $location = $ubicacionIds['Prestado'];
-                    $destinatarios = [
-                        'profesor Juan Pérez',
-                        'profesora María González',
-                        'oficina de Administración',
-                        'departamento de Sistemas',
-                        'profesor Carlos Rodríguez',
-                        'oficina de Rectorado',
-                        'departamento de Investigación',
-                    ];
-                    $comment = 'Prestado a ' . $destinatarios[array_rand($destinatarios)];
-                } elseif ($estadoNombre === 'funcionando' || $estadoNombre === 'guardado') {
-                    $validLocNames = array_keys($ubicacionIds);
-                    $locationName = $validLocNames[array_rand($validLocNames)];
-                    $location = $ubicacionIds[$locationName];
-                    $comment = 'Asignado a ' . $locationName;
-                } elseif ($estadoNombre === 'ingresado') {
-                     $location = $ubicacionIds['LIA'];
-                     $comment = 'Reingreso a depósito';
-                }
-
+            // Segundo movimiento según tipo
+            if ($elemento->marca === 'Dell') {
                 Movimiento::create([
-                    'nro_lia' => $elemento->nro_lia,
-                    'user_id' => $user,
-                    'estado_id' => $estadoIds[$estadoNombre],
-                    'ubicacion_id' => $location,
-                    'fecha' => $currentDate->copy(),
-                    'comentario' => $comment
+                    'elemento_id' => $elemento->id,
+                    'tipo_movimiento' => 'interno',
+                    'ubicacion_id' => $ubicacionFS->id,
+                    'puesto' => $elemento->puesto,
+                    'estado_id' => $estadoFuncionando->id,
+                    'user_id' => $tecUser->id,
+                    'fecha' => Carbon::now()->subMonths(3),
+                    'comentario' => "Instalación en laboratorio y puesta en funcionamiento en {$elemento->puesto}",
+                ]);
+            } elseif ($elemento->marca === 'Cisco') {
+                Movimiento::create([
+                    'elemento_id' => $elemento->id,
+                    'tipo_movimiento' => 'interno',
+                    'ubicacion_id' => $ubicacionRedes->id,
+                    'puesto' => 'Rack Principal',
+                    'estado_id' => $estadoFuncionando->id,
+                    'user_id' => $tecUser->id,
+                    'fecha' => Carbon::now()->subMonths(4),
+                    'comentario' => 'Conexión a patchera troncal en Laboratorio Redes',
+                ]);
+            } elseif ($elemento->marca === 'Lenovo') {
+                // Préstamo activo
+                Movimiento::create([
+                    'elemento_id' => $elemento->id,
+                    'tipo_movimiento' => 'externo_prestamo',
+                    'ubicacion_id' => null,
+                    'puesto' => null,
+                    'estado_id' => $estadoPrestado->id,
+                    'user_id' => $tecUser->id,
+                    'fecha' => Carbon::now()->subDays(12),
+                    'solicitante' => 'Dra. María González (Cátedra Redes)',
+                    'fecha_prestamo' => Carbon::now()->subDays(12),
+                    'fecha_devolucion' => null,
+                    'comentario' => 'Préstamo para dictado de jornada académica',
                 ]);
             }
         }

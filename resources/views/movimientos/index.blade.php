@@ -1,172 +1,145 @@
 @extends('layouts.app')
 
 @section('content')
-    <h2 class="text-center mt-10 text-[#dba800] text-2xl font-semibold">Lista de Movimientos</h2>
-
-    @can('write-data')
-        <a href="{{ route('movimientos.create') }}" class="inline-block mt-5 ml-[5%] bg-[#dba800] text-[#111] px-5 py-2 rounded font-semibold transition-colors duration-200 hover:bg-[#fbc101] no-underline border-2 border-[#dba800] hover:border-[#fbc101]">Añadir Movimiento</a>
-    @endcan
-
-    <!-- Búsqueda -->
-    <form action="{{ route('movimientos.index') }}" method="GET" class="w-[90%] mx-auto mt-6">
-        <div class="flex gap-3 items-center">
-            <input type="text" name="search" placeholder="Buscar por Nro LIA, Estado, Ubicación, Usuario o Comentario..." value="{{ request('search') }}" class="w-full rounded-lg border border-gray-200 px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#dba800]" />
-            <button type="submit" class="bg-[#dba800] hover:bg-[#fbc101] text-[#111] font-semibold py-2 px-4 rounded shadow border-2 border-[#dba800] hover:border-[#fbc101]">Buscar</button>
-            @if(request('search'))
-                <a href="{{ route('movimientos.index', request()->except('search')) }}" class="text-gray-600 hover:text-gray-800">Limpiar</a>
-            @endif
+<div class="max-w-[1240px] mx-auto px-2 space-y-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <span>Historial de Movimientos y Préstamos</span>
+                <span class="text-xs bg-amber-100 text-amber-900 font-bold px-2.5 py-0.5 rounded-full border border-amber-300">
+                    {{ $movimientos->total() }} registros
+                </span>
+            </h1>
+            <p class="text-sm text-gray-600 mt-0.5">Trazabilidad inmutable de traslados físicos entre salas y préstamos a docentes</p>
         </div>
-        @if(request('estado'))
-            <input type="hidden" name="estado" value="{{ request('estado') }}">
-        @endif
-        @if(request('ultimo'))
-            <input type="hidden" name="ultimo" value="1">
-        @endif
-    </form>
-
-    <!-- Filtros -->
-    <div class="flex justify-end gap-4 w-[90%] mx-auto mt-4">
-        <a href="{{ route('movimientos.index', array_merge(request()->all(), ['ultimo' => !request()->boolean('ultimo')])) }}" 
-           class="px-4 py-1 rounded-full border border-amber-700 text-sm font-semibold transition-colors {{ request()->boolean('ultimo') ? 'bg-amber-700 text-white' : 'text-amber-700 hover:bg-amber-50' }}">
-           Último
-        </a>
-        
-        <div class="flex items-center rounded-full border {{ request('estado') ? 'bg-amber-700 border-amber-700 text-white' : 'border-amber-700 text-amber-700 hover:bg-amber-50' }} overflow-hidden transition-colors">
-            @if(request('estado'))
-                <a href="{{ route('movimientos.index', array_merge(request()->except('estado'))) }}" class="pl-4 pr-1 text-sm font-semibold hover:text-amber-200 cursor-pointer" title="Quitar filtro">Estado</a>
-            @else
-                <span class="pl-4 pr-1 text-sm font-semibold cursor-pointer" onclick="this.parentElement.querySelector('select').focus()">Estado</span>
-            @endif
-            <select 
-                name="estado" 
-                onchange="filterByEstadoMov(this.value)" 
-                class="w-32 py-1 px-1 bg-transparent border-none focus:ring-0 text-sm font-semibold {{ request('estado') ? 'text-white' : 'text-amber-700' }} focus:outline-none [&>option]:text-gray-900 [&>option]:bg-white [&>option:hover]:bg-amber-100 [&>option:checked]:bg-amber-200">
-                <option value="">Todos</option>
-                @foreach($estados as $estado)
-                    <option value="{{ $estado->nombre }}" {{ request('estado') === $estado->nombre ? 'selected' : '' }}>
-                        {{ ucfirst($estado->nombre) }}
-                    </option>
-                @endforeach
-            </select>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('movimientos.rapido') }}" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Nuevo Movimiento Rápido
+            </a>
+            <a href="{{ route('reportes.show', 'movimientos-fechas') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2.5 rounded-xl shadow-sm transition-all text-sm">
+                📄 Ver Bitácora Oficial
+            </a>
         </div>
     </div>
 
-    <script>
-        function filterByEstadoMov(estadoNombre) {
-            const url = new URL(window.location.href);
-            if (estadoNombre) {
-                url.searchParams.set('estado', estadoNombre);
-            } else {
-                url.searchParams.delete('estado');
-            }
-            url.searchParams.delete('page');
-            window.location.href = url.toString();
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.querySelector('input[name="search"]');
-            const searchForm = searchInput.closest('form');
-            let timeout = null;
+    <!-- Filters & Search Form -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <form action="{{ route('movimientos.index') }}" method="GET" class="space-y-3">
+            <div class="flex gap-2">
+                <div class="relative flex-1">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar por LIA, UNSJ, marca, solicitante, o comentarios..." 
+                        class="w-full rounded-xl border border-gray-300 pl-10 pr-4 py-2 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
+                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <button type="submit" class="bg-amber-400 hover:bg-amber-500 text-black font-bold px-4 py-2 rounded-xl text-sm transition-colors">
+                    Buscar
+                </button>
+                @if(request()->hasAny(['search', 'tipo_movimiento', 'estado_id', 'ubicacion_id']))
+                    <a href="{{ route('movimientos.index') }}" class="text-xs text-gray-500 hover:text-black self-center px-2">Limpiar</a>
+                @endif
+            </div>
 
-            searchInput.addEventListener('input', function() {
-                clearTimeout(timeout);
-                // Trigger search from 1 character or when empty (to clear)
-                if (this.value.length >= 1 || this.value.length === 0) {
-                    timeout = setTimeout(() => {
-                        searchForm.submit();
-                    }, 600);
-                }
-            });
-            
-            // Focus back on input if it has value
-            if (searchInput.value) {
-                searchInput.focus();
-                const val = searchInput.value;
-                searchInput.value = '';
-                searchInput.value = val;
-            }
-        });
-    </script>
+            <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100 text-xs">
+                <span class="font-bold text-gray-400 uppercase tracking-wider mr-1">Filtrar por:</span>
 
-    <div class="w-[90%] mx-auto mt-4 shadow-md bg-white rounded-lg overflow-hidden">
-        <table class="min-w-full table-auto block md:table">
-            <thead class="hidden md:table-header-group">
-                <tr class="bg-amber-400 text-amber-900 uppercase text-sm leading-normal">
-                    <th class="py-3 px-6 text-left">Nro LIA</th>
-                    <th class="py-3 px-6 text-left">Estado</th>
-                    <th class="py-3 px-6 text-left">Ubicación</th>
-                    <th class="py-3 px-6 text-left">Fecha</th>
-                    <th class="py-3 px-6 text-left">Comentario</th>
-                    <th class="py-3 px-6 text-left">Usuario</th>
-                    @can('write-data')
-                        <th class="py-3 px-6 text-center">Acciones</th>
-                    @endcan
-                </tr>
-            </thead>
-            <tbody class="text-gray-900 text-sm font-medium block md:table-row-group">
-                @foreach($movimientos as $movimiento)
-                    <tr class="block md:table-row odd:bg-amber-50 even:bg-amber-100 border-b border-gray-300 hover:bg-amber-200 mb-4 md:mb-0 rounded-lg shadow-sm md:shadow-none p-4 md:p-0">
-                        <td class="py-2 px-4 md:py-3 md:px-6 text-left whitespace-nowrap block md:table-cell flex justify-between md:block">
-                             <span class="font-bold md:hidden text-amber-900">Nro LIA:</span>
-                            <a href="{{ route('elementos.show', $movimiento->nro_lia) }}" class="text-amber-700 hover:text-amber-900 font-semibold">
-                                {{ $movimiento->nro_lia }}
-                            </a>
-                        </td>
-                        <td class="py-2 px-4 md:py-3 md:px-6 text-left block md:table-cell flex justify-between md:block items-center">
-                            <span class="font-bold md:hidden text-amber-900">Estado:</span>
-                            <span class="px-2 py-1 rounded text-xs font-semibold
-                                {{ $movimiento->estado?->nombre === 'prestado' ? 'bg-blue-200 text-blue-800' : '' }}
-                                {{ $movimiento->estado?->nombre === 'dado de baja' ? 'bg-red-200 text-red-800' : '' }}
-                                {{ $movimiento->estado?->nombre === 'funcionando' ? 'bg-green-200 text-green-800' : '' }}
-                                {{ $movimiento->estado?->nombre === 'guardado' ? 'bg-yellow-200 text-yellow-800' : '' }}
-                                {{ $movimiento->estado?->nombre === 'ingresado' ? 'bg-gray-200 text-gray-800' : '' }}">
-                                {{ ucfirst($movimiento->estado?->nombre ?? 'N/A') }}
-                            </span>
-                        </td>
-                        <td class="py-2 px-4 md:py-3 md:px-6 text-left block md:table-cell flex justify-between md:block">
-                             <span class="font-bold md:hidden text-amber-900">Ubicación:</span>
-                            {{ $movimiento->ubicacion?->nombre ?? 'Sin ubicación' }}
-                        </td>
-                        <td class="py-2 px-4 md:py-3 md:px-6 text-left block md:table-cell flex justify-between md:block">
-                             <span class="font-bold md:hidden text-amber-900">Fecha:</span>
-                            {{ $movimiento->fecha->format('Y-m-d') }}
-                        </td>
-                        <td class="py-2 px-4 md:py-3 md:px-6 text-left block md:table-cell">
-                             <span class="font-bold md:hidden text-amber-900 block mb-1">Comentario:</span>
-                            {{ $movimiento->comentario ?? '-' }}
-                        </td>
-                        <td class="py-2 px-4 md:py-3 md:px-6 text-left block md:table-cell flex justify-between md:block">
-                             <span class="font-bold md:hidden text-amber-900">Usuario:</span>
-                            {{ $movimiento->usuario->name }}
-                        </td>
-                        @can('write-data')
-                            <td class="py-2 px-4 md:py-3 md:px-6 text-center block md:table-cell flex justify-between md:block items-center">
-                                 <span class="font-bold md:hidden text-amber-900">Acciones:</span>
-                                <div class="flex item-center justify-end md:justify-center gap-2">
-                                    <a href="{{ route('movimientos.edit', $movimiento->id) }}" class="text-amber-700 hover:text-amber-900">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                    </a>
-                                    <form action="{{ route('movimientos.destroy', $movimiento->id) }}" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar este movimiento?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-800">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        @endcan
+                <select name="tipo_movimiento" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700">
+                    <option value="">Todos los Tipos</option>
+                    <option value="interno" {{ request('tipo_movimiento') === 'interno' ? 'selected' : '' }}>Traslados Internos</option>
+                    <option value="externo_prestamo" {{ request('tipo_movimiento') === 'externo_prestamo' ? 'selected' : '' }}>Préstamos Externos</option>
+                </select>
+
+                <select name="ubicacion_id" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700">
+                    <option value="">Todas las Salas</option>
+                    @foreach($ubicaciones as $ub)
+                        <option value="{{ $ub->id }}" {{ request('ubicacion_id') == $ub->id ? 'selected' : '' }}>{{ $ub->nombre }}</option>
+                    @endforeach
+                </select>
+
+                <select name="estado_id" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700">
+                    <option value="">Todos los Estados</option>
+                    @foreach($estados as $est)
+                        <option value="{{ $est->id }}" {{ request('estado_id') == $est->id ? 'selected' : '' }}>{{ ucfirst($est->nombre) }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        <th class="py-3 px-4">Fecha / Hora</th>
+                        <th class="py-3 px-4">Tipo Evento</th>
+                        <th class="py-3 px-4">Activo Involucrado</th>
+                        <th class="py-3 px-4">Destino / Puesto</th>
+                        <th class="py-3 px-4">Estado</th>
+                        <th class="py-3 px-4">Solicitante / Detalle</th>
+                        <th class="py-3 px-4 text-right">Responsable</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-gray-800 text-xs">
+                    @forelse($movimientos as $m)
+                        <tr class="hover:bg-amber-50/40 transition-colors">
+                            <td class="py-3 px-4 whitespace-nowrap font-mono">
+                                {{ $m->fecha ? $m->fecha->format('d/m/Y H:i') : '-' }}
+                            </td>
+                            <td class="py-3 px-4 whitespace-nowrap">
+                                {!! $m->presenter()->tipoBadge() !!}
+                            </td>
+                            <td class="py-3 px-4 whitespace-nowrap">
+                                <a href="{{ route('elementos.show', $m->elemento_id) }}" class="font-bold text-gray-900 hover:text-amber-700 font-mono">
+                                    {{ $m->elemento?->nro_lia ?: 'LIA: -' }}
+                                </a>
+                                <span class="text-[11px] text-gray-500 block">
+                                    {{ strtoupper($m->elemento?->tipo?->nombre ?? '') }} {{ $m->elemento?->marca }}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4">
+                                <strong class="text-gray-900">{{ $m->presenter()->destinoTexto() }}</strong>
+                            </td>
+                            <td class="py-3 px-4 whitespace-nowrap">
+                                {!! $m->presenter()->estadoBadge() !!}
+                            </td>
+                            <td class="py-3 px-4">
+                                @if($m->esPrestamo())
+                                    <div class="font-bold text-amber-900">{{ $m->solicitante }}</div>
+                                    <div class="text-[10px] text-gray-500">
+                                        Salida: {{ $m->fecha_prestamo ? $m->fecha_prestamo->format('d/m/Y') : '-' }}
+                                        @if($m->fecha_devolucion)
+                                            <span class="text-emerald-700 font-bold ml-1">| Devuelto {{ Carbon\Carbon::parse($m->fecha_devolucion)->format('d/m/Y') }}</span>
+                                        @else
+                                            <span class="text-amber-800 font-bold ml-1">| Activo ({{ $m->diasPrestado() }}d)</span>
+                                        @endif
+                                    </div>
+                                @endif
+                                @if($m->comentario)
+                                    <div class="text-gray-600 italic mt-0.5 line-clamp-1">"{{ $m->comentario }}"</div>
+                                @endif
+                            </td>
+                            <td class="py-3 px-4 text-right whitespace-nowrap text-gray-500 font-medium">
+                                {{ $m->usuario?->nombre ?? 'Sistema' }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="py-12 text-center text-gray-400">
+                                No se encontraron movimientos con los filtros aplicados.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
 
-    <div class="w-[90%] mx-auto mt-4 mb-6">
-        {{ $movimientos->appends(request()->query())->links('vendor.pagination.responsive-custom') }}
+        @if($movimientos->hasPages())
+            <div class="p-4 border-t border-gray-200 bg-gray-50">
+                {{ $movimientos->links() }}
+            </div>
+        @endif
     </div>
+</div>
 @endsection

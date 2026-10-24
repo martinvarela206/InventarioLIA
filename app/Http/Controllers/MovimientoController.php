@@ -8,6 +8,7 @@ use App\Models\Usuario;
 use App\Models\Ubicacion;
 use App\Models\Estado;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class MovimientoController extends Controller
 {
@@ -16,53 +17,110 @@ class MovimientoController extends Controller
      */
     public function index(Request $request)
     {
-        if (!auth()->user()->hasRole('coordinador')) {
-            abort(403, 'No tienes permiso para ver esta página.');
-        }
+        $query = Movimiento::with(['elemento.tipo', 'usuario', 'ubicacion', 'estado']);
 
-        $query = Movimiento::with(['elemento.ultimoMovimiento', 'usuario', 'ubicacion', 'estado']);
-
-        // Search functionality
-        if ($request->has('search')) {
-            $search = $request->input('search');
+        if ($request->filled('search')) {
+            $search = trim($request->input('search'));
             $query->where(function ($q) use ($search) {
-                $q->where('nro_lia', 'like', "%{$search}%")
-                  ->orWhere('comentario', 'like', "%{$search}%")
-                  ->orWhereHas('elemento', function ($q) use ($search) {
-                      $q->where('descripcion', 'like', "%{$search}%")
-                        ->orWhere('nro_unsj', 'like', "%{$search}%");
+                $q->where('comentario', 'like', "%{$search}%")
+                  ->orWhere('solicitante', 'like', "%{$search}%")
+                  ->orWhere('puesto', 'like', "%{$search}%")
+                  ->orWhereHas('elemento', function ($eq) use ($search) {
+                      $eq->where('nro_lia', 'like', "%{$search}%")
+                         ->orWhere('nro_unsj', 'like', "%{$search}%")
+                         ->orWhere('marca', 'like', "%{$search}%")
+                         ->orWhere('modelo', 'like', "%{$search}%");
                   })
-                  ->orWhereHas('usuario', function ($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
+                  ->orWhereHas('ubicacion', function ($uq) use ($search) {
+                      $uq->where('nombre', 'like', "%{$search}%");
                   })
-                  ->orWhereHas('estado', function ($q) use ($search) {
-                      $q->where('nombre', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('ubicacion', function ($q) use ($search) {
-                      $q->where('nombre', 'like', "%{$search}%");
+                  ->orWhereHas('estado', function ($esq) use ($search) {
+                      $esq->where('nombre', 'like', "%{$search}%");
                   });
             });
         }
 
-        // Estado filter
-        if ($request->filled('estado')) {
-            $query->whereHas('estado', function ($q) use ($request) {
-                $q->where('nombre', $request->estado);
-            });
+        if ($request->filled('tipo_movimiento')) {
+            $query->where('tipo_movimiento', $request->tipo_movimiento);
         }
 
-        if ($request->boolean('ultimo')) {
-            $query->whereIn('id', function ($q) {
-                $q->select('id')
-                  ->from('movimientos as m_outer')
-                  ->whereRaw('fecha = (select max(fecha) from movimientos as m_inner where m_inner.nro_lia = m_outer.nro_lia)')
-                  ->whereRaw('id = (select max(id) from movimientos as m_inner2 where m_inner2.nro_lia = m_outer.nro_lia and m_inner2.fecha = m_outer.fecha)');
-            });
+        if ($request->filled('estado_id')) {
+            $query->where('estado_id', $request->estado_id);
         }
 
-        $movimientos = $query->orderBy('fecha', 'desc')->paginate(10)->withQueryString();
+        if ($request->filled('ubicacion_id')) {
+            $query->where('ubicacion_id', $request->ubicacion_id);
+        }
+
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha', '>=', $request->fecha_desde);
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha', '<=', $request->fecha_hasta);
+        }
+
+        $movimientos = $query->orderBy('fecha', 'desc')->paginate(20)->withQueryString();
         $estados = Estado::all();
-        return view('movimientos.index', compact('movimientos', 'estados'));
+        $ubicaciones = Ubicacion::all();
+
+        return view('movimientos.index', compact('movimientos', 'estados', 'ubicaciones'));
+    }
+
+    /**
+     * Show the rapid mobile-first view for technicians.
+     */
+    public function rapido(Request $request)
+    {
+        $ubicaciones = Ubicacion::orderBy('nombre')->get();
+        $estados = Estado::orderBy('nombre')->get();
+        $elementoPreseleccionado = null;
+
+        if ($request->filled('elemento_id')) {
+            $elementoPreseleccionado = Elemento::with(['tipo', 'ultimoMovimiento.estado', 'ultimoMovimiento.ubicacion'])->find($request->elemento_id);
+        } elseif ($request->filled('nro_lia')) {
+            $elementoPreseleccionado = Elemento::with(['tipo', 'ultimoMovimiento.estado', 'ultimoMovimiento.ubicacion'])
+                ->where('nro_lia', $request->nro_lia)
+                ->first();
+        }
+
+        return view('movimientos.rapido', compact('ubicaciones', 'estados', 'elementoPreseleccionado'));
+    }
+
+    /**
+     * API search endpoint for live autocomplete on quick movements.
+     */
+    public function apiBuscar(Request $request)
+    {
+        $term = trim((string)$request->get('q', ''));
+        if (strlen($term) < 1) {
+            return response()->json([]);
+        }
+
+        $elementos = Elemento::with(['tipo', 'ultimoMovimiento.estado', 'ultimoMovimiento.ubicacion'])
+            ->buscarIdentificador($term)
+            ->limit(10)
+            ->get()
+            ->map(function ($el) {
+                $ultimo = $el->ultimoMovimiento;
+                return [
+                    'id' => $el->id,
+                    'nro_lia' => $el->nro_lia ?: 'S/N',
+                    'nro_unsj' => $el->nro_unsj ?: 'S/N',
+                    'tipo' => $el->tipo?->nombre ?? 'Activo',
+                    'marca' => $el->marca,
+                    'modelo' => $el->modelo,
+                    'puesto' => $el->puesto,
+                    'estado_actual' => $ultimo?->estado?->nombre ?? 'N/A',
+                    'ubicacion_actual' => $ultimo?->ubicacion?->nombre ?? 'N/A',
+                    'es_prestamo_activo' => $ultimo && $ultimo->esPrestamo() && !$ultimo->fecha_devolucion,
+                    'prestamo_id' => ($ultimo && $ultimo->esPrestamo() && !$ultimo->fecha_devolucion) ? $ultimo->id : null,
+                    'solicitante_actual' => $ultimo?->solicitante,
+                    'dias_prestado' => $ultimo?->diasPrestado(),
+                ];
+            });
+
+        return response()->json($elementos);
     }
 
     /**
@@ -70,101 +128,81 @@ class MovimientoController extends Controller
      */
     public function create(Request $request)
     {
-        $elementos = Elemento::all();
-        $usuarios = Usuario::all();
-        $ubicaciones = Ubicacion::all();
-        $estados = Estado::all();
-        $nro_lia = $request->query('nro_lia');
-        return view('movimientos.create', compact('elementos', 'usuarios', 'ubicaciones', 'estados', 'nro_lia'));
+        return $this->rapido($request);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created movement in storage.
      */
     public function store(Request $request)
     {
         $request->validate([
-            'nro_lia' => 'required|exists:elementos,nro_lia',
+            'elemento_id' => 'required|exists:elementos,id',
+            'tipo_movimiento' => 'required|in:interno,externo_prestamo',
             'estado_id' => 'required|exists:estados,id',
             'ubicacion_id' => 'nullable|exists:ubicaciones,id',
-            'fecha' => 'required|date',
+            'puesto' => 'nullable|string|max:50',
+            'solicitante' => 'nullable|string|max:150',
+            'fecha_prestamo' => 'nullable|date',
+            'fecha' => 'nullable|date',
             'comentario' => 'nullable|string',
         ]);
 
-        $fecha = $request->fecha;
-        if (!auth()->user()->can('manage-movements')) {
-            $fecha = now();
-        }
+        $tipoMovimiento = $request->tipo_movimiento;
+        $esPrestamo = $tipoMovimiento === 'externo_prestamo';
 
-        // Use hidden ubicacion_id if the select was disabled
-        $ubicacionId = $request->ubicacion_id ?: $request->ubicacion_id_hidden;
+        $fecha = $request->fecha ? Carbon::parse($request->fecha) : now();
 
-        Movimiento::create([
-            'nro_lia' => $request->nro_lia,
-            'user_id' => auth()->id(),
+        $movimiento = Movimiento::create([
+            'elemento_id' => $request->elemento_id,
+            'tipo_movimiento' => $tipoMovimiento,
+            'ubicacion_id' => $esPrestamo ? null : $request->ubicacion_id,
+            'puesto' => $esPrestamo ? null : $request->puesto,
             'estado_id' => $request->estado_id,
-            'ubicacion_id' => $ubicacionId,
+            'user_id' => auth()->id() ?? Usuario::first()->id,
             'fecha' => $fecha,
+            'solicitante' => $esPrestamo ? $request->solicitante : null,
+            'fecha_prestamo' => $esPrestamo ? ($request->fecha_prestamo ? Carbon::parse($request->fecha_prestamo)->toDateString() : now()->toDateString()) : null,
             'comentario' => $request->comentario,
         ]);
 
-        return redirect()->route('movimientos.index')->with('success', 'Movimiento registrado exitosamente.');
+        return redirect()->route('elementos.show', $request->elemento_id)
+            ->with('success', 'Movimiento registrado con éxito.');
     }
 
     /**
-     * Display the specified resource.
+     * Check-in / Registro de devolución de préstamo
      */
-    public function show(string $id)
-    {
-        // Not typically needed for movements, but can be implemented if required
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        $movimiento = Movimiento::findOrFail($id);
-        $elementos = Elemento::all();
-        $usuarios = Usuario::all();
-        $ubicaciones = Ubicacion::all();
-        $estados = Estado::all();
-        return view('movimientos.edit', compact('movimiento', 'elementos', 'usuarios', 'ubicaciones', 'estados'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function devolucion(Request $request, Movimiento $movimiento)
     {
         $request->validate([
-            'nro_lia' => 'required|exists:elementos,nro_lia',
-            'user_id' => 'required|exists:usuarios,id',
+            'fecha_devolucion' => 'nullable|date',
+            'ubicacion_id' => 'required|exists:ubicaciones,id',
+            'puesto' => 'nullable|string|max:50',
             'estado_id' => 'required|exists:estados,id',
-            'fecha' => 'required|date',
+            'comentario' => 'nullable|string',
         ]);
 
-        $movimiento = Movimiento::findOrFail($id);
-        
-        // Use hidden ubicacion_id if the select was disabled
-        $data = $request->all();
-        if (!$request->ubicacion_id && $request->ubicacion_id_hidden) {
-            $data['ubicacion_id'] = $request->ubicacion_id_hidden;
-        }
-        
-        $movimiento->update($data);
+        $fechaDev = $request->fecha_devolucion ? Carbon::parse($request->fecha_devolucion)->toDateString() : now()->toDateString();
 
-        return redirect()->route('movimientos.index')->with('success', 'Movimiento actualizado exitosamente.');
-    }
+        // 1. Marcar fecha de devolución en el préstamo original
+        $movimiento->update([
+            'fecha_devolucion' => $fechaDev,
+        ]);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        $movimiento = Movimiento::findOrFail($id);
-        $movimiento->delete();
+        // 2. Registrar el nuevo movimiento interno de reingreso al laboratorio
+        Movimiento::create([
+            'elemento_id' => $movimiento->elemento_id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $request->ubicacion_id,
+            'puesto' => $request->puesto,
+            'estado_id' => $request->estado_id,
+            'user_id' => auth()->id() ?? Usuario::first()->id,
+            'fecha' => now(),
+            'comentario' => 'Reingreso de préstamo externo. ' . ($request->comentario ?: ''),
+        ]);
 
-        return redirect()->route('movimientos.index')->with('success', 'Movimiento eliminado exitosamente.');
+        return redirect()->route('elementos.show', $movimiento->elemento_id)
+            ->with('success', 'Devolución registrada exitosamente. El equipo ha reingresado a la sala.');
     }
 }

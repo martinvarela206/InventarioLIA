@@ -3,12 +3,15 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ElementoController;
 use App\Http\Controllers\MovimientoController;
-
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RevisionController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\RevisionController;
-use App\Http\Controllers\DashboardController;
 
+// Autenticación
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
@@ -16,25 +19,45 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('/register', [RegisterController::class, 'register']);
 
-Route::get('/revision', [RevisionController::class, 'index'])->name('revision.index');
-
-// Root: show welcome page
+// Portada / Welcome
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index')->middleware('auth');
+// Rutas de revisión técnica / registro
+Route::get('/revision', [RevisionController::class, 'index'])->name('revision.index');
 
+// Rutas autenticadas
 Route::middleware('auth')->group(function () {
+    // Dashboard Operativo
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+
+    // Catálogo de Elementos e Inspector Dual-Pane
     Route::resource('elementos', ElementoController::class);
-    Route::resource('movimientos', MovimientoController::class);
 
-    // Profile Routes
-    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    // Movimientos y Préstamos
+    Route::get('/movimientos/rapido', [MovimientoController::class, 'rapido'])->name('movimientos.rapido');
+    Route::get('/api/elementos/buscar-rapido', [MovimientoController::class, 'apiBuscar'])->name('api.elementos.buscar');
+    Route::post('/movimientos/{movimiento}/devolucion', [MovimientoController::class, 'devolucion'])->name('movimientos.devolucion');
+    Route::resource('movimientos', MovimientoController::class)->except(['edit', 'update', 'destroy']);
 
+    // Módulo de Reportes Oficiales y Auditoría
+    Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
+    Route::get('/reportes/auditoria-sala/{ubicacion}', [ReporteController::class, 'auditoriaSala'])->name('reportes.auditoria');
+    Route::get('/reportes/{tipo}', [ReporteController::class, 'show'])->name('reportes.show');
+    Route::get('/reportes/{tipo}/export-csv', [ReporteController::class, 'exportCsv'])->name('reportes.exportCsv');
+
+    // Perfil de Usuario
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    // Gestión de Usuarios y Trayectorias (user_admin)
     Route::middleware('user_admin')->group(function () {
-        Route::resource('users', \App\Http\Controllers\UserController::class)->only(['index', 'edit', 'update']);
-        Route::post('/users/{user}/role', [\App\Http\Controllers\UserController::class, 'toggleRole'])->name('users.toggleRole');
+        Route::resource('users', UserController::class)->only(['index', 'edit', 'update']);
+        Route::post('/users/{user}/role', [UserController::class, 'toggleRole'])->name('users.toggleRole');
+        Route::post('/users/{user}/toggle-activo', [UserController::class, 'toggleActivo'])->name('users.toggleActivo');
+        Route::get('/users/{user}/trayectoria', [UserController::class, 'trayectoria'])->name('users.trayectoria');
+        Route::post('/users/{user}/trayectoria', [UserController::class, 'storeTrayectoria'])->name('users.trayectoria.store');
+        Route::delete('/trayectorias/{trayectoria}', [UserController::class, 'destroyTrayectoria'])->name('trayectorias.destroy');
     });
 });
