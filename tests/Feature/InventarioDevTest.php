@@ -695,5 +695,45 @@ class InventarioDevTest extends TestCase
         $responseCarreras = $this->actingAs($revisor)->get(route('app_admin.carreras'));
         $responseCarreras->assertStatus(403);
     }
+
+    public function test_gestion_de_usuarios_muestra_y_permite_asignar_rol_app_admin(): void
+    {
+        $admin = Usuario::create([
+            'nombre' => 'Admin Usuarios Test',
+            'email' => 'admin_users@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $admin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+
+        $docente = Usuario::create([
+            'nombre' => 'Docente A Designar',
+            'email' => 'docente_designar@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $docente->roles()->attach(Rol::where('rol', 'registered')->first());
+
+        // 1. Acceder al listado de usuarios y verificar presencia del rol app_admin y badge de 6 roles
+        $responseList = $this->actingAs($admin)->get(route('users.index'));
+        $responseList->assertStatus(200);
+        $responseList->assertSee('6 Roles Oficiales');
+        $responseList->assertSee('app_admin');
+
+        // 2. Asignar rol app_admin al docente mediante toggleRole
+        $responseToggle = $this->actingAs($admin)->postJson(route('users.toggleRole', $docente->id), [
+            'role' => 'app_admin',
+        ]);
+        $responseToggle->assertStatus(200);
+        $responseToggle->assertJson(['status' => 'assigned']);
+
+        $this->assertTrue($docente->fresh()->hasRole('app_admin'));
+        $this->assertTrue($docente->fresh()->isAppAdmin());
+
+        // 3. Verificar que ahora el docente puede acceder a la gestión de la app y landing
+        $responseApp = $this->actingAs($docente->fresh())->get(route('app_admin.index'));
+        $responseApp->assertStatus(200);
+        $responseApp->assertSee('Panel de Gestión de la Aplicación');
+    }
 }
 

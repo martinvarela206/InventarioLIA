@@ -8,7 +8,7 @@
             <p class="text-sm text-gray-600 mt-0.5">Asignación de roles oficiales, activación de cuentas y trayectorias</p>
         </div>
         <span class="text-xs bg-amber-100 text-amber-900 font-bold px-3 py-1 rounded-full border border-amber-300">
-            5 Roles Oficiales
+            6 Roles Oficiales
         </span>
     </div>
 
@@ -50,7 +50,7 @@
                             <td class="py-3.5 px-4">
                                 <div class="flex flex-wrap gap-1.5">
                                     @php
-                                        $rolesOficiales = ['user_admin', 'item_admin', 'tec', 'rev', 'registered'];
+                                        $rolesOficiales = ['user_admin', 'app_admin', 'item_admin', 'tec', 'rev', 'registered'];
                                     @endphp
                                     @foreach($rolesOficiales as $rName)
                                         @php
