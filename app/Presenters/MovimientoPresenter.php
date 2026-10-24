@@ -54,21 +54,9 @@ class MovimientoPresenter
 
     public function estadoBadge(): string
     {
-        $estado = $this->movimiento->estado;
-        if (!$estado) {
-            return '-';
+        if ($this->movimiento->esPrestamo()) {
+            return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Préstamo</span>';
         }
-
-        $nombre = mb_strtolower($estado->nombre);
-        if (in_array($nombre, ['funcionando', 'nuevo', 'almacenado'])) {
-            return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">' . ucfirst($nombre) . '</span>';
-        }
-        if (in_array($nombre, ['en reparacion', 'verificar funcionamiento'])) {
-            return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">' . ucfirst($nombre) . '</span>';
-        }
-        if (in_array($nombre, ['prestado'])) {
-            return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Prestado</span>';
-        }
-        return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800">' . ucfirst($nombre) . '</span>';
+        return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Interno</span>';
     }
 }

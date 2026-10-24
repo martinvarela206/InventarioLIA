@@ -7,7 +7,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
-use App\Models\Estado;
 use App\Models\Ubicacion;
 use App\Models\Rol;
 use App\Models\Usuario;
@@ -24,7 +23,6 @@ class InventarioDevTest extends TestCase
         $this->seed(\Database\Seeders\RoleSeeder::class);
         $this->seed(\Database\Seeders\TipoSeeder::class);
         $this->seed(\Database\Seeders\AtributoSeeder::class);
-        $this->seed(\Database\Seeders\EstadoSeeder::class);
         $this->seed(\Database\Seeders\UbicacionSeeder::class);
     }
 
@@ -34,18 +32,6 @@ class InventarioDevTest extends TestCase
         $this->assertNotNull(Tipo::where('nombre', 'servidor')->first());
         $this->assertNotNull(Tipo::where('nombre', 'basura tecnologica')->first());
         $this->assertNotNull(Tipo::where('nombre', 'punto de acceso')->first());
-    }
-
-    public function test_catalogo_estados_posee_flag_disponible(): void
-    {
-        $funcionando = Estado::where('nombre', 'funcionando')->first();
-        $this->assertTrue($funcionando->disponible);
-
-        $prestado = Estado::where('nombre', 'prestado')->first();
-        $this->assertFalse($prestado->disponible);
-
-        $baja = Estado::where('nombre', 'dado de baja')->first();
-        $this->assertFalse($baja->disponible);
     }
 
     public function test_catalogo_roles_contiene_los_5_roles_oficiales(): void
@@ -77,7 +63,6 @@ class InventarioDevTest extends TestCase
 
         $tipo = Tipo::where('nombre', 'computadora')->first();
         $ubicacion = Ubicacion::first();
-        $estado = Estado::where('nombre', 'nuevo')->first();
 
         $response = $this->actingAs($admin)->post(route('elementos.store'), [
             'nro_lia' => 'LIA-TEST-99',
@@ -87,7 +72,6 @@ class InventarioDevTest extends TestCase
             'modelo' => 'Inspiron',
             'cantidad' => 1,
             'ubicacion_id' => $ubicacion->id,
-            'estado_id' => $estado->id,
         ]);
 
         $elemento = Elemento::where('nro_lia', 'LIA-TEST-99')->first();
@@ -96,7 +80,6 @@ class InventarioDevTest extends TestCase
             'elemento_id' => $elemento->id,
             'tipo_movimiento' => 'interno',
             'ubicacion_id' => $ubicacion->id,
-            'estado_id' => $estado->id,
         ]);
     }
 
@@ -118,8 +101,6 @@ class InventarioDevTest extends TestCase
             'marca' => 'Lenovo',
         ]);
 
-        $estadoPrestado = Estado::where('nombre', 'prestado')->first();
-        $estadoFuncionando = Estado::where('nombre', 'funcionando')->first();
         $ubicacionDestino = Ubicacion::first();
 
         // 1. Registrar préstamo
@@ -128,7 +109,6 @@ class InventarioDevTest extends TestCase
             'tipo_movimiento' => 'externo_prestamo',
             'solicitante' => 'Profesor Carlos Gómez',
             'fecha_prestamo' => Carbon::now()->subDays(5)->toDateString(),
-            'estado_id' => $estadoPrestado->id,
         ]);
 
         $this->assertTrue(Elemento::prestadosActivos()->where('id', $elemento->id)->exists());
@@ -138,7 +118,6 @@ class InventarioDevTest extends TestCase
         $this->actingAs($tec)->post(route('movimientos.devolucion', $prestamo->id), [
             'fecha_devolucion' => Carbon::now()->toDateString(),
             'ubicacion_id' => $ubicacionDestino->id,
-            'estado_id' => $estadoFuncionando->id,
             'comentario' => 'Reingresó en óptimo estado',
         ]);
 
@@ -244,7 +223,6 @@ class InventarioDevTest extends TestCase
         $tipo = Tipo::first();
         $ubicacion1 = Ubicacion::first();
         $ubicacion2 = Ubicacion::skip(1)->first();
-        $estado = Estado::first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'LIA-INMUTABLE-01',
@@ -256,7 +234,6 @@ class InventarioDevTest extends TestCase
             'elemento_id' => $elemento->id,
             'tipo_movimiento' => 'interno',
             'ubicacion_id' => $ubicacion1->id,
-            'estado_id' => $estado->id,
             'user_id' => $tec->id,
             'fecha' => now(),
             'comentario' => 'Movimiento con error de tipeo en puesto',
@@ -275,7 +252,6 @@ class InventarioDevTest extends TestCase
             'motivo_correccion' => 'Se corrigió la sala y puesto real del activo',
             'ubicacion_id' => $ubicacion2->id,
             'puesto' => 'Mesa 08',
-            'estado_id' => $estado->id,
             'comentario' => 'Enmienda auditada',
         ]);
 
@@ -401,7 +377,6 @@ class InventarioDevTest extends TestCase
 
         $tipo = Tipo::where('nombre', 'computadora')->first();
         $ubicacion = Ubicacion::first();
-        $estado = Estado::where('nombre', 'nuevo')->first();
         $attrCpu = \App\Models\Atributo::where('nombre', 'Procesador')->first();
         $attrRam = \App\Models\Atributo::where('nombre', 'RAM')->first();
 
@@ -410,7 +385,6 @@ class InventarioDevTest extends TestCase
             'nro_unsj' => 'UNSJ-5001',
             'tipo_id' => $tipo->id,
             'ubicacion_id' => $ubicacion->id,
-            'estado_id' => $estado->id,
             'modelo' => 'Dell Precision T3600',
             'cantidad' => 1,
             'atributos' => [
@@ -453,14 +427,12 @@ class InventarioDevTest extends TestCase
 
         $tipo = Tipo::first();
         $ubicacion = Ubicacion::first();
-        $estado = Estado::first();
 
         $el = Elemento::create([
             'nro_lia' => 7777,
             'nro_unsj' => 'UNSJ-7777',
             'tipo_id' => $tipo->id,
             'ubicacion_id' => $ubicacion->id,
-            'estado_id' => $estado->id,
             'modelo' => 'Servidor ProLiant',
         ]);
 

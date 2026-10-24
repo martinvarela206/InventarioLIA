@@ -17,7 +17,6 @@ class StoreEnmiendaRequest extends FormRequest
             'motivo_correccion' => 'required|string|min:4|max:255',
             'ubicacion_id' => 'nullable|exists:ubicaciones,id',
             'puesto' => 'nullable|string|max:50',
-            'estado_id' => 'required|exists:estados,id',
             'solicitante' => 'nullable|string|max:150',
             'comentario' => 'nullable|string',
         ];

@@ -16,7 +16,6 @@ class StoreMovimientoRequest extends FormRequest
         return [
             'elemento_id' => 'required|exists:elementos,id',
             'tipo_movimiento' => 'required|in:interno,externo_prestamo',
-            'estado_id' => 'required|exists:estados,id',
             'ubicacion_id' => 'nullable|exists:ubicaciones,id',
             'puesto' => 'nullable|string|max:50',
             'solicitante' => 'nullable|string|max:150',

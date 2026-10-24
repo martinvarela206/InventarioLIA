@@ -42,7 +42,7 @@
                 <button type="submit" class="bg-amber-400 hover:bg-amber-500 text-black font-bold py-2.5 px-5 rounded-xl shadow-sm transition-all text-sm">
                     Buscar
                 </button>
-                @if(request()->hasAny(['search', 'tipo', 'estado', 'ubicacion', 'gb', 'garantia']))
+                @if(request()->hasAny(['search', 'tipo', 'ubicacion', 'gb', 'garantia']))
                     <a href="{{ route('elementos.index') }}" class="text-sm font-semibold text-gray-500 hover:text-black px-2 py-2">
                         Limpiar filtros
                     </a>
@@ -59,16 +59,6 @@
                     @foreach($tipos as $tipo)
                         <option value="{{ $tipo->nombre }}" {{ request('tipo') === $tipo->nombre ? 'selected' : '' }}>
                             {{ ucfirst($tipo->nombre) }}
-                        </option>
-                    @endforeach
-                </select>
-
-                <!-- Filter Estado -->
-                <select name="estado" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100">
-                    <option value="">Todos los Estados</option>
-                    @foreach($estados as $estado)
-                        <option value="{{ $estado->nombre }}" {{ request('estado') === $estado->nombre ? 'selected' : '' }}>
-                            {{ ucfirst($estado->nombre) }}
                         </option>
                     @endforeach
                 </select>
@@ -117,7 +107,7 @@
                         <th class="py-3 px-4">Tipo / Categoría</th>
                         <th class="py-3 px-4">Marca y Modelo</th>
                         <th class="py-3 px-4">Ubicación y Puesto</th>
-                        <th class="py-3 px-4">Estado</th>
+                        <th class="py-3 px-4">Situación</th>
                         <th class="py-3 px-4">Garantía / Adq.</th>
                         <th class="py-3 px-4 text-right">Acciones</th>
                     </tr>

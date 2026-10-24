@@ -134,10 +134,13 @@ class Elemento extends Model
 
     public function scopeDisponibles(Builder $query): Builder
     {
-        return $query->whereHas('ultimoMovimiento', function ($q) {
-            $q->whereHas('estado', function ($sq) {
-                $sq->where('disponible', true);
-            })->whereNull('fecha_prestamo');
+        return $query->whereDoesntHave('tipo', function ($tq) {
+            $tq->where('nombre', 'basura tecnologica');
+        })->whereHas('ultimoMovimiento', function ($q) {
+            $q->where(function ($sub) {
+                $sub->whereNull('fecha_prestamo')
+                    ->orWhereNotNull('fecha_devolucion');
+            });
         });
     }
 
@@ -161,14 +164,8 @@ class Elemento extends Model
 
     public function scopeObsoletos(Builder $query): Builder
     {
-        return $query->where(function ($q) {
-            $q->whereHas('tipo', function ($tq) {
-                $tq->where('nombre', 'basura tecnologica');
-            })->orWhereHas('ultimoMovimiento', function ($mq) {
-                $mq->whereHas('estado', function ($eq) {
-                    $eq->whereIn('nombre', ['dado de baja', 'donado', 'transferido']);
-                });
-            });
+        return $query->whereHas('tipo', function ($tq) {
+            $tq->where('nombre', 'basura tecnologica');
         });
     }
 

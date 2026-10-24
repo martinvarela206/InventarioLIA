@@ -27,7 +27,6 @@ class StoreElementoRequest extends FormRequest
             'anio_compra' => "nullable|integer|min:1980|max:{$maxAnio}",
             'puesto' => 'nullable|string|max:50',
             'ubicacion_id' => 'nullable|exists:ubicaciones,id',
-            'estado_id' => 'nullable|exists:estados,id',
             'cantidad' => 'required|integer|min:1',
             'fecha_adquisicion' => 'nullable|date',
             'fecha_vencimiento_garantia' => 'nullable|date|after_or_equal:fecha_adquisicion',

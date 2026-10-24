@@ -17,7 +17,6 @@ class DevolucionMovimientoRequest extends FormRequest
             'fecha_devolucion' => 'nullable|date',
             'ubicacion_id' => 'required|exists:ubicaciones,id',
             'puesto' => 'nullable|string|max:50',
-            'estado_id' => 'required|exists:estados,id',
             'comentario' => 'nullable|string',
         ];
     }

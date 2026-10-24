@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Elemento;
 use App\Models\Tipo;
-use App\Models\Estado;
 
 use Illuminate\View\View;
 
@@ -19,7 +18,7 @@ class RevisionController extends Controller
             return view('revision.welcome');
         }
 
-        $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.estado']);
+        $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion']);
 
         if ($request->filled('search')) {
             $search = trim($request->input('search'));
@@ -36,9 +35,6 @@ class RevisionController extends Controller
                   })
                   ->orWhereHas('ultimoMovimiento.ubicacion', function ($uq) use ($search) {
                       $uq->where('nombre', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('ultimoMovimiento.estado', function ($eq) use ($search) {
-                      $eq->where('nombre', 'like', "%{$search}%");
                   });
             });
         }
@@ -54,16 +50,9 @@ class RevisionController extends Controller
             $query->where('descripcion', 'like', "%{$gb}%");
         }
 
-        if ($request->filled('estado')) {
-            $query->whereHas('ultimoMovimiento.estado', function ($q) use ($request) {
-                $q->where('nombre', $request->estado)->orWhere('id', $request->estado);
-            });
-        }
-
         $elementos = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
-        $estados = Estado::all();
         $tipos = Tipo::all();
 
-        return view('revision.index', compact('elementos', 'estados', 'tipos'));
+        return view('revision.index', compact('elementos', 'tipos'));
     }
 }

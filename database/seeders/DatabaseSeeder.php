@@ -20,7 +20,6 @@ class DatabaseSeeder extends Seeder
             TipoSeeder::class,
             AtributoSeeder::class,
             UbicacionSeeder::class,
-            EstadoSeeder::class,
             InventarioOdsSeeder::class,
             MovimientoFakeSeeder::class,
         ]);

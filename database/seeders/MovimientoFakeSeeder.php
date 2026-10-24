@@ -6,7 +6,6 @@ use Illuminate\Database\Seeder;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Ubicacion;
-use App\Models\Estado;
 use App\Models\Usuario;
 use App\Models\Tipo;
 use Carbon\Carbon;
@@ -23,15 +22,6 @@ class MovimientoFakeSeeder extends Seeder
         $adminUser = Usuario::where('email', 'admin@lia.unsj.edu.ar')->first() ?? Usuario::first();
         $tecUser = Usuario::where('email', 'tecnico@lia.unsj.edu.ar')->first() ?? $adminUser;
         $revUser = Usuario::where('email', 'revisor@lia.unsj.edu.ar')->first() ?? $adminUser;
-
-        // Estados
-        $estadoFuncionando = Estado::where('nombre', 'funcionando')->first();
-        $estadoNuevo = Estado::where('nombre', 'nuevo')->first();
-        $estadoAlmacenado = Estado::where('nombre', 'almacenado')->first();
-        $estadoPrestado = Estado::where('nombre', 'prestado')->first();
-        $estadoReparacion = Estado::where('nombre', 'en reparacion')->first();
-        $estadoVerificar = Estado::where('nombre', 'verificar funcionamiento')->first();
-        $estadoBaja = Estado::where('nombre', 'dado de baja')->first();
 
         // Ubicaciones
         $labFS = Ubicacion::where('nombre', 'Laboratorio Federico Sanchez')->first() ?? Ubicacion::first();
@@ -115,7 +105,6 @@ class MovimientoFakeSeeder extends Seeder
                 'tipo_movimiento' => 'externo_prestamo',
                 'ubicacion_id' => null,
                 'puesto' => null,
-                'estado_id' => $estadoPrestado->id,
                 'user_id' => $tecUser->id,
                 'fecha' => $fechaSalida,
                 'solicitante' => $sol['nombre'],
@@ -140,7 +129,6 @@ class MovimientoFakeSeeder extends Seeder
                 'tipo_movimiento' => 'externo_prestamo',
                 'ubicacion_id' => null,
                 'puesto' => null,
-                'estado_id' => $estadoPrestado->id,
                 'user_id' => $tecUser->id,
                 'fecha' => $salida,
                 'solicitante' => "Dr. Investigador Invitado #{$j}",
@@ -155,7 +143,6 @@ class MovimientoFakeSeeder extends Seeder
                 'tipo_movimiento' => 'interno',
                 'ubicacion_id' => $tallerHW->id,
                 'puesto' => null,
-                'estado_id' => $estadoFuncionando->id,
                 'user_id' => $tecUser->id,
                 'fecha' => $retorno,
                 'comentario' => "Reingreso conforme de préstamo externo. Retornado en perfecto estado operativo.",
@@ -176,7 +163,6 @@ class MovimientoFakeSeeder extends Seeder
                 'tipo_movimiento' => 'interno',
                 'ubicacion_id' => $labFS->id,
                 'puesto' => $nroPuesto,
-                'estado_id' => $estadoFuncionando->id,
                 'user_id' => $tecUser->id,
                 'fecha' => Carbon::now()->subMonths(2)->addDays($k),
                 'comentario' => "Asignación e instalación física en Laboratorio Federico Sánchez ({$nroPuesto})",
@@ -196,7 +182,6 @@ class MovimientoFakeSeeder extends Seeder
                 'tipo_movimiento' => 'interno',
                 'ubicacion_id' => $labPM->id,
                 'puesto' => $nroPuestoPM,
-                'estado_id' => $estadoFuncionando->id,
                 'user_id' => $tecUser->id,
                 'fecha' => Carbon::now()->subMonths(1)->addDays($m),
                 'comentario' => "Reubicación de puesto en Laboratorio Paola Moyano ({$nroPuestoPM})",
@@ -222,7 +207,6 @@ class MovimientoFakeSeeder extends Seeder
                 'tipo_movimiento' => 'interno',
                 'ubicacion_id' => $tallerHW->id,
                 'puesto' => 'Banco de Trabajo HW',
-                'estado_id' => ($fIdx % 2 === 0) ? $estadoReparacion->id : $estadoVerificar->id,
                 'user_id' => $tecUser->id,
                 'fecha' => Carbon::now()->subDays(6 - $fIdx),
                 'comentario' => "Intervención técnica: " . $fallas[$fIdx],
@@ -238,7 +222,6 @@ class MovimientoFakeSeeder extends Seeder
                 'tipo_movimiento' => 'interno',
                 'ubicacion_id' => $tallerHW->id,
                 'puesto' => 'Puesto Equivocado',
-                'estado_id' => $estadoAlmacenado->id,
                 'user_id' => $tecUser->id,
                 'fecha' => Carbon::now()->subDays(20),
                 'comentario' => 'Movimiento registrado con error de sala y puesto de destino.',
@@ -250,7 +233,6 @@ class MovimientoFakeSeeder extends Seeder
                 'tipo_movimiento' => 'interno',
                 'ubicacion_id' => $labFS->id,
                 'puesto' => 'Puesto 07',
-                'estado_id' => $estadoFuncionando->id,
                 'user_id' => $adminUser->id,
                 'fecha' => Carbon::now()->subDays(18),
                 'correccion_de_id' => $movError->id,

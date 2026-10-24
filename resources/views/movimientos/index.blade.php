@@ -35,7 +35,7 @@
                 <button type="submit" class="bg-amber-400 hover:bg-amber-500 text-black font-bold px-4 py-2 rounded-xl text-sm transition-colors">
                     Buscar
                 </button>
-                @if(request()->hasAny(['search', 'tipo_movimiento', 'estado_id', 'ubicacion_id']))
+                @if(request()->hasAny(['search', 'tipo_movimiento', 'ubicacion_id']))
                     <a href="{{ route('movimientos.index') }}" class="text-xs text-gray-500 hover:text-black self-center px-2">Limpiar</a>
                 @endif
             </div>
@@ -55,13 +55,6 @@
                         <option value="{{ $ub->id }}" {{ request('ubicacion_id') == $ub->id ? 'selected' : '' }}>{{ $ub->nombre }}</option>
                     @endforeach
                 </select>
-
-                <select name="estado_id" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700">
-                    <option value="">Todos los Estados</option>
-                    @foreach($estados as $est)
-                        <option value="{{ $est->id }}" {{ request('estado_id') == $est->id ? 'selected' : '' }}>{{ ucfirst($est->nombre) }}</option>
-                    @endforeach
-                </select>
             </div>
         </form>
     </div>
@@ -76,7 +69,7 @@
                         <th class="py-3 px-4">Tipo Evento</th>
                         <th class="py-3 px-4">Activo Involucrado</th>
                         <th class="py-3 px-4">Destino / Puesto</th>
-                        <th class="py-3 px-4">Estado</th>
+                        <th class="py-3 px-4">Situación</th>
                         <th class="py-3 px-4">Solicitante / Detalle</th>
                         <th class="py-3 px-4 text-right">Responsable</th>
                     </tr>

@@ -143,7 +143,7 @@
                                         {!! $m->presenter()->tipoBadge() !!}
                                         {!! $m->presenter()->estadoBadge() !!}
                                         @if($index === 0)
-                                            <span class="text-[10px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded">Estado Actual</span>
+                                            <span class="text-[10px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded">Último Movimiento</span>
                                         @endif
                                     </div>
                                     <span class="text-xs text-gray-500 font-mono">
@@ -184,7 +184,7 @@
                                         </div>
                                         <div class="flex items-center gap-3">
                                             <span>Registrado por: <strong class="text-gray-800">{{ $m->usuario?->nombre ?? 'Sistema' }}</strong></span>
-                                            <button type="button" onclick="abrirModalCorreccion({{ $m->id }}, '{{ $m->ubicacion_id }}', '{{ $m->puesto }}', '{{ $m->estado_id }}', '{{ addslashes($m->solicitante ?? '') }}')" class="text-xs text-amber-800 hover:text-black font-bold hover:underline bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded transition-colors">
+                                            <button type="button" onclick="abrirModalCorreccion({{ $m->id }}, '{{ $m->ubicacion_id }}', '{{ $m->puesto }}', '{{ addslashes($m->solicitante ?? '') }}')" class="text-xs text-amber-800 hover:text-black font-bold hover:underline bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded transition-colors">
                                                 Enmendar Error
                                             </button>
                                         </div>
@@ -295,15 +295,6 @@
                 </div>
             </div>
 
-            <div>
-                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Estado Operativo</label>
-                <select name="estado_id" id="correccion-estado" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold" required>
-                    @foreach(\App\Models\Estado::all() as $est)
-                        <option value="{{ $est->id }}">{{ ucfirst($est->nombre) }}</option>
-                    @endforeach
-                </select>
-            </div>
-
             <div id="campo-solicitante-correccion" class="hidden">
                 <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Solicitante del Préstamo</label>
                 <input type="text" name="solicitante" id="correccion-solicitante" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
@@ -346,7 +337,7 @@
         }
     }
 
-    function abrirModalCorreccion(movimientoId, ubicacionId, puesto, estadoId, solicitante) {
+    function abrirModalCorreccion(movimientoId, ubicacionId, puesto, solicitante) {
         document.getElementById('form-correccion').action = '/movimientos/' + movimientoId + '/correccion';
         document.getElementById('correccion-titulo').innerText = 'Enmendar Movimiento #' + movimientoId;
         
@@ -354,9 +345,6 @@
             document.getElementById('correccion-ubicacion').value = ubicacionId;
         }
         document.getElementById('correccion-puesto').value = puesto || '';
-        if (estadoId) {
-            document.getElementById('correccion-estado').value = estadoId;
-        }
         
         const wrapSolicitante = document.getElementById('campo-solicitante-correccion');
         if (solicitante) {

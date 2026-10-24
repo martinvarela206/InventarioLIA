@@ -22,16 +22,12 @@
         @if(request('gb'))
             <input type="hidden" name="gb" value="{{ request('gb') }}">
         @endif
-        @if(request('estado'))
-            <input type="hidden" name="estado" value="{{ request('estado') }}">
-        @endif
     </form>
 
     <div class="flex justify-end gap-4 mb-6 items-center">
         <form action="{{ route('revision.index') }}" method="GET" class="flex items-center">
             @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
             @if(request('tipo')) <input type="hidden" name="tipo" value="{{ request('tipo') }}"> @endif
-            @if(request('estado')) <input type="hidden" name="estado" value="{{ request('estado') }}"> @endif
             
             <div class="flex items-center rounded-full border {{ request('gb') ? 'bg-amber-700 border-amber-700 text-white' : 'border-amber-700 text-amber-700 hover:bg-amber-50' }} overflow-hidden transition-colors">
                 @if(request('gb'))
@@ -69,25 +65,6 @@
                 @endforeach
             </select>
         </div>
-        
-        <div class="flex items-center rounded-full border {{ request('estado') ? 'bg-amber-700 border-amber-700 text-white' : 'border-amber-700 text-amber-700 hover:bg-amber-50' }} overflow-hidden transition-colors">
-            @if(request('estado'))
-                <a href="{{ route('revision.index', array_merge(request()->except('estado'))) }}" class="pl-4 pr-1 text-sm font-semibold hover:text-amber-200 cursor-pointer leading-none" title="Quitar filtro">Estado</a>
-            @else
-                <span class="pl-4 pr-1 text-sm font-semibold cursor-pointer leading-none" onclick="this.parentElement.querySelector('select').focus()">Estado</span>
-            @endif
-            <select 
-                name="estado" 
-                onchange="filterByEstado(this.value)" 
-                class="w-32 py-1 px-1 bg-transparent border-none focus:ring-0 text-sm font-semibold {{ request('estado') ? 'text-white' : 'text-amber-700' }} focus:outline-none [&>option]:text-gray-900 [&>option]:bg-white [&>option:hover]:bg-amber-100 [&>option:checked]:bg-amber-200">
-                <option value="">Todos</option>
-                @foreach($estados as $estado)
-                    <option value="{{ $estado->nombre }}" {{ request('estado') === $estado->nombre ? 'selected' : '' }}>
-                        {{ ucfirst($estado->nombre) }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
     </div>
 
     <script>
@@ -97,17 +74,6 @@
                 url.searchParams.set('tipo', tipoNombre);
             } else {
                 url.searchParams.delete('tipo');
-            }
-            url.searchParams.delete('page');
-            window.location.href = url.toString();
-        }
-        
-        function filterByEstado(estadoNombre) {
-            const url = new URL(window.location.href);
-            if (estadoNombre) {
-                url.searchParams.set('estado', estadoNombre);
-            } else {
-                url.searchParams.delete('estado');
             }
             url.searchParams.delete('page');
             window.location.href = url.toString();
@@ -147,7 +113,7 @@
                 <tr class="bg-amber-400 text-amber-900 uppercase text-sm leading-normal">
                     <th class="py-3 px-6 text-left">Nro LIA</th>
                     <th class="py-3 px-6 text-left">Descripción</th>
-                    <th class="py-3 px-6 text-left">Estado</th>
+                    <th class="py-3 px-6 text-left">Situación</th>
                     <th class="py-3 px-6 text-left">Vencimiento</th>
                     <th class="py-3 px-6 text-left">Ubicación Actual</th>
                 </tr>
@@ -164,15 +130,8 @@
                             {{ $elemento->descripcion_texto }}
                         </td>
                         <td class="py-2 px-4 md:py-3 md:px-6 text-left block md:table-cell flex justify-between md:block items-center">
-                             <span class="font-bold md:hidden text-amber-900">Estado:</span>
-                            <span class="px-2 py-1 rounded text-xs font-semibold
-                                {{ $elemento->ultimoMovimiento?->estado?->nombre === 'prestado' ? 'bg-blue-200 text-blue-800' : '' }}
-                                {{ $elemento->ultimoMovimiento?->estado?->nombre === 'dado de baja' ? 'bg-red-200 text-red-800' : '' }}
-                                {{ $elemento->ultimoMovimiento?->estado?->nombre === 'funcionando' ? 'bg-green-200 text-green-800' : '' }}
-                                {{ $elemento->ultimoMovimiento?->estado?->nombre === 'guardado' ? 'bg-yellow-200 text-yellow-800' : '' }}
-                                {{ $elemento->ultimoMovimiento?->estado?->nombre === 'ingresado' ? 'bg-gray-200 text-gray-800' : '' }}">
-                                {{ ucfirst($elemento->ultimoMovimiento?->estado?->nombre ?? 'N/A') }}
-                            </span>
+                             <span class="font-bold md:hidden text-amber-900">Situación:</span>
+                            {!! $elemento->presenter()->statusBadge() !!}
                         </td>
                         <td class="py-2 px-4 md:py-3 md:px-6 text-left block md:table-cell flex justify-between md:block">
                              <span class="font-bold md:hidden text-amber-900">Vencimiento:</span>

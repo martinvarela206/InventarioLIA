@@ -97,23 +97,13 @@
         <!-- 4. MOVIMIENTO INICIAL OBLIGATORIO -->
         <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
             <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">4. Asignación y Movimiento Inicial Automático</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Sala o Armario Inicial <span class="text-red-500 font-bold">*</span></label>
-                    <select name="ubicacion_id" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold">
-                        @foreach($ubicaciones as $ub)
-                            <option value="{{ $ub->id }}" {{ $ub->nombre === 'Armario de HW' ? 'selected' : '' }}>{{ $ub->nombre }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Estado Inicial <span class="text-red-500 font-bold">*</span></label>
-                    <select name="estado_id" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold">
-                        @foreach($estados as $est)
-                            <option value="{{ $est->id }}" {{ $est->nombre === 'nuevo' ? 'selected' : '' }}>{{ ucfirst($est->nombre) }}</option>
-                        @endforeach
-                    </select>
-                </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Sala o Armario Inicial <span class="text-red-500 font-bold">*</span></label>
+                <select name="ubicacion_id" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold">
+                    @foreach($ubicaciones as $ub)
+                        <option value="{{ $ub->id }}" {{ $ub->nombre === 'Armario de HW' ? 'selected' : '' }}>{{ $ub->nombre }}</option>
+                    @endforeach
+                </select>
             </div>
         </div>
 

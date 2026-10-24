@@ -54,7 +54,7 @@
                     <th class="py-1.5 px-2 border border-gray-400">Identificadores</th>
                     <th class="py-1.5 px-2 border border-gray-400">Tipo</th>
                     <th class="py-1.5 px-2 border border-gray-400">Marca / Modelo / Serie</th>
-                    <th class="py-1.5 px-2 border border-gray-400">Estado Sistema</th>
+                    <th class="py-1.5 px-2 border border-gray-400">Situación</th>
                     <th class="py-1.5 px-2 border border-gray-400 w-36 text-center">Verificación Física</th>
                     <th class="py-1.5 px-2 border border-gray-400 w-44">Observaciones in situ</th>
                 </tr>
@@ -81,7 +81,7 @@
                             @endif
                         </td>
                         <td class="py-1.5 px-2 border border-gray-400 font-medium">
-                            {{ ucfirst($u?->estado?->nombre ?? 'N/A') }}
+                            {{ $u?->esPrestamo() ? 'Prestado' : 'En Sala' }}
                         </td>
                         <td class="py-1.5 px-2 border border-gray-400 text-center whitespace-nowrap">
                             <span class="inline-block mr-2">[ &nbsp; ] OK</span>

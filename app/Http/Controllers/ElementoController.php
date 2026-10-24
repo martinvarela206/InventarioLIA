@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
-use App\Models\Estado;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
 use App\Http\Requests\StoreElementoRequest;
@@ -26,7 +25,7 @@ class ElementoController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Elemento::with(['tipo', 'ultimoMovimiento.estado', 'ultimoMovimiento.ubicacion']);
+        $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion']);
 
         if ($request->filled('search')) {
             $search = trim($request->input('search'));
@@ -36,12 +35,6 @@ class ElementoController extends Controller
         if ($request->filled('tipo')) {
             $query->whereHas('tipo', function ($q) use ($request) {
                 $q->where('nombre', $request->tipo)->orWhere('id', $request->tipo);
-            });
-        }
-
-        if ($request->filled('estado')) {
-            $query->whereHas('ultimoMovimiento.estado', function ($q) use ($request) {
-                $q->where('nombre', $request->estado)->orWhere('id', $request->estado);
             });
         }
 
@@ -73,11 +66,10 @@ class ElementoController extends Controller
         }
 
         $elementos = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
-        $estados = Estado::all();
         $tipos = Tipo::all();
         $ubicaciones = Ubicacion::all();
 
-        return view('elementos.index', compact('elementos', 'estados', 'tipos', 'ubicaciones'));
+        return view('elementos.index', compact('elementos', 'tipos', 'ubicaciones'));
     }
 
     /**
@@ -87,9 +79,8 @@ class ElementoController extends Controller
     {
         $tipos = Tipo::with('atributos')->orderBy('nombre')->get();
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
-        $estados = Estado::orderBy('nombre')->get();
 
-        return view('elementos.create', compact('tipos', 'ubicaciones', 'estados'));
+        return view('elementos.create', compact('tipos', 'ubicaciones'));
     }
 
     /**
@@ -139,9 +130,6 @@ class ElementoController extends Controller
             }
 
             // GARANTIZAR MOVIMIENTO INICIAL AUTOMÁTICO
-            $defaultEstado = Estado::where('nombre', 'nuevo')->first() ?? Estado::first();
-            $estadoId = !empty($validated['estado_id']) ? $validated['estado_id'] : $defaultEstado->id;
-
             $defaultUbicacion = Ubicacion::where('nombre', 'Armario de HW')->first() ?? Ubicacion::first();
             $ubicacionId = !empty($validated['ubicacion_id']) ? $validated['ubicacion_id'] : $defaultUbicacion->id;
 
@@ -150,7 +138,6 @@ class ElementoController extends Controller
                 'tipo_movimiento' => 'interno',
                 'ubicacion_id' => $ubicacionId,
                 'puesto' => $validated['puesto'] ?? null,
-                'estado_id' => $estadoId,
                 'user_id' => auth()->id() ?? Usuario::first()->id,
                 'fecha' => now(),
                 'comentario' => 'Alta inicial del elemento en el inventario',
@@ -172,9 +159,7 @@ class ElementoController extends Controller
             'tipo.atributos',
             'valoresAtributos.atributo',
             'ultimoMovimiento.ubicacion',
-            'ultimoMovimiento.estado',
             'movimientos.ubicacion',
-            'movimientos.estado',
             'movimientos.usuario',
         ]);
 

@@ -6,7 +6,6 @@ use App\Models\Movimiento;
 use App\Models\Elemento;
 use App\Models\Usuario;
 use App\Models\Ubicacion;
-use App\Models\Estado;
 use App\Http\Requests\StoreMovimientoRequest;
 use App\Http\Requests\DevolucionMovimientoRequest;
 use App\Http\Requests\StoreEnmiendaRequest;
@@ -24,7 +23,7 @@ class MovimientoController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Movimiento::with(['elemento.tipo', 'usuario', 'ubicacion', 'estado']);
+        $query = Movimiento::with(['elemento.tipo', 'usuario', 'ubicacion']);
 
         if ($request->filled('search')) {
             $search = trim($request->input('search'));
@@ -40,19 +39,12 @@ class MovimientoController extends Controller
                   })
                   ->orWhereHas('ubicacion', function ($uq) use ($search) {
                       $uq->where('nombre', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('estado', function ($esq) use ($search) {
-                      $esq->where('nombre', 'like', "%{$search}%");
                   });
             });
         }
 
         if ($request->filled('tipo_movimiento')) {
             $query->where('tipo_movimiento', $request->tipo_movimiento);
-        }
-
-        if ($request->filled('estado_id')) {
-            $query->where('estado_id', $request->estado_id);
         }
 
         if ($request->filled('ubicacion_id')) {
@@ -68,10 +60,9 @@ class MovimientoController extends Controller
         }
 
         $movimientos = $query->orderBy('fecha', 'desc')->paginate(20)->withQueryString();
-        $estados = Estado::all();
         $ubicaciones = Ubicacion::all();
 
-        return view('movimientos.index', compact('movimientos', 'estados', 'ubicaciones'));
+        return view('movimientos.index', compact('movimientos', 'ubicaciones'));
     }
 
     /**
@@ -80,18 +71,17 @@ class MovimientoController extends Controller
     public function rapido(Request $request): View
     {
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
-        $estados = Estado::orderBy('nombre')->get();
         $elementoPreseleccionado = null;
 
         if ($request->filled('elemento_id')) {
-            $elementoPreseleccionado = Elemento::with(['tipo', 'ultimoMovimiento.estado', 'ultimoMovimiento.ubicacion'])->find($request->elemento_id);
+            $elementoPreseleccionado = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion'])->find($request->elemento_id);
         } elseif ($request->filled('nro_lia')) {
-            $elementoPreseleccionado = Elemento::with(['tipo', 'ultimoMovimiento.estado', 'ultimoMovimiento.ubicacion'])
+            $elementoPreseleccionado = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion'])
                 ->where('nro_lia', $request->nro_lia)
                 ->first();
         }
 
-        return view('movimientos.rapido', compact('ubicaciones', 'estados', 'elementoPreseleccionado'));
+        return view('movimientos.rapido', compact('ubicaciones', 'elementoPreseleccionado'));
     }
 
     /**
@@ -104,7 +94,7 @@ class MovimientoController extends Controller
             return response()->json([]);
         }
 
-        $elementos = Elemento::with(['tipo', 'ultimoMovimiento.estado', 'ultimoMovimiento.ubicacion'])
+        $elementos = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion'])
             ->buscarIdentificador($term)
             ->limit(10)
             ->get()
@@ -118,7 +108,6 @@ class MovimientoController extends Controller
                     'marca' => $el->marca,
                     'modelo' => $el->modelo,
                     'puesto' => $el->puesto,
-                    'estado_actual' => $ultimo?->estado?->nombre ?? 'N/A',
                     'ubicacion_actual' => $ultimo?->ubicacion?->nombre ?? 'N/A',
                     'es_prestamo_activo' => $ultimo && $ultimo->esPrestamo() && !$ultimo->fecha_devolucion,
                     'prestamo_id' => ($ultimo && $ultimo->esPrestamo() && !$ultimo->fecha_devolucion) ? $ultimo->id : null,
@@ -154,7 +143,6 @@ class MovimientoController extends Controller
             'tipo_movimiento' => $tipoMovimiento,
             'ubicacion_id' => $esPrestamo ? null : ($validated['ubicacion_id'] ?? null),
             'puesto' => $esPrestamo ? null : ($validated['puesto'] ?? null),
-            'estado_id' => $validated['estado_id'],
             'user_id' => auth()->id() ?? Usuario::first()->id,
             'fecha' => $fecha,
             'solicitante' => $esPrestamo ? ($validated['solicitante'] ?? null) : null,
@@ -188,7 +176,6 @@ class MovimientoController extends Controller
                 'tipo_movimiento' => 'interno',
                 'ubicacion_id' => $validated['ubicacion_id'],
                 'puesto' => $validated['puesto'] ?? null,
-                'estado_id' => $validated['estado_id'],
                 'user_id' => auth()->id() ?? Usuario::first()->id,
                 'fecha' => now(),
                 'comentario' => 'Reingreso de préstamo externo. ' . ($validated['comentario'] ?? ''),

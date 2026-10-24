@@ -72,19 +72,9 @@
             <form id="form-devolucion" method="POST" action="{{ $elementoPreseleccionado && $elementoPreseleccionado->ultimoMovimiento ? route('movimientos.devolucion', $elementoPreseleccionado->ultimoMovimiento->id) : '#' }}">
                 @csrf
                 <div class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fecha de Devolución</label>
-                            <input type="date" name="fecha_devolucion" value="{{ date('Y-m-d') }}" class="w-full px-3 py-2 border rounded-lg bg-white font-medium">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Estado al Reingresar</label>
-                            <select name="estado_id" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold">
-                                @foreach($estados as $est)
-                                    <option value="{{ $est->id }}" {{ $est->nombre === 'funcionando' ? 'selected' : '' }}>{{ ucfirst($est->nombre) }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fecha de Devolución</label>
+                        <input type="date" name="fecha_devolucion" value="{{ date('Y-m-d') }}" class="w-full px-3 py-2 border rounded-lg bg-white font-medium">
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -155,14 +145,6 @@
                             <input type="text" name="puesto" placeholder="Ej. Puesto 03, Mesa 12" class="w-full px-3.5 py-2.5 border rounded-xl bg-white">
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Estado Operativo</label>
-                        <select name="estado_id" id="select-estado-interno" class="w-full px-3.5 py-2.5 border rounded-xl bg-white font-semibold">
-                            @foreach($estados as $est)
-                                <option value="{{ $est->id }}" {{ $est->nombre === 'funcionando' ? 'selected' : '' }}>{{ ucfirst($est->nombre) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
                 </div>
 
                 <!-- Campos de Préstamo Externo -->
@@ -171,18 +153,9 @@
                         <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Docente / Investigador / Cátedra Solicitante <span class="text-red-500 font-bold">*</span></label>
                         <input type="text" name="solicitante" id="input-solicitante" placeholder="Ej. Dr. Juan Pérez (Cátedra Algoritmos)" class="w-full px-3.5 py-2.5 border rounded-xl bg-white font-semibold">
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fecha de Salida</label>
-                            <input type="date" name="fecha_prestamo" value="{{ date('Y-m-d') }}" class="w-full px-3.5 py-2.5 border rounded-xl bg-white font-medium">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Estado al Prestar</label>
-                            <select class="w-full px-3.5 py-2.5 border rounded-xl bg-gray-100 font-semibold text-gray-600" disabled>
-                                <option>Prestado</option>
-                            </select>
-                            <input type="hidden" name="estado_id_prestamo" id="input-estado-prestado-id" value="{{ optional($estados->firstWhere('nombre', 'prestado'))->id }}">
-                        </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fecha de Salida</label>
+                        <input type="date" name="fecha_prestamo" value="{{ date('Y-m-d') }}" class="w-full px-3.5 py-2.5 border rounded-xl bg-white font-medium">
                     </div>
                 </div>
 
@@ -285,8 +258,6 @@
         const btnPrestamo = document.getElementById('btn-tipo-prestamo');
         const camposInterno = document.getElementById('campos-interno');
         const camposPrestamo = document.getElementById('campos-prestamo');
-        const selectEstado = document.getElementById('select-estado-interno');
-        const inputEstadoPrestado = document.getElementById('input-estado-prestado-id');
 
         if (tipo === 'interno') {
             btnInterno.classList.add('border-amber-500', 'bg-amber-50', 'text-amber-900');
@@ -306,13 +277,10 @@
 
             camposInterno.classList.add('hidden');
             camposPrestamo.classList.remove('hidden');
-            if (inputEstadoPrestado && selectEstado) {
-                selectEstado.value = inputEstadoPrestado.value;
-            }
         }
     }
 
-    // Interceptar submit para asignar estado prestado si corresponde
+    // Interceptar submit para verificar elemento seleccionado
     document.getElementById('form-movimiento')?.addEventListener('submit', function(e) {
         const elementoId = document.getElementById('form-elemento-id').value;
         if (!elementoId) {
@@ -320,12 +288,6 @@
             alert('Por favor busca y selecciona un elemento antes de guardar el movimiento.');
             document.getElementById('buscar-input').focus();
             return;
-        }
-
-        const esPrestamo = document.querySelector('input[name="tipo_movimiento"]:checked').value === 'externo_prestamo';
-        if (esPrestamo) {
-            const prestadoId = document.getElementById('input-estado-prestado-id').value;
-            document.getElementById('select-estado-interno').value = prestadoId;
         }
     });
 </script>

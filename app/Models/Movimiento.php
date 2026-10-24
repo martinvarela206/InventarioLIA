@@ -23,7 +23,6 @@ class Movimiento extends Model
         'tipo_movimiento',
         'ubicacion_id',
         'puesto',
-        'estado_id',
         'user_id',
         'fecha',
         'solicitante',
@@ -69,7 +68,6 @@ class Movimiento extends Model
             'tipo_movimiento' => $this->tipo_movimiento,
             'ubicacion_id' => $datos['ubicacion_id'] ?? $this->ubicacion_id,
             'puesto' => array_key_exists('puesto', $datos) ? $datos['puesto'] : $this->puesto,
-            'estado_id' => $datos['estado_id'] ?? $this->estado_id,
             'user_id' => $usuarioId,
             'fecha' => now(),
             'solicitante' => array_key_exists('solicitante', $datos) ? $datos['solicitante'] : $this->solicitante,
@@ -103,11 +101,6 @@ class Movimiento extends Model
     public function ubicacion(): BelongsTo
     {
         return $this->belongsTo(Ubicacion::class, 'ubicacion_id');
-    }
-
-    public function estado(): BelongsTo
-    {
-        return $this->belongsTo(Estado::class, 'estado_id');
     }
 
     public function usuario(): BelongsTo

@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('tipo_movimiento', 30)->default('interno'); // 'interno', 'externo_prestamo'
             $table->foreignId('ubicacion_id')->nullable()->constrained('ubicaciones')->onDelete('set null');
             $table->string('puesto', 50)->nullable();
-            $table->foreignId('estado_id')->constrained('estados')->onDelete('restrict');
             $table->foreignId('user_id')->constrained('usuarios')->onDelete('cascade');
             $table->dateTime('fecha');
             $table->string('solicitante', 150)->nullable();

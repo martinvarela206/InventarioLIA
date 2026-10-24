@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
-use App\Models\Estado;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
 use Carbon\Carbon;
@@ -124,7 +123,6 @@ class ImportarInventarioOdsCommand extends Command
                 $rawMarca = $colMap['marca'] !== null && isset($rowVals[$colMap['marca']]) ? trim($rowVals[$colMap['marca']]) : null;
                 $rawModelo = $colMap['modelo'] !== null && isset($rowVals[$colMap['modelo']]) ? trim($rowVals[$colMap['modelo']]) : null;
                 $rawUbicacion = $colMap['ubicacion'] !== null && isset($rowVals[$colMap['ubicacion']]) ? trim($rowVals[$colMap['ubicacion']]) : 'Administracion';
-                $rawEstado = $colMap['estado'] !== null && isset($rowVals[$colMap['estado']]) ? trim($rowVals[$colMap['estado']]) : 'funcionando';
                 $rawFecha = $colMap['fecha'] !== null && isset($rowVals[$colMap['fecha']]) ? trim($rowVals[$colMap['fecha']]) : null;
                 $rawCantidad = $colMap['cantidad'] !== null && isset($rowVals[$colMap['cantidad']]) ? (int)$rowVals[$colMap['cantidad']] : 1;
                 $rawComentarios = $colMap['comentarios'] !== null && isset($rowVals[$colMap['comentarios']]) ? trim($rowVals[$colMap['comentarios']]) : null;
@@ -176,9 +174,8 @@ class ImportarInventarioOdsCommand extends Command
                     $puesto = "Puesto " . str_pad($m[1], 2, '0', STR_PAD_LEFT);
                 }
 
-                // Resolver Ubicación y Estado estrictamente canónicos
+                // Resolver Ubicación canónica
                 $ubicacionModel = Ubicacion::resolverUbicacionCanonica($rawUbicacion ?: 'Administracion');
-                $estadoModel = $this->resolverEstado($rawEstado);
 
                 // Fecha del movimiento
                 $fechaMovimiento = $this->parsearFecha($rawFecha);
@@ -211,18 +208,13 @@ class ImportarInventarioOdsCommand extends Command
                 }
 
                 // Registrar movimiento inicial histórico
-                $esPrestamo = mb_strtolower($estadoModel->nombre) === 'prestado';
-
                 Movimiento::create([
                     'elemento_id' => $elemento->id,
-                    'tipo_movimiento' => $esPrestamo ? 'externo_prestamo' : 'interno',
-                    'ubicacion_id' => $esPrestamo ? null : $ubicacionModel->id,
+                    'tipo_movimiento' => 'interno',
+                    'ubicacion_id' => $ubicacionModel->id,
                     'puesto' => $puesto,
-                    'estado_id' => $estadoModel->id,
                     'user_id' => $defaultUser->id,
                     'fecha' => $fechaMovimiento,
-                    'solicitante' => $esPrestamo ? ($rawComentarios ?: 'Préstamo histórico ODS') : null,
-                    'fecha_prestamo' => $esPrestamo ? $fechaMovimiento->toDateString() : null,
                     'comentario' => "Carga inicial histórica desde planilla ODS ({$sheetName})",
                 ]);
 
@@ -287,13 +279,7 @@ class ImportarInventarioOdsCommand extends Command
     private function mapearColumnas(array $h0, array $h1, string $sheetName): array
     {
         $map = [
-            'data_start_row' => 2,
-            'lia' => null,
-            'unsj' => null,
-            'marca' => null,
-            'modelo' => null,
-            'ubicacion' => null,
-            'estado' => null,
+            'data_start_row' => 1,
             'fecha' => null,
             'cantidad' => null,
             'comentarios' => null,
@@ -301,6 +287,11 @@ class ImportarInventarioOdsCommand extends Command
             'ram' => null,
             'disco' => null,
             'anio' => null,
+            'lia' => null,
+            'unsj' => null,
+            'marca' => null,
+            'modelo' => null,
+            'ubicacion' => null,
         ];
 
         // Caso especial: Basura Tecnologica tiene fila 0 como "PCs" y fila 1 como encabezados reales
@@ -311,7 +302,6 @@ class ImportarInventarioOdsCommand extends Command
                 if (str_contains($colLower, 'lia')) $map['lia'] = $idx;
                 elseif (str_contains($colLower, 'inventario')) $map['unsj'] = $idx;
                 elseif (str_contains($colLower, 'marca')) $map['marca'] = $idx;
-                elseif (str_contains($colLower, 'estado')) $map['estado'] = $idx;
                 elseif (str_contains($colLower, 'cpu')) $map['procesador'] = $idx;
                 elseif (str_contains($colLower, 'ram')) $map['ram'] = $idx;
                 elseif (str_contains($colLower, 'disco')) $map['disco'] = $idx;
@@ -332,7 +322,6 @@ class ImportarInventarioOdsCommand extends Command
             } elseif (str_contains($colLower, 'marca')) $map['marca'] = $idx;
             elseif (str_contains($colLower, 'modelo') || str_contains($colLower, 'tipo')) $map['modelo'] = $idx;
             elseif (str_contains($colLower, 'ubicaci')) $map['ubicacion'] = $idx;
-            elseif (str_contains($colLower, 'estado')) $map['estado'] = $idx;
             elseif (str_contains($colLower, 'cantidad')) $map['cantidad'] = $idx;
             elseif (str_contains($colLower, 'comentario')) $map['comentarios'] = $idx;
             elseif (str_contains($colLower, 'capacidad')) $map['disco'] = $idx;
@@ -381,38 +370,6 @@ class ImportarInventarioOdsCommand extends Command
         ];
 
         return $map[$clean] ?? 'accesorio';
-    }
-
-    private function resolverEstado(string $raw): Estado
-    {
-        $clean = mb_strtolower(trim($raw), 'UTF-8');
-
-        $map = [
-            'funcionando' => 'funcionando',
-            'usado' => 'funcionando',
-            'bueno' => 'funcionando',
-            'almacenado' => 'almacenado',
-            'guardado' => 'almacenado',
-            'nuevo' => 'nuevo',
-            'en reparacion' => 'en reparacion',
-            'reparacion' => 'en reparacion',
-            'no funciona' => 'en reparacion',
-            'verificar funcionamiento' => 'verificar funcionamiento',
-            'verificar' => 'verificar funcionamiento',
-            'prestado' => 'prestado',
-            'donado' => 'donado',
-            'transferido' => 'transferido',
-            'dado de baja' => 'dado de baja',
-            'baja' => 'dado de baja',
-            'obsoleto' => 'dado de baja',
-        ];
-
-        $nombre = $map[$clean] ?? 'funcionando';
-
-        return Estado::firstOrCreate(['nombre' => $nombre], [
-            'descripcion' => ucfirst($nombre),
-            'disponible' => in_array($nombre, ['funcionando', 'almacenado', 'nuevo']),
-        ]);
     }
 
     private function limpiarIdentificador(?string $val): ?string

@@ -6,7 +6,6 @@ use Illuminate\Database\Seeder;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Ubicacion;
-use App\Models\Estado;
 use App\Models\Usuario;
 use Carbon\Carbon;
 
@@ -21,11 +20,6 @@ class MovimientoSeeder extends Seeder
         $adminUser = Usuario::where('email', 'admin@lia.unsj.edu.ar')->first() ?? Usuario::first();
         $tecUser = Usuario::where('email', 'tecnico@lia.unsj.edu.ar')->first() ?? $adminUser;
 
-        $estadoFuncionando = Estado::where('nombre', 'funcionando')->first();
-        $estadoAlmacenado = Estado::where('nombre', 'almacenado')->first();
-        $estadoPrestado = Estado::where('nombre', 'prestado')->first();
-        $estadoReparacion = Estado::where('nombre', 'en reparacion')->first();
-
         $ubicacionFS = Ubicacion::where('nombre', 'Laboratorio Federico Sanchez')->first() ?? Ubicacion::first();
         $ubicacionRedes = Ubicacion::where('nombre', 'Laboratorio Redes')->first() ?? Ubicacion::first();
         $ubicacionArmario = Ubicacion::where('nombre', 'Armario de HW')->first() ?? Ubicacion::first();
@@ -37,7 +31,6 @@ class MovimientoSeeder extends Seeder
                 'tipo_movimiento' => 'interno',
                 'ubicacion_id' => $ubicacionArmario->id,
                 'puesto' => null,
-                'estado_id' => $estadoAlmacenado->id,
                 'user_id' => $adminUser->id,
                 'fecha' => Carbon::now()->subMonths(6),
                 'comentario' => 'Ingreso patrimonial y almacenamiento inicial en Armario de HW',
@@ -50,7 +43,6 @@ class MovimientoSeeder extends Seeder
                     'tipo_movimiento' => 'interno',
                     'ubicacion_id' => $ubicacionFS->id,
                     'puesto' => $elemento->puesto,
-                    'estado_id' => $estadoFuncionando->id,
                     'user_id' => $tecUser->id,
                     'fecha' => Carbon::now()->subMonths(3),
                     'comentario' => "Instalación en laboratorio y puesta en funcionamiento en {$elemento->puesto}",
@@ -61,7 +53,6 @@ class MovimientoSeeder extends Seeder
                     'tipo_movimiento' => 'interno',
                     'ubicacion_id' => $ubicacionRedes->id,
                     'puesto' => 'Rack Principal',
-                    'estado_id' => $estadoFuncionando->id,
                     'user_id' => $tecUser->id,
                     'fecha' => Carbon::now()->subMonths(4),
                     'comentario' => 'Conexión a patchera troncal en Laboratorio Redes',
@@ -73,7 +64,6 @@ class MovimientoSeeder extends Seeder
                     'tipo_movimiento' => 'externo_prestamo',
                     'ubicacion_id' => null,
                     'puesto' => null,
-                    'estado_id' => $estadoPrestado->id,
                     'user_id' => $tecUser->id,
                     'fecha' => Carbon::now()->subDays(12),
                     'solicitante' => 'Dra. María González (Cátedra Redes)',
