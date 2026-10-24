@@ -5,18 +5,18 @@
             <h3 class="text-white font-bold text-4xl leading-tight mb-3">Gestiona el Inventario y Tickets de Incidencias del LIA de manera segura y ordenada.</h3>
             <h3 class="text-white font-bold text-4xl leading-tight mb-3">¡Todo bajo control!</h3>
             
-            <div class="flex gap-6 justify-center my-4">
+            <div class="flex gap-4 sm:gap-6 justify-center my-4 flex-wrap">
                 @auth
-                    <a href="{{ route('revision.index') }}" class="bg-[#dba800] text-[#111] px-6 py-2.5 rounded border-4 border-[#dba800] font-medium hover:bg-[#fbc101] hover:border-[#fbc101] transition-all duration-200">
+                    <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="bg-[#dba800] text-[#111] px-6 py-2.5 rounded border-4 border-[#dba800] font-bold hover:bg-[#fbc101] hover:border-[#fbc101] transition-all duration-200">
                         Ir al Panel
                     </a>
                 @else
-                    <a href="{{ route('login') }}" class="bg-[#dba800] text-[#111] px-6 py-2.5 rounded border-4 border-[#dba800] font-medium hover:bg-[#fbc101] hover:border-[#fbc101] transition-all duration-200">
+                    <a href="{{ route('login') }}" class="bg-[#dba800] text-[#111] px-6 py-2.5 rounded border-4 border-[#dba800] font-bold hover:bg-[#fbc101] hover:border-[#fbc101] transition-all duration-200">
                         Ingresar
                     </a>
-                    <!-- <a href="{{ route('register') }}" class="bg-black/25 backdrop-blur-md text-[#dba800] px-6 py-2.5 rounded border-4 border-[#dba800] font-medium hover:bg-[#fbc101] hover:text-[#111] hover:border-[#fbc101] transition-all duration-200">
+                    <a href="{{ route('register') }}" class="bg-black/40 backdrop-blur-md text-[#dba800] px-6 py-2.5 rounded border-4 border-[#dba800] font-bold hover:bg-[#fbc101] hover:text-[#111] hover:border-[#fbc101] transition-all duration-200">
                         Registrarse
-                    </a> -->
+                    </a>
                 @endauth
             </div>
         </div>

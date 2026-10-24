@@ -22,6 +22,21 @@
                         <a href="#lia1" class="text-[#111] font-medium border-b-2 border-transparent hover:border-[#111] transition-colors">LIA</a>
                         <a href="#lia2" class="text-[#111] font-medium border-b-2 border-transparent hover:border-[#111] transition-colors">Personal</a>
                     </nav>
+
+                    <div class="flex items-center gap-3 pl-4 border-l border-amber-600/40">
+                        @auth
+                            <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="text-[#111] font-bold text-sm px-3.5 py-1.5 rounded-lg bg-black/10 hover:bg-black/15 transition-all">
+                                Ir al Panel
+                            </a>
+                        @else
+                            <a href="{{ route('login') }}" class="text-[#111] font-bold text-sm px-3.5 py-1.5 rounded-lg hover:bg-amber-400 transition-colors">
+                                Ingresar
+                            </a>
+                            <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] hover:bg-black/80 font-extrabold text-sm px-4 py-1.5 rounded-lg transition-colors shadow-sm">
+                                Registrarse
+                            </a>
+                        @endauth
+                    </div>
                 @else
                     <nav class="flex items-center gap-2">
                         @auth
@@ -58,7 +73,8 @@
                                 </button>
                             </form>
                         @else
-                            <a href="{{ route('login') }}" class="text-[#111] font-semibold px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 transition-colors">Iniciar sesión</a>
+                            <a href="{{ route('login') }}" class="text-[#111] font-semibold px-3.5 py-1.5 rounded-lg hover:bg-amber-400 transition-colors text-sm">Iniciar sesión</a>
+                            <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] hover:bg-black/80 font-bold text-sm px-3.5 py-1.5 rounded-lg transition-colors shadow-sm">Registrarse</a>
                         @endauth
                     </div>
                 @endif
@@ -72,6 +88,15 @@
                 <a href="#sistema-lia" class="text-[#111] font-medium py-1.5 px-3 rounded hover:bg-amber-400">Sistema LIA</a>
                 <a href="#lia1" class="text-[#111] font-medium py-1.5 px-3 rounded hover:bg-amber-400">LIA</a>
                 <a href="#lia2" class="text-[#111] font-medium py-1.5 px-3 rounded hover:bg-amber-400">Personal</a>
+                <div class="h-px bg-amber-600/40 my-2"></div>
+                @auth
+                    <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="text-[#111] font-bold py-2 px-3 rounded bg-amber-400 text-center">Ir al Panel</a>
+                @else
+                    <div class="flex items-center gap-2 px-1 py-1">
+                        <a href="{{ route('login') }}" class="text-[#111] font-bold py-2 px-3 rounded bg-amber-400/80 hover:bg-amber-400 flex-1 text-center text-sm">Ingresar</a>
+                        <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] font-bold py-2 px-3 rounded flex-1 text-center text-sm shadow-sm">Registrarse</a>
+                    </div>
+                @endauth
             @else
                 @auth
                     @if(Auth::user()->hasActivePermissions())
@@ -98,7 +123,10 @@
                         </form>
                     </div>
                 @else
-                    <a href="{{ route('login') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Iniciar sesión</a>
+                    <div class="flex items-center gap-2 px-1 py-1">
+                        <a href="{{ route('login') }}" class="text-[#111] font-semibold py-2 px-3 rounded bg-amber-400/80 hover:bg-amber-400 flex-1 text-center text-sm">Iniciar sesión</a>
+                        <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] font-bold py-2 px-3 rounded flex-1 text-center text-sm shadow-sm">Registrarse</a>
+                    </div>
                 @endauth
             @endif
         </div>

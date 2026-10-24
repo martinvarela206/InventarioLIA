@@ -555,5 +555,40 @@ class InventarioDevTest extends TestCase
         $responseHabilitado->assertStatus(200);
         $responseHabilitado->assertSee('Centro de Control Operativo LIA');
     }
+
+    public function test_landing_page_posee_boton_registro_y_permite_registro_de_nuevos_usuarios(): void
+    {
+        // 1. Visitante no autenticado en la landing page
+        $responseLanding = $this->get('/');
+        $responseLanding->assertStatus(200);
+        $responseLanding->assertSee(route('register'));
+        $responseLanding->assertSee('Registrarse');
+        $responseLanding->assertSee('Ingresar');
+
+        // 2. Acceder al formulario de registro
+        $responseForm = $this->get(route('register'));
+        $responseForm->assertStatus(200);
+        $responseForm->assertSee('Registro de Usuario');
+
+        // 3. Completar el registro
+        $responsePost = $this->post(route('register'), [
+            'nombre' => 'Nuevo Estudiante Test',
+            'email' => 'nuevo_estudiante@exactas.unsj.edu.ar',
+            'dni' => '40999888',
+            'carrera' => 'Licenciatura en Ciencias de la Computación',
+            'password' => 'secret123',
+            'password_confirmation' => 'secret123',
+        ]);
+
+        $this->assertDatabaseHas('usuarios', [
+            'email' => 'nuevo_estudiante@exactas.unsj.edu.ar',
+            'nombre' => 'Nuevo Estudiante Test',
+            'activo' => false,
+        ]);
+
+        $nuevoUsuario = Usuario::where('email', 'nuevo_estudiante@exactas.unsj.edu.ar')->first();
+        $this->assertNotNull($nuevoUsuario);
+        $this->assertTrue($nuevoUsuario->hasRole('registered'));
+    }
 }
 
