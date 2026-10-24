@@ -81,12 +81,13 @@
                             </td>
                             <td class="py-3.5 px-4 text-right whitespace-nowrap">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a href="{{ route('users.trayectoria', $user->id) }}" class="p-1.5 bg-gray-100 hover:bg-amber-100 text-gray-700 hover:text-black rounded-lg text-xs font-semibold flex items-center gap-1" title="Ver y gestionar periodos de trayectoria">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        Trayectoria ({{ $user->trayectorias->count() }})
+                                    <a href="{{ route('users.trayectoria', $user->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs transition-all" title="Ver y gestionar periodos de trayectoria">
+                                        <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span>Trayectoria ({{ $user->trayectorias->count() }})</span>
                                     </a>
-                                    <a href="{{ route('users.edit', $user->id) }}" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg text-xs font-semibold" title="Editar perfil">
-                                        Editar
+                                    <a href="{{ route('users.edit', $user->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50 border border-gray-300 text-gray-800 hover:text-black font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs transition-all" title="Editar perfil y permisos">
+                                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        <span>Editar</span>
                                     </a>
                                 </div>
                             </td>
@@ -124,10 +125,10 @@
         </p>
 
         <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
-            <button type="button" onclick="cerrarModalRol()" class="px-4 py-2 border rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50">
+            <button type="button" onclick="cerrarModalRol()" class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs shadow-sm transition-all">
                 Cancelar
             </button>
-            <button type="button" id="btn-confirmar-rol" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 font-bold text-black rounded-xl text-xs shadow-sm transition-all">
+            <button type="button" id="btn-confirmar-rol" class="px-5 py-2 bg-[#fbc101] hover:bg-amber-400 font-extrabold text-black rounded-xl text-xs shadow-sm transition-all">
                 Sí, Confirmar Cambio
             </button>
         </div>
@@ -145,11 +146,11 @@
 
         if (actualmenteTiene) {
             mensaje.innerHTML = `¿Está seguro de que desea <strong>REMOVER</strong> el rol <span class="font-mono bg-red-100 text-red-900 px-1 py-0.5 rounded font-bold">${roleName}</span> al usuario <strong>${userName}</strong>?`;
-            btn.className = 'px-5 py-2 bg-red-600 hover:bg-red-700 font-bold text-white rounded-xl text-xs shadow-sm transition-all';
+            btn.className = 'px-5 py-2 bg-rose-600 hover:bg-rose-700 font-extrabold text-white rounded-xl text-xs shadow-sm transition-all';
             btn.innerText = 'Sí, Remover Rol';
         } else {
             mensaje.innerHTML = `¿Está seguro de que desea <strong>ASIGNAR</strong> el rol <span class="font-mono bg-amber-100 text-amber-900 px-1 py-0.5 rounded font-bold">${roleName}</span> al usuario <strong>${userName}</strong>?`;
-            btn.className = 'px-5 py-2 bg-amber-500 hover:bg-amber-600 font-bold text-black rounded-xl text-xs shadow-sm transition-all';
+            btn.className = 'px-5 py-2 bg-[#fbc101] hover:bg-amber-400 font-extrabold text-black rounded-xl text-xs shadow-sm transition-all';
             btn.innerText = 'Sí, Asignar Rol';
         }
 

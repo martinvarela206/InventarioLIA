@@ -4,14 +4,19 @@
 <div class="max-w-[800px] mx-auto px-2 space-y-6">
 
     <!-- Header -->
-    <div class="border-b border-gray-200 pb-4">
-        <a href="{{ route('tipos.index') }}" class="text-xs font-bold text-gray-500 hover:text-black flex items-center gap-1 mb-2">
-            ← Volver a Tipos de Activos
-        </a>
-        <h1 class="text-2xl font-black text-gray-900 capitalize">Configurar Tipo: {{ $tipo->nombre }}</h1>
-        <p class="text-xs text-gray-500 mt-0.5">
-            Modifica la descripción y los atributos técnicos que aplican a los activos de este tipo.
-        </p>
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-4">
+        <div>
+            <h1 class="text-2xl font-black text-gray-900 capitalize">Configurar Tipo: {{ $tipo->nombre }}</h1>
+            <p class="text-xs text-gray-500 mt-0.5">
+                Modifica la descripción y los atributos técnicos que aplican a los activos de este tipo.
+            </p>
+        </div>
+        <div>
+            <a href="{{ route('tipos.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
+                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver a Tipos</span>
+            </a>
+        </div>
     </div>
 
     @if($errors->any())
@@ -100,12 +105,13 @@
             </div>
         </div>
 
-        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
-            <a href="{{ route('tipos.index') }}" class="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl">
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+            <a href="{{ route('tipos.index') }}" class="px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold rounded-xl text-xs shadow-sm transition-all inline-flex items-center gap-1.5">
                 Cancelar
             </a>
-            <button type="submit" class="px-5 py-2 text-xs font-black bg-amber-400 hover:bg-amber-500 text-black rounded-xl shadow-sm transition-all">
-                Guardar Cambios
+            <button type="submit" class="px-5 py-2.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl text-xs shadow-sm transition-all inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Guardar Cambios</span>
             </button>
         </div>
     </form>

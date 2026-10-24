@@ -2,12 +2,17 @@
 
 @section('content')
 <div class="max-w-[850px] mx-auto">
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Editar Ficha del Activo</h1>
             <p class="text-sm text-gray-600 mt-0.5">{{ $elemento->presenter()->identificadorCompleto() }}</p>
         </div>
-        <a href="{{ route('elementos.show', $elemento->id) }}" class="text-sm font-semibold text-gray-600 hover:text-black">← Volver al detalle</a>
+        <div>
+            <a href="{{ route('elementos.show', $elemento->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
+                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver al Detalle</span>
+            </a>
+        </div>
     </div>
 
     <form action="{{ route('elementos.update', $elemento->id) }}" method="POST" class="bg-white shadow-sm border border-gray-200 rounded-2xl p-6 lg:p-8 space-y-6">
@@ -126,9 +131,14 @@
             <textarea name="observaciones" rows="3" class="w-full px-3 py-2 border rounded-lg bg-white text-sm">{{ old('observaciones', $elemento->observaciones) }}</textarea>
         </div>
 
-        <div class="pt-4 border-t border-gray-100 flex justify-end gap-3">
-            <a href="{{ route('elementos.show', $elemento->id) }}" class="px-5 py-2.5 rounded-xl border border-gray-300 font-semibold text-gray-600 hover:bg-gray-50 text-sm">Cancelar</a>
-            <button type="submit" class="px-6 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 font-bold text-black shadow transition-all text-sm">Actualizar Ficha</button>
+        <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+            <a href="{{ route('elementos.show', $elemento->id) }}" class="px-5 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 font-bold text-gray-800 rounded-xl shadow-sm text-sm transition-all inline-flex items-center gap-1.5">
+                Cancelar
+            </a>
+            <button type="submit" class="px-6 py-2.5 bg-[#fbc101] hover:bg-amber-400 font-extrabold text-black rounded-xl shadow-sm transition-all text-sm inline-flex items-center gap-2">
+                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Actualizar Ficha</span>
+            </button>
         </div>
     </form>
 </div>

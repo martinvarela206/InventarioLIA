@@ -2,15 +2,20 @@
 
 @section('content')
 <div class="max-w-[850px] mx-auto space-y-6">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-            <a href="{{ route('users.index') }}" class="text-sm font-semibold text-gray-500 hover:text-black">← Volver a usuarios</a>
-            <h1 class="text-2xl font-bold text-gray-900 mt-1">Historial de Trayectoria: {{ $user->nombre }}</h1>
-            <p class="text-xs text-gray-500">Registro cronológico de rotación de alumnos, pasantes, becarios y docentes en el LIA</p>
+            <h1 class="text-2xl font-bold text-gray-900">Historial de Trayectoria: {{ $user->nombre }}</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Registro cronológico de rotación de alumnos, pasantes, becarios y docentes en el LIA</p>
         </div>
-        <span class="text-xs font-mono bg-gray-100 text-gray-700 px-3 py-1 rounded-md">
-            {{ $user->email }}
-        </span>
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-mono bg-gray-100 text-gray-700 px-3 py-1.5 rounded-xl border border-gray-200">
+                {{ $user->email }}
+            </span>
+            <a href="{{ route('users.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
+                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver</span>
+            </a>
+        </div>
     </div>
 
     <!-- Formulario para Añadir Periodo de Trayectoria -->
@@ -36,9 +41,10 @@
                 <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Resolución / Notas / Observaciones</label>
                 <input type="text" name="notas" placeholder="Resolución de designación N° 124/2026-FCEFN..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
             </div>
-            <div class="flex justify-end">
-                <button type="submit" class="px-5 py-2 bg-amber-400 hover:bg-amber-500 text-black font-bold rounded-xl text-xs shadow-sm transition-all">
-                    + Agregar Periodo
+            <div class="flex justify-end pt-2">
+                <button type="submit" class="px-5 py-2.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl text-sm shadow-sm transition-all inline-flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    <span>Agregar Periodo</span>
                 </button>
             </div>
         </form>
@@ -68,7 +74,7 @@
                     <form action="{{ route('trayectorias.destroy', $t->id) }}" method="POST" onsubmit="return confirm('¿Seguro de eliminar este periodo?');">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-semibold p-1">
+                        <button type="submit" class="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-bold rounded-xl px-3 py-1.5 text-xs transition-colors">
                             Eliminar
                         </button>
                     </form>

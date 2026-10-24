@@ -23,7 +23,8 @@
         </div>
         <div>
             <a href="{{ route('app_admin.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
-                ← Volver al Panel
+                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver al Panel</span>
             </a>
         </div>
     </div>
@@ -68,8 +69,9 @@
                         <label for="activa" class="text-xs font-bold text-gray-700">Disponible de inmediato para registro</label>
                     </div>
 
-                    <button type="submit" class="w-full bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow text-sm transition-colors mt-2">
-                        + Registrar Carrera
+                    <button type="submit" class="w-full bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm text-sm transition-all inline-flex items-center justify-center gap-2 mt-2">
+                        <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span>Registrar Carrera</span>
                     </button>
                 </form>
             </div>
@@ -173,8 +175,11 @@
             </div>
 
             <div class="flex items-center justify-end gap-3 pt-3 border-t">
-                <button type="button" onclick="cerrarModalEditar()" class="text-xs font-bold text-gray-600 hover:text-black px-4 py-2">Cancelar</button>
-                <button type="submit" class="bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs shadow">Guardar Cambios</button>
+                <button type="button" onclick="cerrarModalEditar()" class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs shadow-sm transition-all">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl text-xs shadow-sm transition-all inline-flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>Guardar Cambios</span>
+                </button>
             </div>
         </form>
     </div>

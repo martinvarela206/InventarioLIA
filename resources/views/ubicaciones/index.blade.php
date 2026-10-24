@@ -24,13 +24,13 @@
         </div>
 
         <div class="flex items-center gap-3">
-            <a href="{{ route('dashboard.index') }}" class="px-3.5 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-xl text-xs shadow-sm transition-all flex items-center gap-1.5">
-                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                Volver al Dashboard
-            </a>
-            <a href="{{ route('ubicaciones.create') }}" class="px-4 py-2 bg-amber-400 hover:bg-amber-500 text-black font-extrabold rounded-xl text-xs shadow-sm transition-all flex items-center gap-1.5">
+            <a href="{{ route('ubicaciones.create') }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Nuevo Espacio / Sala
+            </a>
+            <a href="{{ route('dashboard.index') }}" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Volver al Dashboard
             </a>
         </div>
     </div>

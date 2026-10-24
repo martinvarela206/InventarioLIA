@@ -9,15 +9,15 @@
             <span>/</span>
             <span class="text-black font-semibold">{{ $elemento->presenter()->identificadorCompleto() }}</span>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3">
             @if(Auth::user()->canManageMovimientos())
-                <a href="{{ route('movimientos.rapido', ['elemento_id' => $elemento->id]) }}" class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-black font-bold py-2 px-4 rounded-lg shadow-sm transition-all text-sm">
+                <a href="{{ route('movimientos.rapido', ['elemento_id' => $elemento->id]) }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     Registrar Movimiento / Préstamo
                 </a>
             @endif
             @if(Auth::user()->canManageElementos())
-                <a href="{{ route('elementos.edit', $elemento->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-semibold py-2 px-3.5 rounded-lg shadow-sm text-sm transition-all">
+                <a href="{{ route('elementos.edit', $elemento->id) }}" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold py-2.5 px-4 rounded-xl shadow-sm text-sm transition-all">
                     <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                     Editar Ficha
                 </a>
@@ -313,9 +313,10 @@
             </div>
 
             <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
-                <button type="button" onclick="cerrarModalCorreccion()" class="px-4 py-2 border rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50">Cancelar</button>
-                <button type="submit" class="px-5 py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl text-xs shadow-sm transition-all">
-                    Registrar Enmienda Oficial
+                <button type="button" onclick="cerrarModalCorreccion()" class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs shadow-sm transition-all">Cancelar</button>
+                <button type="submit" class="px-5 py-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl text-xs shadow-sm transition-all inline-flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>Registrar Enmienda Oficial</span>
                 </button>
             </div>
         </form>

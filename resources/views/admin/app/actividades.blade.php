@@ -122,7 +122,7 @@
                                 <form action="{{ route('app_admin.actividades.destroy', $act->id) }}" method="POST" onsubmit="return confirm('¿Eliminar esta publicación del feed?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:text-red-800 font-bold hover:underline">
+                                    <button type="submit" class="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-bold rounded-xl px-3 py-1 text-xs transition-colors">
                                         Eliminar
                                     </button>
                                 </form>

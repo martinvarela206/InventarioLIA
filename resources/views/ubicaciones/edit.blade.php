@@ -55,12 +55,12 @@
             </span>
 
             <div class="flex items-center gap-3">
-                <a href="{{ route('ubicaciones.index') }}" class="px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">
+                <a href="{{ route('ubicaciones.index') }}" class="px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold rounded-xl text-xs shadow-sm transition-all inline-flex items-center gap-1.5">
                     Cancelar
                 </a>
-                <button type="submit" class="px-5 py-2.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl text-xs shadow-sm transition-all flex items-center gap-1.5">
+                <button type="submit" class="px-5 py-2.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl text-xs shadow-sm transition-all inline-flex items-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    Actualizar Espacio Físico
+                    <span>Actualizar Espacio Físico</span>
                 </button>
             </div>
         </div>

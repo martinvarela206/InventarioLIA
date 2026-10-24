@@ -17,16 +17,16 @@
             <p class="text-sm text-gray-600 mt-0.5">Gestión y control patrimonial de computadoras, periféricos y equipamiento</p>
         </div>
         <div class="flex items-center gap-3">
-            @if(Auth::user()->canManageMovimientos())
-                <a href="{{ route('movimientos.rapido') }}" class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-black font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    Movimiento Rápido
-                </a>
-            @endif
             @if(Auth::user()->canManageElementos())
-                <a href="{{ route('elementos.create') }}" class="inline-flex items-center gap-1.5 bg-[#111] hover:bg-gray-800 text-white font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
+                <a href="{{ route('elementos.create') }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Añadir Activo
+                </a>
+            @endif
+            @if(Auth::user()->canManageMovimientos())
+                <a href="{{ route('movimientos.rapido') }}" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Movimiento Rápido
                 </a>
             @endif
         </div>
@@ -42,7 +42,7 @@
                         class="w-full rounded-xl border border-gray-300 pl-10 pr-4 py-2.5 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 font-medium" />
                     <svg class="w-5 h-5 text-gray-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
-                <button type="submit" class="bg-amber-400 hover:bg-amber-500 text-black font-bold py-2.5 px-5 rounded-xl shadow-sm transition-all text-sm inline-flex items-center gap-1.5">
+                <button type="submit" class="bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-5 rounded-xl shadow-sm transition-all text-sm inline-flex items-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     Buscar
                 </button>

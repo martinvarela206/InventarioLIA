@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="max-w-[750px] mx-auto py-6">
-    <div class="mb-6 flex items-center justify-between">
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
             <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -12,7 +12,12 @@
             </h1>
             <p class="text-sm text-gray-600 mt-0.5">Gestión de datos personales y seguridad de la cuenta institucional</p>
         </div>
-        <a href="{{ route('dashboard.index') }}" class="text-xs font-semibold text-gray-600 hover:text-black">← Volver al Dashboard</a>
+        <div>
+            <a href="{{ route('dashboard.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
+                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver al Dashboard</span>
+            </a>
+        </div>
     </div>
 
     @if (session('status') === 'profile-updated')
@@ -134,9 +139,9 @@
 
         <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
             <span class="text-xs font-semibold text-gray-400">Sistema Nexo LIA • Gestión de Cuentas</span>
-            <button type="submit" class="px-6 py-2.5 bg-amber-400 hover:bg-amber-500 text-black font-bold text-sm rounded-xl shadow-sm transition-all flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                Guardar Cambios de Perfil
+            <button type="submit" class="px-6 py-2.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold text-sm rounded-xl shadow-sm transition-all inline-flex items-center gap-2">
+                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Guardar Cambios de Perfil</span>
             </button>
         </div>
     </form>

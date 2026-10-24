@@ -2,14 +2,21 @@
 
 @section('content')
 <div class="max-w-[700px] mx-auto py-6">
-    <div class="flex items-center justify-between mb-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-            <a href="{{ route('users.index') }}" class="text-xs text-gray-500 hover:text-black">← Volver al listado</a>
-            <h1 class="text-2xl font-bold text-gray-900 mt-1">Editar Usuario: {{ $user->nombre }}</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Editar Usuario: {{ $user->nombre }}</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Gestión de datos de contacto, rol y habilitación de acceso</p>
         </div>
-        <a href="{{ route('users.trayectoria', $user->id) }}" class="text-xs font-bold text-amber-800 bg-amber-100 px-3 py-1.5 rounded-lg hover:bg-amber-200">
-            Ver Trayectoria
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('users.trayectoria', $user->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
+                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Ver Trayectoria</span>
+            </a>
+            <a href="{{ route('users.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
+                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver</span>
+            </a>
+        </div>
     </div>
 
     <form action="{{ route('users.update', $user->id) }}" method="POST" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-4">
@@ -87,10 +94,13 @@
             </div>
         </div>
 
-        <div class="pt-4 border-t border-gray-100 flex justify-end gap-3">
-            <a href="{{ route('users.index') }}" class="px-4 py-2 border rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50">Cancelar</a>
-            <button type="submit" class="px-5 py-2 bg-amber-400 hover:bg-amber-500 font-bold text-black rounded-xl text-xs shadow-sm transition-all">
-                Guardar Cambios
+        <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+            <a href="{{ route('users.index') }}" class="px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold rounded-xl text-sm shadow-sm transition-all inline-flex items-center gap-1.5">
+                Cancelar
+            </a>
+            <button type="submit" class="px-5 py-2.5 bg-[#fbc101] hover:bg-amber-400 font-extrabold text-black rounded-xl text-sm shadow-sm transition-all inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Guardar Cambios</span>
             </button>
         </div>
     </form>

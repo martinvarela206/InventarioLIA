@@ -10,10 +10,16 @@
 
     <form action="{{ route('revision.index') }}" method="GET" class="mb-6">
         <div class="flex gap-3 items-center">
-            <input type="text" name="search" placeholder="Buscar por Nro LIA, Descripción o Ubicación..." value="{{ request('search') }}" class="w-full rounded-lg border border-gray-200 px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#dba800]" />
-            <button type="submit" class="bg-[#dba800] hover:bg-[#fbc101] text-[#111] font-semibold py-2 px-4 rounded shadow">Buscar</button>
+            <input type="text" name="search" placeholder="Buscar por Nro LIA, Descripción o Ubicación..." value="{{ request('search') }}" class="w-full rounded-xl border border-gray-300 px-4 py-2.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium text-sm" />
+            <button type="submit" class="bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm text-sm inline-flex items-center gap-1.5 transition-all">
+                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <span>Buscar</span>
+            </button>
             @if(request('search'))
-                <a href="{{ route('revision.index', request()->except('search')) }}" class="text-gray-600 hover:text-gray-800">Limpiar</a>
+                <a href="{{ route('revision.index', request()->except('search')) }}" class="bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold py-2.5 px-3.5 rounded-xl shadow-sm text-sm inline-flex items-center gap-1.5 transition-all">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <span>Limpiar</span>
+                </a>
             @endif
         </div>
         @if(request('tipo'))
@@ -107,10 +113,10 @@
         });
     </script>
 
-    <div class="bg-white shadow-md rounded my-6 overflow-x-auto">
+    <div class="bg-white shadow-sm border border-gray-200 rounded-2xl my-6 overflow-hidden">
         <table class="min-w-full table-auto block md:table">
             <thead class="hidden md:table-header-group">
-                <tr class="bg-amber-400 text-amber-900 uppercase text-sm leading-normal">
+                <tr class="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
                     <th class="py-3 px-6 text-left">Nro LIA</th>
                     <th class="py-3 px-6 text-left">Descripción</th>
                     <th class="py-3 px-6 text-left">Situación</th>
