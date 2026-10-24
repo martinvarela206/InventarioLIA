@@ -52,8 +52,6 @@ class DashboardController extends Controller
                 'descripcion' => $ubicacion->descripcion,
                 'total_activos' => $count,
             ];
-        })->filter(function ($u) {
-            return $u['total_activos'] > 0;
         })->sortByDesc('total_activos')->values();
 
         // 4. Alertas de Equipos Críticos (Garantías Vencidas)

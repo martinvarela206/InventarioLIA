@@ -148,12 +148,20 @@
 
     <!-- 3. DISTRIBUCIÓN POR LABORATORIOS Y SALAS -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center justify-between mb-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
             <div>
                 <h2 class="font-bold text-gray-900 text-lg">Distribución de Activos por Salas Físicas</h2>
-                <p class="text-xs text-gray-500 mt-0.5">Mapa y ocupación de los 12 espacios físicos del LIA</p>
+                <p class="text-xs text-gray-500 mt-0.5">Mapa y ocupación de los {{ count($distribucionSalas) }} espacios físicos del LIA</p>
             </div>
-            <a href="{{ route('reportes.index') }}" class="text-xs text-amber-800 font-semibold hover:underline">Modo Auditoría →</a>
+            <div class="flex items-center gap-3">
+                @if(Auth::user()->hasRole('item_admin'))
+                    <a href="{{ route('ubicaciones.index') }}" class="text-xs bg-[#fbc101] hover:bg-amber-400 font-extrabold px-3 py-1.5 rounded-lg text-black transition-colors flex items-center gap-1 shadow-2xs">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                        Gestionar Salas
+                    </a>
+                @endif
+                <a href="{{ route('reportes.index') }}" class="text-xs text-amber-800 font-semibold hover:underline">Modo Auditoría →</a>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -899,6 +899,91 @@ class InventarioDevTest extends TestCase
         $this->assertNotEmpty($dataLia);
         $this->assertEquals($elemento->id, $dataLia[0]['id']);
     }
+
+    public function test_item_admin_puede_gestionar_salas_y_espacios_fisicos(): void
+    {
+        $itemAdmin = Usuario::create([
+            'nombre' => 'Admin de Espacios',
+            'email' => 'admin_espacios@test.com',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $itemAdmin->roles()->attach(Rol::where('rol', 'item_admin')->first()->id);
+
+        $tecnico = Usuario::create([
+            'nombre' => 'Tecnico Sin Permiso Espacios',
+            'email' => 'tecnico_sin_espacios@test.com',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $tecnico->roles()->attach(Rol::where('rol', 'tec')->first()->id);
+
+        // 1. Acceder al índice de salas como item_admin
+        $responseIndex = $this->actingAs($itemAdmin)->get(route('ubicaciones.index'));
+        $responseIndex->assertStatus(200);
+        $responseIndex->assertSee('Salas, Laboratorios y Depósitos del LIA');
+
+        // 2. Crear una nueva sala
+        $responseStore = $this->actingAs($itemAdmin)->post(route('ubicaciones.store'), [
+            'nombre' => 'Laboratorio Delta IA',
+            'descripcion' => 'Espacio para experimentación con modelos locales',
+        ]);
+        $responseStore->assertRedirect(route('ubicaciones.index'));
+
+        $this->assertDatabaseHas('ubicaciones', [
+            'nombre' => 'Laboratorio Delta IA',
+        ]);
+
+        $nuevaSala = Ubicacion::where('nombre', 'Laboratorio Delta IA')->first();
+        $this->assertNotNull($nuevaSala);
+
+        // 3. Editar la sala
+        $responseUpdate = $this->actingAs($itemAdmin)->put(route('ubicaciones.update', $nuevaSala->id), [
+            'nombre' => 'Laboratorio Delta IA - Planta Alta',
+            'descripcion' => 'Descripción actualizada',
+        ]);
+        $responseUpdate->assertRedirect(route('ubicaciones.index'));
+
+        $this->assertDatabaseHas('ubicaciones', [
+            'id' => $nuevaSala->id,
+            'nombre' => 'Laboratorio Delta IA - Planta Alta',
+        ]);
+
+        // 4. Eliminar la sala sin activos asociados (debe eliminarse con éxito)
+        $responseDelete = $this->actingAs($itemAdmin)->delete(route('ubicaciones.destroy', $nuevaSala->id));
+        $responseDelete->assertRedirect(route('ubicaciones.index'));
+        $this->assertDatabaseMissing('ubicaciones', [
+            'id' => $nuevaSala->id,
+        ]);
+
+        // 5. Protección: si una sala tiene activos o movimientos, no se puede eliminar
+        $salaConMovimientos = Ubicacion::first();
+        $this->assertNotNull($salaConMovimientos);
+
+        $tipo = Tipo::first();
+        $elProtegido = Elemento::create([
+            'nro_lia' => 'LIA-PROT-01',
+            'tipo_id' => $tipo->id,
+        ]);
+        Movimiento::create([
+            'elemento_id' => $elProtegido->id,
+            'ubicacion_id' => $salaConMovimientos->id,
+            'user_id' => $itemAdmin->id,
+            'fecha' => now(),
+        ]);
+
+        $responseDeleteProtegida = $this->actingAs($itemAdmin)->delete(route('ubicaciones.destroy', $salaConMovimientos->id));
+        $responseDeleteProtegida->assertRedirect(route('ubicaciones.index'));
+        $this->assertDatabaseHas('ubicaciones', [
+            'id' => $salaConMovimientos->id,
+        ]);
+
+        // 6. Restricción: un técnico o usuario sin item_admin recibe 403 Forbidden
+        $responseForbidden = $this->actingAs($tecnico)->post(route('ubicaciones.store'), [
+            'nombre' => 'Sala Hack',
+        ]);
+        $responseForbidden->assertStatus(403);
+    }
 }
 
 

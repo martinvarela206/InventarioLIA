@@ -55,6 +55,7 @@
                                 @endif
                                 @if(Auth::user()->hasRole('item_admin'))
                                     <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('tipos.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Tipos</a>
+                                    <a href="{{ route('ubicaciones.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('ubicaciones.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Salas</a>
                                 @endif
                                 @if(Auth::user()->isAppAdmin())
                                     <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg bg-amber-500/30 hover:bg-amber-500/60 transition-colors {{ Request::routeIs('app_admin.*') ? 'bg-amber-500 shadow-sm font-bold' : '' }}">Gestión App</a>
@@ -125,6 +126,7 @@
                         @endif
                         @if(Auth::user()->hasRole('item_admin'))
                             <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Tipos de Hardware</a>
+                            <a href="{{ route('ubicaciones.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Salas y Espacios</a>
                         @endif
                         @if(Auth::user()->isAppAdmin())
                             <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg bg-amber-400/60 font-bold">⚙️ Gestión App</a>
