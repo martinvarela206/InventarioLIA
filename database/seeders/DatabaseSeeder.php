@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             UserSeeder::class,
             TipoSeeder::class,
+            AtributoSeeder::class,
             UbicacionSeeder::class,
             EstadoSeeder::class,
             InventarioOdsSeeder::class,

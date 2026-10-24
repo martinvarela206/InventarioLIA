@@ -45,7 +45,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo de Activo <span class="text-red-500 font-bold">*</span></label>
-                    <select name="tipo_id" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold" required>
+                    <select name="tipo_id" id="select-tipo" onchange="actualizarAtributosPorTipo()" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold" required>
                         <option value="">Seleccione tipo...</option>
                         @foreach($tipos as $tipo)
                             <option value="{{ $tipo->id }}" {{ old('tipo_id') == $tipo->id ? 'selected' : '' }}>{{ ucfirst($tipo->nombre) }}</option>
@@ -117,27 +117,25 @@
             </div>
         </div>
 
-        <!-- 5. ESPECIFICACIONES DINÁMICAS (JSON) -->
-        <div>
-            <div class="flex items-center justify-between mb-2">
-                <label class="block text-xs font-bold text-gray-700 uppercase">5. Características Técnicas de Hardware (CPU, RAM, Disco)</label>
+        <!-- 5. ESPECIFICACIONES TÉCNICAS (ATRIBUTOS DINÁMICOS PIVOT) -->
+        <div class="bg-gray-50/80 p-4 rounded-xl border border-gray-200 space-y-3">
+            <div class="flex items-center justify-between">
+                <div>
+                    <label class="block text-xs font-bold text-gray-800 uppercase tracking-wider">5. Especificaciones Técnicas del Tipo</label>
+                    <p class="text-[11px] text-gray-500">Campos dinámicos según el tipo de hardware seleccionado.</p>
+                </div>
                 <button type="button" onclick="agregarCampoSpec()" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-3 py-1 rounded-md transition-colors">
-                    + Agregar Especificación
+                    + Campo Ad-hoc
                 </button>
             </div>
-            <div id="specs-container" class="space-y-2">
-                <div class="flex gap-2">
-                    <input type="text" name="descripcion_keys[]" value="Procesador" placeholder="Característica (ej. Procesador)" class="w-1/3 px-3 py-1.5 border rounded-lg text-sm bg-gray-50">
-                    <input type="text" name="descripcion_values[]" placeholder="Detalle (ej. Intel Core i5 10th Gen 3.2GHz)" class="flex-1 px-3 py-1.5 border rounded-lg text-sm bg-white">
-                </div>
-                <div class="flex gap-2">
-                    <input type="text" name="descripcion_keys[]" value="RAM" placeholder="Característica (ej. RAM)" class="w-1/3 px-3 py-1.5 border rounded-lg text-sm bg-gray-50">
-                    <input type="text" name="descripcion_values[]" placeholder="Detalle (ej. 16GB DDR4)" class="flex-1 px-3 py-1.5 border rounded-lg text-sm bg-white">
-                </div>
-                <div class="flex gap-2">
-                    <input type="text" name="descripcion_keys[]" value="Disco" placeholder="Característica (ej. Disco)" class="w-1/3 px-3 py-1.5 border rounded-lg text-sm bg-gray-50">
-                    <input type="text" name="descripcion_values[]" placeholder="Detalle (ej. 512GB SSD NVMe)" class="flex-1 px-3 py-1.5 border rounded-lg text-sm bg-white">
-                </div>
+
+            <!-- Contenedor dinámico de atributos del tipo -->
+            <div id="atributos-tipo-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- Se llena automáticamente con JS según el tipo seleccionado -->
+            </div>
+
+            <!-- Campos libres adicionales -->
+            <div id="specs-container" class="space-y-2 pt-2">
             </div>
         </div>
 
@@ -155,6 +153,38 @@
 </div>
 
 <script>
+    const tiposConAtributos = @json($tipos);
+
+    function actualizarAtributosPorTipo() {
+        const select = document.getElementById('select-tipo');
+        const container = document.getElementById('atributos-tipo-container');
+        container.innerHTML = '';
+        
+        const tipoId = parseInt(select.value);
+        if (!tipoId) return;
+
+        const tipoEncontrado = tiposConAtributos.find(t => t.id === tipoId);
+        if (!tipoEncontrado || !tipoEncontrado.atributos || tipoEncontrado.atributos.length === 0) {
+            container.innerHTML = '<p class="text-gray-400 text-xs italic col-span-2">Este tipo no tiene atributos específicos preconfigurados. Puedes añadir campos libres con el botón superior.</p>';
+            return;
+        }
+
+        tipoEncontrado.atributos.forEach(attr => {
+            const div = document.createElement('div');
+            div.className = 'bg-white p-3 rounded-lg border border-gray-200 shadow-2xs';
+            const unidad = attr.unidad_medida ? ` <span class="text-gray-400 font-normal">(${attr.unidad_medida})</span>` : '';
+            div.innerHTML = `
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">${attr.nombre}${unidad}</label>
+                <input type="${attr.tipo_dato === 'numero' ? 'number' : 'text'}" name="atributos[${attr.id}]" placeholder="Valor para ${attr.nombre}..." class="w-full text-xs px-3 py-2 border rounded-lg bg-gray-50 focus:bg-white font-medium">
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        actualizarAtributosPorTipo();
+    });
+
     function agregarCampoSpec(k = '', v = '') {
         const container = document.getElementById('specs-container');
         const div = document.createElement('div');

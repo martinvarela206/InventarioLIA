@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Tipo extends Model
 {
@@ -19,6 +20,14 @@ class Tipo extends Model
     public function elementos(): HasMany
     {
         return $this->hasMany(Elemento::class, 'tipo_id');
+    }
+
+    public function atributos(): BelongsToMany
+    {
+        return $this->belongsToMany(Atributo::class, 'tipo_atributo')
+                    ->withPivot('es_requerido', 'orden')
+                    ->orderBy('orden', 'asc')
+                    ->withTimestamps();
     }
 
     /**

@@ -14,6 +14,9 @@ use Carbon\Carbon;
 use ZipArchive;
 use SimpleXMLElement;
 
+use App\Models\Atributo;
+use App\Models\ElementoAtributoValor;
+
 class ImportarInventarioOdsCommand extends Command
 {
     /**
@@ -173,8 +176,8 @@ class ImportarInventarioOdsCommand extends Command
                     $puesto = "Puesto " . str_pad($m[1], 2, '0', STR_PAD_LEFT);
                 }
 
-                // Resolver Ubicación y Estado
-                $ubicacionModel = Ubicacion::firstOrCreateNormalizado($rawUbicacion ?: 'Administracion');
+                // Resolver Ubicación y Estado estrictamente canónicos
+                $ubicacionModel = Ubicacion::resolverUbicacionCanonica($rawUbicacion ?: 'Administracion');
                 $estadoModel = $this->resolverEstado($rawEstado);
 
                 // Fecha del movimiento
@@ -194,6 +197,18 @@ class ImportarInventarioOdsCommand extends Command
                     'cantidad' => $rawCantidad > 0 ? $rawCantidad : 1,
                     'fecha_adquisicion' => $fechaMovimiento->toDateString(),
                 ]);
+
+                // Almacenar características dinámicas en la tabla pivot elemento_atributo_valor
+                foreach ($specs as $attrNombre => $attrValor) {
+                    if (!empty($attrValor)) {
+                        $attrModel = Atributo::firstOrCreateNormalizado($attrNombre);
+                        ElementoAtributoValor::create([
+                            'elemento_id' => $elemento->id,
+                            'atributo_id' => $attrModel->id,
+                            'valor' => (string)$attrValor,
+                        ]);
+                    }
+                }
 
                 // Registrar movimiento inicial histórico
                 $esPrestamo = mb_strtolower($estadoModel->nombre) === 'prestado';

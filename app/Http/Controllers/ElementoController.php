@@ -16,6 +16,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
+use App\Models\Atributo;
+use App\Models\ElementoAtributoValor;
+
 class ElementoController extends Controller
 {
     /**
@@ -77,7 +80,7 @@ class ElementoController extends Controller
      */
     public function create(): View
     {
-        $tipos = Tipo::orderBy('nombre')->get();
+        $tipos = Tipo::with('atributos')->orderBy('nombre')->get();
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $estados = Estado::orderBy('nombre')->get();
 
@@ -116,6 +119,20 @@ class ElementoController extends Controller
                 'fecha_vencimiento_garantia' => $validated['fecha_vencimiento_garantia'] ?? null,
             ]);
 
+            // Guardar atributos específicos dinámicos en la tabla pivot
+            if ($request->has('atributos') && is_array($request->atributos)) {
+                foreach ($request->atributos as $attrId => $valor) {
+                    $valLimpio = trim((string)$valor);
+                    if ($valLimpio !== '') {
+                        ElementoAtributoValor::create([
+                            'elemento_id' => $elemento->id,
+                            'atributo_id' => $attrId,
+                            'valor' => $valLimpio,
+                        ]);
+                    }
+                }
+            }
+
             // GARANTIZAR MOVIMIENTO INICIAL AUTOMÁTICO
             $defaultEstado = Estado::where('nombre', 'nuevo')->first() ?? Estado::first();
             $estadoId = !empty($validated['estado_id']) ? $validated['estado_id'] : $defaultEstado->id;
@@ -147,7 +164,8 @@ class ElementoController extends Controller
     public function show(Elemento $elemento): View
     {
         $elemento->load([
-            'tipo',
+            'tipo.atributos',
+            'valoresAtributos.atributo',
             'ultimoMovimiento.ubicacion',
             'ultimoMovimiento.estado',
             'movimientos.ubicacion',
@@ -163,7 +181,8 @@ class ElementoController extends Controller
      */
     public function edit(Elemento $elemento): View
     {
-        $tipos = Tipo::orderBy('nombre')->get();
+        $elemento->load('valoresAtributos');
+        $tipos = Tipo::with('atributos')->orderBy('nombre')->get();
         return view('elementos.edit', compact('elemento', 'tipos'));
     }
 
@@ -197,6 +216,23 @@ class ElementoController extends Controller
             'fecha_adquisicion' => $validated['fecha_adquisicion'] ?? null,
             'fecha_vencimiento_garantia' => $validated['fecha_vencimiento_garantia'] ?? null,
         ]);
+
+        // Sincronizar atributos técnicos dinámicos
+        if ($request->has('atributos') && is_array($request->atributos)) {
+            foreach ($request->atributos as $attrId => $valor) {
+                $valLimpio = trim((string)$valor);
+                if ($valLimpio !== '') {
+                    ElementoAtributoValor::updateOrCreate(
+                        ['elemento_id' => $elemento->id, 'atributo_id' => $attrId],
+                        ['valor' => $valLimpio]
+                    );
+                } else {
+                    ElementoAtributoValor::where('elemento_id', $elemento->id)
+                        ->where('atributo_id', $attrId)
+                        ->delete();
+                }
+            }
+        }
 
         return redirect()->route('elementos.show', $elemento->id)
             ->with('success', 'Ficha del elemento actualizada con éxito.');

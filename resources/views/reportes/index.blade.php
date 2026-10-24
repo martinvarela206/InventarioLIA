@@ -51,11 +51,17 @@
                 </p>
             </div>
             <div class="mt-5 pt-4 border-t border-gray-100">
-                <form action="{{ route('reportes.show', 'historial-reparaciones') }}" method="GET" class="flex gap-2">
-                    <input type="number" name="elemento_id" placeholder="ID Técnico de Activo..." class="w-full text-xs px-2.5 py-1.5 border rounded-lg bg-gray-50" required>
-                    <button type="submit" class="px-3 py-1.5 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-black">
-                        Ver
-                    </button>
+                <form action="{{ route('reportes.show', 'historial-reparaciones') }}" method="GET" class="space-y-2">
+                    <div class="flex gap-2">
+                        <input type="text" name="nro_lia" placeholder="N° LIA (ej: SRV-001, LIA-U-24)..." class="w-full text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white" required>
+                        <button type="submit" class="px-3 py-1.5 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-black whitespace-nowrap">
+                            Ver
+                        </button>
+                    </div>
+                    <div class="text-[11px] text-gray-500 flex items-center justify-between">
+                        <span>Opcional UNSJ:</span>
+                        <input type="text" name="nro_unsj" placeholder="02-08246..." class="w-32 text-xs px-2 py-0.5 border border-gray-200 rounded bg-gray-50">
+                    </div>
                 </form>
             </div>
         </div>
@@ -73,11 +79,17 @@
                 </p>
             </div>
             <div class="mt-5 pt-4 border-t border-gray-100">
-                <form action="{{ route('reportes.show', 'ubicacion-trazabilidad') }}" method="GET" class="flex gap-2">
-                    <input type="number" name="elemento_id" placeholder="ID Técnico de Activo..." class="w-full text-xs px-2.5 py-1.5 border rounded-lg bg-gray-50" required>
-                    <button type="submit" class="px-3 py-1.5 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-black">
-                        Ver
-                    </button>
+                <form action="{{ route('reportes.show', 'ubicacion-trazabilidad') }}" method="GET" class="space-y-2">
+                    <div class="flex gap-2">
+                        <input type="text" name="nro_lia" placeholder="N° LIA (ej: SRV-001, LIA-U-24)..." class="w-full text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white" required>
+                        <button type="submit" class="px-3 py-1.5 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-black whitespace-nowrap">
+                            Ver
+                        </button>
+                    </div>
+                    <div class="text-[11px] text-gray-500 flex items-center justify-between">
+                        <span>Opcional UNSJ:</span>
+                        <input type="text" name="nro_unsj" placeholder="02-08246..." class="w-32 text-xs px-2 py-0.5 border border-gray-200 rounded bg-gray-50">
+                    </div>
                 </form>
             </div>
         </div>

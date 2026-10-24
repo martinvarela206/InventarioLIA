@@ -98,6 +98,11 @@ class Elemento extends Model
         return $this->hasOne(Movimiento::class, 'elemento_id')->latestOfMany('id');
     }
 
+    public function valoresAtributos(): HasMany
+    {
+        return $this->hasMany(ElementoAtributoValor::class, 'elemento_id')->with('atributo');
+    }
+
     public function presenter(): ElementoPresenter
     {
         return new ElementoPresenter($this);
@@ -105,6 +110,14 @@ class Elemento extends Model
 
     public function getDescripcionTextoAttribute(): string
     {
+        if ($this->valoresAtributos->isNotEmpty()) {
+            return $this->valoresAtributos->map(function ($va) {
+                $nom = $va->atributo?->nombre ?? 'Dato';
+                $unidad = $va->atributo?->unidad_medida ? ' ' . $va->atributo->unidad_medida : '';
+                return "{$nom}: {$va->valor}{$unidad}";
+            })->implode(' | ');
+        }
+
         if (is_array($this->descripcion)) {
             $parts = [];
             foreach ($this->descripcion as $key => $val) {

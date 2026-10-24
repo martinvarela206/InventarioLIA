@@ -198,11 +198,27 @@
                 </div>
             </div>
 
-            <!-- Tab Content 2: Technical Hardware Specs -->
+            <!-- Tab Content 2: Technical Hardware Specs (Atributos Dinámicos Pivot) -->
             <div id="tab-content-specs" class="tab-pane hidden">
                 <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Configuración de Hardware Estructurada</h3>
-                    @if(is_array($elemento->descripcion) && count($elemento->descripcion) > 0)
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Configuración y Atributos Técnicos</h3>
+                    @if($elemento->valoresAtributos->isNotEmpty())
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @foreach($elemento->valoresAtributos as $va)
+                                <div class="bg-white p-3.5 rounded-lg border border-gray-200 shadow-2xs">
+                                    <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider block">
+                                        {{ $va->atributo?->nombre ?? 'Característica' }}
+                                    </span>
+                                    <span class="text-sm font-black text-gray-900 mt-1 block">
+                                        {{ $va->valor }}
+                                        @if($va->atributo?->unidad_medida)
+                                            <span class="text-xs text-gray-500 font-normal ml-0.5">({{ $va->atributo->unidad_medida }})</span>
+                                        @endif
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    @elseif(is_array($elemento->descripcion) && count($elemento->descripcion) > 0)
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @foreach($elemento->descripcion as $specKey => $specVal)
                                 <div class="bg-white p-3.5 rounded-lg border border-gray-200 shadow-2xs">
@@ -215,7 +231,7 @@
                         <div class="py-12 text-center text-gray-400 text-sm">
                             <p>No se cargaron especificaciones de hardware detalladas para este dispositivo.</p>
                             @if(Auth::user()->isItemAdmin() || Auth::user()->isAdmin())
-                                <a href="{{ route('elementos.edit', $elemento->id) }}" class="inline-block mt-3 text-xs text-amber-700 underline font-semibold">Añadir especificaciones (CPU, RAM, Disco)</a>
+                                <a href="{{ route('elementos.edit', $elemento->id) }}" class="inline-block mt-3 text-xs text-amber-700 underline font-semibold">Configurar especificaciones</a>
                             @endif
                         </div>
                     @endif

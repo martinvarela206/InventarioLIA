@@ -23,6 +23,7 @@ class InventarioDevTest extends TestCase
 
         $this->seed(\Database\Seeders\RoleSeeder::class);
         $this->seed(\Database\Seeders\TipoSeeder::class);
+        $this->seed(\Database\Seeders\AtributoSeeder::class);
         $this->seed(\Database\Seeders\EstadoSeeder::class);
         $this->seed(\Database\Seeders\UbicacionSeeder::class);
     }
@@ -305,4 +306,135 @@ class InventarioDevTest extends TestCase
         $response->assertSee('Préstamos Externos Activos');
         $this->assertLessThan(2.0, $elapsed, "El dashboard debe cargar en menos de 2 segundos, tardó {$elapsed}s");
     }
+
+    public function test_administrador_puede_gestionar_tipos_y_asociar_atributos(): void
+    {
+        $admin = Usuario::create([
+            'nombre' => 'Admin Tipos',
+            'email' => 'admin_tipos@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $admin->roles()->attach(Rol::where('rol', 'item_admin')->first());
+
+        $atributoExistente = \App\Models\Atributo::where('nombre', 'Procesador')->first();
+        $this->assertNotNull($atributoExistente);
+
+        // Crear nuevo tipo con atributo existente y uno nuevo al vuelo
+        $response = $this->actingAs($admin)->post(route('tipos.store'), [
+            'nombre' => 'Instrumento de Medicion',
+            'categoria' => 'Laboratorio',
+            'descripcion' => 'Aparatos de medicion de precision',
+            'atributos' => [$atributoExistente->id],
+            'requeridos' => [$atributoExistente->id => '1'],
+            'nuevo_atributo_nombre' => 'Tasa de Muestreo',
+            'nuevo_atributo_tipo' => 'texto',
+            'nuevo_atributo_unidad' => 'MS/s',
+            'nuevo_atributo_requerido' => '1',
+        ]);
+
+        $response->assertRedirect(route('tipos.index'));
+        $this->assertDatabaseHas('tipos', ['nombre' => 'instrumento de medicion']);
+        $this->assertDatabaseHas('atributos', ['nombre' => 'Tasa de Muestreo']);
+
+        $tipoCreado = Tipo::where('nombre', 'instrumento de medicion')->first();
+        $this->assertCount(2, $tipoCreado->atributos);
+    }
+
+    public function test_creacion_de_elemento_persiste_atributos_en_tabla_pivot(): void
+    {
+        $admin = Usuario::create([
+            'nombre' => 'Admin Activos',
+            'email' => 'admin_activos@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $admin->roles()->attach(Rol::where('rol', 'item_admin')->first());
+
+        $tipo = Tipo::where('nombre', 'computadora')->first();
+        $ubicacion = Ubicacion::first();
+        $estado = Estado::where('nombre', 'nuevo')->first();
+        $attrCpu = \App\Models\Atributo::where('nombre', 'Procesador')->first();
+        $attrRam = \App\Models\Atributo::where('nombre', 'RAM')->first();
+
+        $response = $this->actingAs($admin)->post(route('elementos.store'), [
+            'nro_lia' => '5001',
+            'nro_unsj' => 'UNSJ-5001',
+            'tipo_id' => $tipo->id,
+            'ubicacion_id' => $ubicacion->id,
+            'estado_id' => $estado->id,
+            'modelo' => 'Dell Precision T3600',
+            'cantidad' => 1,
+            'atributos' => [
+                $attrCpu->id => 'Intel Xeon E5-1620',
+                $attrRam->id => '32GB DDR3',
+            ],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect();
+        $elemento = Elemento::where('nro_lia', '5001')->first();
+        $this->assertNotNull($elemento);
+
+        // Verificar almacenamiento en tabla pivot
+        $this->assertDatabaseHas('elemento_atributo_valor', [
+            'elemento_id' => $elemento->id,
+            'atributo_id' => $attrCpu->id,
+            'valor' => 'Intel Xeon E5-1620',
+        ]);
+        $this->assertDatabaseHas('elemento_atributo_valor', [
+            'elemento_id' => $elemento->id,
+            'atributo_id' => $attrRam->id,
+            'valor' => '32GB DDR3',
+        ]);
+
+        // Verificar que el accessor dinámico genera la descripción
+        $this->assertStringContainsString('Intel Xeon E5-1620', $elemento->descripcion_texto);
+        $this->assertStringContainsString('32GB DDR3', $elemento->descripcion_texto);
+    }
+
+    public function test_reporte_historial_reparacion_y_trazabilidad_resuelve_por_nro_lia_y_unsj(): void
+    {
+        $admin = Usuario::create([
+            'nombre' => 'Admin Reportes',
+            'email' => 'admin_rep@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $admin->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        $tipo = Tipo::first();
+        $ubicacion = Ubicacion::first();
+        $estado = Estado::first();
+
+        $el = Elemento::create([
+            'nro_lia' => 7777,
+            'nro_unsj' => 'UNSJ-7777',
+            'tipo_id' => $tipo->id,
+            'ubicacion_id' => $ubicacion->id,
+            'estado_id' => $estado->id,
+            'modelo' => 'Servidor ProLiant',
+        ]);
+
+        // Consulta de trazabilidad histórica pasando nro_lia
+        $response = $this->actingAs($admin)->get(route('reportes.show', [
+            'tipo' => 'trazabilidad-historica',
+            'nro_lia' => 7777,
+            'nro_unsj' => 'UNSJ-7777',
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertSee('UNSJ-7777');
+        $response->assertSee('Servidor ProLiant');
+
+        // Consulta de historial de reparación pasando nro_lia
+        $responseRep = $this->actingAs($admin)->get(route('reportes.show', [
+            'tipo' => 'historial-reparaciones',
+            'nro_lia' => 7777,
+        ]));
+
+        $responseRep->assertStatus(200);
+        $responseRep->assertSee('7777');
+    }
 }
+

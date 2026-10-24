@@ -41,7 +41,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo <span class="text-red-500 font-bold">*</span></label>
-                <select name="tipo_id" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold" required>
+                <select name="tipo_id" id="select-tipo" onchange="actualizarAtributosPorTipo()" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold" required>
                     @foreach($tipos as $tipo)
                         <option value="{{ $tipo->id }}" {{ old('tipo_id', $elemento->tipo_id) == $tipo->id ? 'selected' : '' }}>{{ ucfirst($tipo->nombre) }}</option>
                     @endforeach
@@ -88,15 +88,24 @@
             </div>
         </div>
 
-        <!-- Especificaciones Dinámicas -->
-        <div>
-            <div class="flex items-center justify-between mb-2">
-                <label class="block text-xs font-bold text-gray-700 uppercase">Características Técnicas (CPU, RAM, Disco)</label>
+        <!-- Especificaciones Técnicas (Atributos Dinámicos Pivot) -->
+        <div class="bg-gray-50/80 p-4 rounded-xl border border-gray-200 space-y-3">
+            <div class="flex items-center justify-between">
+                <div>
+                    <label class="block text-xs font-bold text-gray-800 uppercase tracking-wider">Especificaciones Técnicas del Tipo</label>
+                    <p class="text-[11px] text-gray-500">Campos dinámicos según el tipo de hardware.</p>
+                </div>
                 <button type="button" onclick="agregarCampoSpec()" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-3 py-1 rounded-md transition-colors">
-                    + Agregar Campo
+                    + Campo Ad-hoc
                 </button>
             </div>
-            <div id="specs-container" class="space-y-2">
+
+            <!-- Contenedor dinámico de atributos del tipo -->
+            <div id="atributos-tipo-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- Se llena con JS según el tipo seleccionado y los valores precargados -->
+            </div>
+
+            <div id="specs-container" class="space-y-2 pt-2">
                 @if(is_array($elemento->descripcion))
                     @foreach($elemento->descripcion as $k => $v)
                         <div class="flex gap-2 items-center">
@@ -123,6 +132,40 @@
 </div>
 
 <script>
+    const tiposConAtributos = @json($tipos);
+    const valoresActuales = @json($elemento->valoresAtributos->pluck('valor', 'atributo_id'));
+
+    function actualizarAtributosPorTipo() {
+        const select = document.getElementById('select-tipo');
+        const container = document.getElementById('atributos-tipo-container');
+        container.innerHTML = '';
+        
+        const tipoId = parseInt(select.value);
+        if (!tipoId) return;
+
+        const tipoEncontrado = tiposConAtributos.find(t => t.id === tipoId);
+        if (!tipoEncontrado || !tipoEncontrado.atributos || tipoEncontrado.atributos.length === 0) {
+            container.innerHTML = '<p class="text-gray-400 text-xs italic col-span-2">Este tipo no tiene atributos específicos preconfigurados. Puedes añadir campos libres con el botón superior.</p>';
+            return;
+        }
+
+        tipoEncontrado.atributos.forEach(attr => {
+            const div = document.createElement('div');
+            div.className = 'bg-white p-3 rounded-lg border border-gray-200 shadow-2xs';
+            const val = valoresActuales[attr.id] || '';
+            const unidad = attr.unidad_medida ? ` <span class="text-gray-400 font-normal">(${attr.unidad_medida})</span>` : '';
+            div.innerHTML = `
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">${attr.nombre}${unidad}</label>
+                <input type="${attr.tipo_dato === 'numero' ? 'number' : 'text'}" name="atributos[${attr.id}]" value="${val}" placeholder="Valor para ${attr.nombre}..." class="w-full text-xs px-3 py-2 border rounded-lg bg-gray-50 focus:bg-white font-medium">
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        actualizarAtributosPorTipo();
+    });
+
     function agregarCampoSpec(k = '', v = '') {
         const container = document.getElementById('specs-container');
         const div = document.createElement('div');

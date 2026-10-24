@@ -22,51 +22,57 @@ class Ubicacion extends Model
     }
 
     /**
-     * Resuelve o crea una ubicación normalizando variaciones del relevamiento.
+     * Resuelve de forma estricta y canónica la ubicación física dentro de los 12 espacios oficiales del LIA.
+     * NUNCA crea ubicaciones espurias a partir de números, estados o celdas desfasadas del ODS.
      */
-    public static function firstOrCreateNormalizado(string $nombre, ?string $descripcion = null): self
+    public static function resolverUbicacionCanonica(string $nombre): self
     {
         $raw = trim($nombre);
         $clean = mb_strtolower($raw, 'UTF-8');
 
-        $map = [
-            'oficina a' => 'Oficina A',
-            'of a' => 'Oficina A',
-            'oficina b' => 'Oficina B',
-            'of b' => 'Oficina B',
-            'laboratorio federico sanchez' => 'Laboratorio Federico Sanchez',
-            'lab federico sanchez' => 'Laboratorio Federico Sanchez',
-            'lab fs' => 'Laboratorio Federico Sanchez',
-            'lab fb' => 'Laboratorio Federico Sanchez',
-            'laboratorio paola moyano' => 'Laboratorio Paola Moyano',
-            'lab paola moyano' => 'Laboratorio Paola Moyano',
-            'lab pm' => 'Laboratorio Paola Moyano',
-            'laboratorio redes' => 'Laboratorio Redes',
-            'lab redes' => 'Laboratorio Redes',
-            'redes' => 'Laboratorio Redes',
-            'armario de hw' => 'Armario de HW',
-            'armario hw' => 'Armario de HW',
-            'armario' => 'Armario de HW',
-            'administracion' => 'Administracion',
-            'admin' => 'Administracion',
-            'laboratorio b' => 'Laboratorio B',
-            'lab b' => 'Laboratorio B',
-            'laboratorio c' => 'Laboratorio C',
-            'lab c' => 'Laboratorio C',
-            'rack administracion' => 'Rack Administracion',
-            'rack admin' => 'Rack Administracion',
-            'rack redes' => 'Rack Redes',
-            'oficina de hardware' => 'Oficina de Hardware',
-            'of hardware' => 'Oficina de Hardware',
-            'lab hardware' => 'Oficina de Hardware',
-            'lia' => 'Administracion',
-        ];
+        // Mapeo exhaustivo hacia las 12 salas físicas reales
+        if (str_contains($clean, 'federico') || str_contains($clean, 'sanchez') || $clean === 'fs') {
+            return static::where('nombre', 'Laboratorio Federico Sanchez')->first() ?? static::first();
+        }
+        if (str_contains($clean, 'paola') || str_contains($clean, 'moyano') || $clean === 'pm') {
+            return static::where('nombre', 'Laboratorio Paola Moyano')->first() ?? static::first();
+        }
+        if (str_contains($clean, 'rack') && (str_contains($clean, 'red') || str_contains($clean, 'laboratorio'))) {
+            return static::where('nombre', 'Rack Redes')->first() ?? static::first();
+        }
+        if (str_contains($clean, 'rack')) {
+            return static::where('nombre', 'Rack Administracion')->first() ?? static::first();
+        }
+        if (str_contains($clean, 'redes') || str_contains($clean, 'telecom')) {
+            return static::where('nombre', 'Laboratorio Redes')->first() ?? static::first();
+        }
+        if (str_contains($clean, 'oficina de hard') || str_contains($clean, 'lab hardware') || str_contains($clean, 'taller')) {
+            return static::where('nombre', 'Oficina de Hardware')->first() ?? static::first();
+        }
+        if (str_contains($clean, 'armario') || str_contains($clean, 'hw') || str_contains($clean, 'herramienta') || str_contains($clean, 'disco') || is_numeric($clean)) {
+            return static::where('nombre', 'Armario de HW')->first() ?? static::first();
+        }
+        if (str_contains($clean, 'oficina a') || $clean === 'of a') {
+            return static::where('nombre', 'Oficina A')->first() ?? static::first();
+        }
+        if (str_contains($clean, 'oficina b') || $clean === 'of b') {
+            return static::where('nombre', 'Oficina B')->first() ?? static::first();
+        }
+        if ($clean === 'laboratorio b' || $clean === 'lab b' || $clean === 'b') {
+            return static::where('nombre', 'Laboratorio B')->first() ?? static::first();
+        }
+        if ($clean === 'laboratorio c' || $clean === 'lab c' || $clean === 'c') {
+            return static::where('nombre', 'Laboratorio C')->first() ?? static::first();
+        }
 
-        $nombreFinal = $map[$clean] ?? $raw;
+        return static::where('nombre', 'Administracion')->first() ?? static::first();
+    }
 
-        return static::firstOrCreate(
-            ['nombre' => $nombreFinal],
-            ['descripcion' => $descripcion ?? "Ubicación física: {$nombreFinal}"]
-        );
+    /**
+     * Alias retrocompatible con seeders.
+     */
+    public static function firstOrCreateNormalizado(string $nombre, ?string $descripcion = null): self
+    {
+        return static::resolverUbicacionCanonica($nombre);
     }
 }

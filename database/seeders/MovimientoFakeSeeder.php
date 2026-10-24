@@ -80,6 +80,15 @@ class MovimientoFakeSeeder extends Seeder
                     ? Carbon::now()->addMonths(6 + ($idx % 12)) // Vigente
                     : Carbon::now()->subMonths(3 + ($idx % 24)), // Vencida
             ]);
+
+            // Sincronizar en la tabla pivot elemento_atributo_valor
+            foreach ($specs as $key => $val) {
+                $attr = \App\Models\Atributo::firstOrCreateNormalizado($key);
+                \App\Models\ElementoAtributoValor::updateOrCreate(
+                    ['elemento_id' => $pc->id, 'atributo_id' => $attr->id],
+                    ['valor' => (string)$val]
+                );
+            }
         }
 
         // 2. PRÉSTAMOS EXTERNOS ACTIVOS (Para alimentar el Dashboard y el check-in)

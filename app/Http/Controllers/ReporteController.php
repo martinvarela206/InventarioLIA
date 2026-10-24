@@ -272,8 +272,7 @@ class ReporteController extends Controller
                 ];
 
             case 'historial-reparaciones':
-                $elementoId = $request->elemento_id;
-                $elemento = $elementoId ? Elemento::find($elementoId) : Elemento::first();
+                $elemento = $this->resolverElementoParaReporte($request);
 
                 $items = $elemento ? Movimiento::where('elemento_id', $elemento->id)
                     ->whereHas('estado', fn($q) => $q->whereIn('nombre', ['en reparacion', 'verificar funcionamiento', 'funcionando']))
@@ -302,8 +301,7 @@ class ReporteController extends Controller
                 ];
 
             case 'ubicacion-trazabilidad':
-                $elementoId = $request->elemento_id;
-                $elemento = $elementoId ? Elemento::find($elementoId) : Elemento::first();
+                $elemento = $this->resolverElementoParaReporte($request);
 
                 $items = $elemento ? Movimiento::where('elemento_id', $elemento->id)
                     ->with(['estado', 'ubicacion', 'usuario'])
@@ -364,5 +362,39 @@ class ReporteController extends Controller
                     'total' => $items->count(),
                 ];
         }
+    }
+
+    /**
+     * Resuelve el activo para los reportes específicos a partir del Nro LIA, Nro UNSJ o ID.
+     */
+    private function resolverElementoParaReporte(Request $request): ?Elemento
+    {
+        // 1. Si especificó ID numérico directo (retrocompatibilidad)
+        if ($request->filled('elemento_id')) {
+            return Elemento::find($request->elemento_id);
+        }
+
+        // 2. Si especificó N° LIA y/o N° UNSJ
+        $nroLia = trim((string)$request->input('nro_lia', ''));
+        $nroUnsj = trim((string)$request->input('nro_unsj', ''));
+
+        if ($nroLia !== '' && $nroUnsj !== '') {
+            $el = Elemento::where('nro_lia', $nroLia)->where('nro_unsj', $nroUnsj)->first();
+            if ($el) return $el;
+        }
+
+        if ($nroLia !== '') {
+            $coincidencias = Elemento::where('nro_lia', $nroLia)->get();
+            if ($coincidencias->isNotEmpty()) {
+                return $coincidencias->first();
+            }
+        }
+
+        if ($nroUnsj !== '') {
+            $el = Elemento::where('nro_unsj', $nroUnsj)->first();
+            if ($el) return $el;
+        }
+
+        return Elemento::first();
     }
 }

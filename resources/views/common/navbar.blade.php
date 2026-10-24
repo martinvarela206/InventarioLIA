@@ -31,8 +31,10 @@
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                                 Movimiento Rápido
                             </a>
-                            <a href="{{ route('movimientos.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('movimientos.index') ? 'bg-amber-400/90 shadow-sm' : '' }}">Historial</a>
                             <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('reportes.*') ? 'bg-amber-400/90 shadow-sm' : '' }}">Reportes</a>
+                            @if(Auth::user()->hasRole(['item_admin', 'user_admin']))
+                                <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('tipos.*') ? 'bg-amber-400/90 shadow-sm' : '' }}">Tipos</a>
+                            @endif
                             @if(Auth::user()->isAdmin())
                                 <a href="{{ route('users.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('users.*') ? 'bg-amber-400/90 shadow-sm' : '' }}">Usuarios</a>
                             @endif
@@ -73,6 +75,9 @@
                     <a href="{{ route('movimientos.rapido') }}" class="text-[#111] font-semibold py-2 px-3 rounded bg-amber-500/40">⚡ Movimiento Rápido (Móvil)</a>
                     <a href="{{ route('movimientos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Historial de Movimientos</a>
                     <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Reportes Oficiales</a>
+                    @if(Auth::user()->hasRole(['item_admin', 'user_admin']))
+                        <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Tipos de Hardware</a>
+                    @endif
                     @if(Auth::user()->isAdmin())
                         <a href="{{ route('users.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Administración de Usuarios</a>
                     @endif

@@ -52,6 +52,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
+    // API de Atributos por Tipo
+    Route::get('/api/tipos/{tipo}/atributos', [\App\Http\Controllers\TipoController::class, 'apiAtributosPorTipo'])->name('api.tipos.atributos');
+
+    // Gestión de Tipos de Activos y Atributos Técnicos (item_admin y user_admin)
+    Route::middleware('role:item_admin,user_admin')->group(function () {
+        Route::resource('tipos', \App\Http\Controllers\TipoController::class)->except(['show']);
+        Route::post('/atributos', [\App\Http\Controllers\TipoController::class, 'storeAtributo'])->name('atributos.store');
+    });
+
     // Gestión de Usuarios y Trayectorias (user_admin)
     Route::middleware('user_admin')->group(function () {
         Route::resource('users', UserController::class)->only(['index', 'edit', 'update']);
