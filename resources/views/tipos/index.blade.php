@@ -12,7 +12,12 @@
                 </span>
                 <span class="text-xs text-gray-500 font-semibold">item_admin / user_admin</span>
             </div>
-            <h1 class="text-2xl font-black text-gray-900 mt-1">Gestión de Tipos de Activos y Atributos Técnicos</h1>
+            <h1 class="text-2xl font-black text-gray-900 mt-1 flex items-center gap-2">
+                <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span>Gestión de Tipos de Activos y Atributos Técnicos</span>
+            </h1>
             <p class="text-xs text-gray-500 mt-0.5">
                 Define las familias de equipamiento y los atributos específicos que se almacenarán de cada uno (RAM, Procesador, Capacidad, Puertos, etc.).
             </p>
@@ -141,8 +146,10 @@
     <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
         <div class="flex items-center justify-between border-b pb-3">
             <h3 class="font-extrabold text-gray-900 text-base">Crear Atributo Técnico Global</h3>
-            <button type="button" onclick="document.getElementById('modalNuevoAtributo').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 font-black text-lg">
-                ✕
+            <button type="button" onclick="document.getElementById('modalNuevoAtributo').classList.add('hidden')" class="text-gray-400 hover:text-black p-1 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Cerrar modal">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
             </button>
         </div>
 

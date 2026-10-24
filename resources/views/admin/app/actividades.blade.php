@@ -11,7 +11,12 @@
                 <span class="text-gray-900 font-bold">Actividades y Novedades</span>
             </div>
             <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
-                <span>📸 Posteos y Actividades del LIA (Feed)</span>
+                <span class="inline-flex items-center gap-2">
+                    <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                    </svg>
+                    Posteos y Actividades del LIA (Feed)
+                </span>
                 <span class="text-xs bg-amber-100 text-amber-900 font-extrabold px-2.5 py-0.5 rounded-full border border-amber-300">
                     {{ $actividades->count() }} publicaciones
                 </span>
@@ -22,7 +27,10 @@
         </div>
         <div>
             <a href="{{ url('/#actividades-lia') }}" target="_blank" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
-                🌐 Ver Feed en Portada
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Ver Feed en Portada
             </a>
         </div>
     </div>
@@ -68,8 +76,11 @@
                         <input type="datetime-local" name="fecha_publicacion" value="{{ now()->format('Y-m-d\TH:i') }}" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400">
                     </div>
 
-                    <button type="submit" class="w-full bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow text-sm transition-colors mt-2">
-                        🚀 Publicar en el Feed
+                    <button type="submit" class="w-full bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow text-sm transition-colors mt-2 inline-flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        Publicar en el Feed
                     </button>
                 </form>
             </div>

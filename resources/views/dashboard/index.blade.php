@@ -5,7 +5,12 @@
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Centro de Control Operativo LIA</h1>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2.5">
+                <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span>Centro de Control Operativo LIA</span>
+            </h1>
             <p class="text-sm text-gray-600 mt-1">Métricas en tiempo real, trazabilidad de salas y préstamos activos</p>
         </div>
         <div class="flex items-center gap-3">
@@ -39,32 +44,47 @@
 
         <!-- Operativos -->
         <a href="{{ route('reportes.show', 'operativos') }}" title="Ver reporte digital de activos operativos en salas" class="bg-white rounded-2xl p-5 border border-emerald-200/80 shadow-sm relative overflow-hidden bg-gradient-to-b from-white to-emerald-50/20 block hover:-translate-y-1 hover:shadow-md hover:border-emerald-400 transition-all group cursor-pointer">
-            <div class="flex items-center justify-between">
+            <div class="absolute right-3 top-3 text-emerald-100/60 group-hover:text-emerald-200/60 transition-colors -z-0">
+                <svg class="w-16 h-16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div class="flex items-center justify-between relative z-10">
                 <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider block">Operativos en Salas</span>
                 <span class="text-xs font-semibold text-emerald-600 group-hover:text-emerald-800 transition-colors flex items-center gap-0.5">Reporte <span class="group-hover:translate-x-0.5 transition-transform">→</span></span>
             </div>
-            <div class="text-3xl font-black text-emerald-700 mt-2">{{ number_format($totalOperativos) }}</div>
-            <span class="text-xs text-emerald-600 mt-1 block">En uso y disponibles</span>
+            <div class="text-3xl font-black text-emerald-700 mt-2 relative z-10">{{ number_format($totalOperativos) }}</div>
+            <span class="text-xs text-emerald-600 mt-1 block relative z-10">En uso y disponibles</span>
         </a>
 
         <!-- Prestados Activos -->
         <a href="{{ route('reportes.show', 'prestados') }}" title="Ver reporte digital de equipos prestados a cátedras" class="bg-white rounded-2xl p-5 border border-amber-300 shadow-sm relative overflow-hidden bg-gradient-to-b from-white to-amber-50/40 block hover:-translate-y-1 hover:shadow-md hover:border-amber-400 transition-all group cursor-pointer">
-            <div class="flex items-center justify-between">
+            <div class="absolute right-3 top-3 text-amber-100/80 group-hover:text-amber-200/80 transition-colors -z-0">
+                <svg class="w-16 h-16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+            </div>
+            <div class="flex items-center justify-between relative z-10">
                 <span class="text-xs font-bold text-amber-900 uppercase tracking-wider block">Prestados a Cátedras</span>
                 <span class="text-xs font-semibold text-amber-700 group-hover:text-amber-900 transition-colors flex items-center gap-0.5">Reporte <span class="group-hover:translate-x-0.5 transition-transform">→</span></span>
             </div>
-            <div class="text-3xl font-black text-amber-600 mt-2">{{ number_format($totalPrestados) }}</div>
-            <span class="text-xs text-amber-700 mt-1 block">Fuera del laboratorio</span>
+            <div class="text-3xl font-black text-amber-600 mt-2 relative z-10">{{ number_format($totalPrestados) }}</div>
+            <span class="text-xs text-amber-700 mt-1 block relative z-10">Fuera del laboratorio</span>
         </a>
 
         <!-- Obsoletos / Bajas -->
         <a href="{{ route('reportes.show', 'bajas-basura') }}" title="Ver reporte digital de bajas y basura tecnológica" class="bg-white rounded-2xl p-5 border border-rose-200 shadow-sm relative overflow-hidden block hover:-translate-y-1 hover:shadow-md hover:border-rose-400 transition-all group cursor-pointer">
-            <div class="flex items-center justify-between">
+            <div class="absolute right-3 top-3 text-rose-100/70 group-hover:text-rose-200/70 transition-colors -z-0">
+                <svg class="w-16 h-16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </div>
+            <div class="flex items-center justify-between relative z-10">
                 <span class="text-xs font-bold text-rose-800 uppercase tracking-wider block">Bajas y Basura Tec.</span>
                 <span class="text-xs font-semibold text-rose-600 group-hover:text-rose-800 transition-colors flex items-center gap-0.5">Reporte <span class="group-hover:translate-x-0.5 transition-transform">→</span></span>
             </div>
-            <div class="text-3xl font-black text-rose-700 mt-2">{{ number_format($totalObsoletos) }}</div>
-            <span class="text-xs text-rose-600 mt-1 block">Descarte institucional</span>
+            <div class="text-3xl font-black text-rose-700 mt-2 relative z-10">{{ number_format($totalObsoletos) }}</div>
+            <span class="text-xs text-rose-600 mt-1 block relative z-10">Descarte institucional</span>
         </a>
     </div>
 

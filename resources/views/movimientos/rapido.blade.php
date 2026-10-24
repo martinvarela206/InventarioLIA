@@ -5,7 +5,10 @@
     <!-- Header -->
     <div class="mb-6 text-center">
         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-200 text-amber-900 mb-2">
-            ⚡ Operación Rápida
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <span>Operación Rápida</span>
         </span>
         <h1 class="text-2xl lg:text-3xl font-extrabold text-gray-900">
             Registro Rápido de Movimientos y Préstamos

@@ -102,8 +102,11 @@
 
             <!-- Direct Actions -->
             <div class="p-4 bg-gray-50 border-t border-gray-100 flex flex-col gap-2">
-                <a href="{{ route('reportes.show', ['tipo' => 'ubicacion-trazabilidad', 'elemento_id' => $elemento->id]) }}" class="text-center text-xs text-gray-600 hover:text-black font-semibold py-1.5 border border-gray-200 rounded-md bg-white hover:bg-gray-100 transition-colors">
-                    📄 Ver Reporte de Trazabilidad Oficial
+                <a href="{{ route('reportes.show', ['tipo' => 'ubicacion-trazabilidad', 'elemento_id' => $elemento->id]) }}" class="inline-flex items-center justify-center gap-1.5 text-center text-xs text-gray-700 hover:text-black font-semibold py-2 px-3 border border-gray-200 rounded-lg bg-white hover:bg-gray-100 transition-colors shadow-xs">
+                    <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Ver Reporte de Trazabilidad Oficial</span>
                 </a>
             </div>
         </div>
@@ -266,7 +269,11 @@
                 <h3 class="text-base font-bold text-gray-900" id="correccion-titulo">Enmendar Movimiento</h3>
                 <p class="text-xs text-gray-600 mt-0.5">El movimiento original permanecerá inmutable. Se creará una enmienda oficial enlazada.</p>
             </div>
-            <button type="button" onclick="cerrarModalCorreccion()" class="text-gray-400 hover:text-black font-bold text-lg p-1">✕</button>
+            <button type="button" onclick="cerrarModalCorreccion()" class="text-gray-400 hover:text-black p-1 rounded-lg hover:bg-gray-200 transition-colors" aria-label="Cerrar modal">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
 
         <form id="form-correccion" method="POST" action="" class="p-6 space-y-4">

@@ -11,7 +11,8 @@
                 <span class="text-gray-900 font-bold">Carreras Universitarias</span>
             </div>
             <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
-                <span>🎓 Carreras para Registro de Usuarios</span>
+                <svg class="w-6 h-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
+                <span>Carreras para Registro de Usuarios</span>
                 <span class="text-xs bg-amber-100 text-amber-900 font-extrabold px-2.5 py-0.5 rounded-full border border-amber-300">
                     {{ $carreras->count() }} registradas
                 </span>
@@ -122,16 +123,16 @@
                                 </form>
 
                                 <!-- Botón Editar -->
-                                <button type="button" onclick="editarCarrera({{ $carrera->id }}, '{{ addslashes($carrera->nombre) }}', '{{ addslashes($carrera->codigo ?? '') }}', {{ $carrera->activa ? 'true' : 'false' }})" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold px-2.5 py-1.5 rounded-lg transition-colors">
-                                    ✏️
+                                <button type="button" onclick="editarCarrera({{ $carrera->id }}, '{{ addslashes($carrera->nombre) }}', '{{ addslashes($carrera->codigo ?? '') }}', {{ $carrera->activa ? 'true' : 'false' }})" class="p-1.5 text-gray-600 hover:text-black hover:bg-gray-100 rounded-lg transition-colors" title="Editar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                 </button>
 
                                 <!-- Eliminar (con resguardo histórico) -->
                                 <form action="{{ route('app_admin.carreras.destroy', $carrera->id) }}" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar o archivar esta carrera? Si posee usuarios históricos, se desactivará automáticamente para preservar sus registros.')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-xs text-red-600 hover:text-red-800 hover:bg-red-50 p-1.5 rounded-lg transition-colors" title="Eliminar / Archivar">
-                                        🗑️
+                                    <button type="submit" class="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar / Archivar">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                     </button>
                                 </form>
                             </div>

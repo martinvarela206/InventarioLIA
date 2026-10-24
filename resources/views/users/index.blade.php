@@ -4,7 +4,12 @@
 <div class="max-w-[1240px] mx-auto px-2 space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Administración de Usuarios y Permisos</h1>
+            <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span>Administración de Usuarios y Permisos</span>
+            </h1>
             <p class="text-sm text-gray-600 mt-0.5">Asignación de roles oficiales, activación de cuentas y trayectorias</p>
         </div>
         <span class="text-xs bg-amber-100 text-amber-900 font-bold px-3 py-1 rounded-full border border-amber-300">
@@ -58,10 +63,18 @@
                                         @endphp
                                         <button type="button" 
                                             onclick="solicitarConfirmacionRol({{ $user->id }}, '{{ addslashes($user->nombre) }}', '{{ $rName }}', {{ $hasRole ? 'true' : 'false' }})"
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all border {{ $hasRole ? 'bg-amber-400 border-amber-500 text-black shadow-2xs' : 'bg-gray-100 border-gray-200 text-gray-400 hover:bg-gray-200' }}"
+                                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all border {{ $hasRole ? 'bg-amber-400 border-amber-500 text-black shadow-2xs' : 'bg-gray-100 border-gray-200 text-gray-400 hover:bg-gray-200' }}"
                                             title="{{ $hasRole ? 'Clic para remover este rol' : 'Clic para asignar este rol' }}">
                                             <span>{{ $rName }}</span>
-                                            <span class="text-[10px]">{{ $hasRole ? '✓' : '+' }}</span>
+                                            @if($hasRole)
+                                                <svg class="w-3 h-3 text-black stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                            @else
+                                                <svg class="w-3 h-3 text-gray-400 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                                                </svg>
+                                            @endif
                                         </button>
                                     @endforeach
                                 </div>
@@ -95,8 +108,10 @@
 <div id="modal-confirmacion-rol" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-gray-200">
         <div class="flex items-center gap-3">
-            <div id="modal-icono" class="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
-                ⚠️
+            <div id="modal-icono" class="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
             </div>
             <div>
                 <h3 class="text-base font-bold text-gray-900" id="modal-titulo">Confirmar Cambio Crítico de Rol</h3>

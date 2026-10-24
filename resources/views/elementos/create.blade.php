@@ -182,7 +182,9 @@
         div.innerHTML = `
             <input type="text" name="descripcion_keys[]" value="${k}" placeholder="Característica" class="w-1/3 px-3 py-1.5 border rounded-lg text-sm bg-gray-50">
             <input type="text" name="descripcion_values[]" value="${v}" placeholder="Valor / Detalle" class="flex-1 px-3 py-1.5 border rounded-lg text-sm bg-white">
-            <button type="button" onclick="this.parentElement.remove()" class="p-1.5 text-red-500 hover:text-red-700 text-sm font-bold">✕</button>
+            <button type="button" onclick="this.parentElement.remove()" class="p-1.5 text-red-500 hover:text-red-700 transition-colors rounded hover:bg-red-50" title="Quitar fila">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
         `;
         container.appendChild(div);
     }
