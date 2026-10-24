@@ -89,13 +89,18 @@
                     <option value="sin_datos" {{ request('garantia') === 'sin_datos' ? 'selected' : '' }}>Sin Datos</option>
                 </select>
 
-                <!-- Filter GB con cursor-pointer arreglado -->
-                <div class="flex items-center rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 cursor-pointer hover:bg-gray-100">
-                    <label for="filter-gb-input" class="text-xs font-bold text-gray-700 cursor-pointer mr-1">RAM / Disco (GB):</label>
-                    <input type="number" id="filter-gb-input" name="gb" value="{{ request('gb') }}" placeholder="Ej: 16" 
-                        class="w-14 bg-transparent border-none text-xs font-bold focus:ring-0 cursor-pointer p-0 text-gray-900" 
-                        onchange="this.form.submit()">
-                </div>
+                <!-- Filter RAM / Capacidad -->
+                <select name="gb" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100">
+                    <option value="">RAM / Capacidad: Todas</option>
+                    <option value="4" {{ request('gb') == '4' ? 'selected' : '' }}>4 GB</option>
+                    <option value="8" {{ request('gb') == '8' ? 'selected' : '' }}>8 GB</option>
+                    <option value="16" {{ request('gb') == '16' ? 'selected' : '' }}>16 GB</option>
+                    <option value="32" {{ request('gb') == '32' ? 'selected' : '' }}>32 GB</option>
+                    <option value="120" {{ request('gb') == '120' ? 'selected' : '' }}>120 / 128 GB</option>
+                    <option value="240" {{ request('gb') == '240' ? 'selected' : '' }}>240 / 256 GB</option>
+                    <option value="480" {{ request('gb') == '480' ? 'selected' : '' }}>480 / 512 GB</option>
+                    <option value="1000" {{ request('gb') == '1000' ? 'selected' : '' }}>1 TB (1000 GB)</option>
+                </select>
             </div>
         </form>
     </div>

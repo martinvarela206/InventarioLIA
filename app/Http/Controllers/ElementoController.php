@@ -53,7 +53,12 @@ class ElementoController extends Controller
 
         if ($request->filled('gb')) {
             $gb = $request->input('gb');
-            $query->where('descripcion', 'like', "%{$gb}GB%");
+            $query->where(function ($q) use ($gb) {
+                $q->where('descripcion', 'like', "%{$gb}%")
+                  ->orWhereHas('valoresAtributos', function ($vaq) use ($gb) {
+                      $vaq->where('valor', 'like', "%{$gb}%");
+                  });
+            });
         }
 
         if ($request->filled('garantia')) {
