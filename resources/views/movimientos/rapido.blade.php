@@ -143,7 +143,7 @@
                 <div id="campos-interno" class="space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Sala / Laboratorio Destino *</label>
+                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Sala / Laboratorio Destino <span class="text-red-500 font-bold">*</span></label>
                             <select name="ubicacion_id" class="w-full px-3.5 py-2.5 border rounded-xl bg-white font-semibold">
                                 @foreach($ubicaciones as $ub)
                                     <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
@@ -168,7 +168,7 @@
                 <!-- Campos de Préstamo Externo -->
                 <div id="campos-prestamo" class="space-y-4 hidden">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Docente / Investigador / Cátedra Solicitante *</label>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Docente / Investigador / Cátedra Solicitante <span class="text-red-500 font-bold">*</span></label>
                         <input type="text" name="solicitante" id="input-solicitante" placeholder="Ej. Dr. Juan Pérez (Cátedra Algoritmos)" class="w-full px-3.5 py-2.5 border rounded-xl bg-white font-semibold">
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

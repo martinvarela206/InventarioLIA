@@ -23,12 +23,14 @@ return new class extends Migration
             $table->string('solicitante', 150)->nullable();
             $table->date('fecha_prestamo')->nullable();
             $table->date('fecha_devolucion')->nullable();
+            $table->foreignId('correccion_de_id')->nullable()->constrained('movimientos')->onDelete('restrict');
             $table->text('comentario')->nullable();
 
             $table->index('tipo_movimiento');
             $table->index('fecha');
             $table->index('fecha_prestamo');
             $table->index('fecha_devolucion');
+            $table->index('correccion_de_id');
         });
     }
 

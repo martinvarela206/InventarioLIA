@@ -169,9 +169,24 @@
                                             "{{ $m->comentario }}"
                                         </p>
                                     @endif
-                                    <p class="text-[11px] text-gray-400 text-right">
-                                        Registrado por: {{ $m->usuario?->nombre ?? 'Sistema' }}
-                                    </p>
+                                    
+                                    <div class="flex items-center justify-between text-[11px] text-gray-500 pt-1.5 border-t border-gray-100">
+                                        <div>
+                                            @if($m->correccion_de_id)
+                                                <span class="text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                                                    Subsanación del Movimiento #{{ $m->correccion_de_id }}
+                                                </span>
+                                            @else
+                                                <span>Movimiento #{{ $m->id }}</span>
+                                            @endif
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <span>Registrado por: <strong class="text-gray-800">{{ $m->usuario?->nombre ?? 'Sistema' }}</strong></span>
+                                            <button type="button" onclick="abrirModalCorreccion({{ $m->id }}, '{{ $m->ubicacion_id }}', '{{ $m->puesto }}', '{{ $m->estado_id }}', '{{ addslashes($m->solicitante ?? '') }}')" class="text-xs text-amber-800 hover:text-black font-bold hover:underline bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded transition-colors">
+                                                Enmendar Error
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -225,6 +240,72 @@
     </div>
 </div>
 
+<!-- Modal de Enmienda / Corrección Oficial de Movimiento Inmutable -->
+<div id="modal-correccion" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-200 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="p-5 border-b border-gray-100 bg-amber-50/70 flex items-center justify-between">
+            <div>
+                <h3 class="text-base font-bold text-gray-900" id="correccion-titulo">Enmendar Movimiento</h3>
+                <p class="text-xs text-gray-600 mt-0.5">El movimiento original permanecerá inmutable. Se creará una enmienda oficial enlazada.</p>
+            </div>
+            <button type="button" onclick="cerrarModalCorreccion()" class="text-gray-400 hover:text-black font-bold text-lg p-1">✕</button>
+        </div>
+
+        <form id="form-correccion" method="POST" action="" class="p-6 space-y-4">
+            @csrf
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    Motivo de la Corrección / Error Cometido <span class="text-red-500 font-bold">*</span>
+                </label>
+                <input type="text" name="motivo_correccion" id="correccion-motivo" required placeholder="Ej. Se asignó por error Puesto 02 en lugar de Puesto 08" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                <p class="text-[11px] text-gray-500 mt-1">Este motivo quedará asentado en la bitácora de auditoría institucional.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Sala Correcta</label>
+                    <select name="ubicacion_id" id="correccion-ubicacion" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold">
+                        @foreach(\App\Models\Ubicacion::all() as $ub)
+                            <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Puesto Correcto</label>
+                    <input type="text" name="puesto" id="correccion-puesto" placeholder="Ej. Puesto 04" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Estado Operativo</label>
+                <select name="estado_id" id="correccion-estado" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-semibold" required>
+                    @foreach(\App\Models\Estado::all() as $est)
+                        <option value="{{ $est->id }}">{{ ucfirst($est->nombre) }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div id="campo-solicitante-correccion" class="hidden">
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Solicitante del Préstamo</label>
+                <input type="text" name="solicitante" id="correccion-solicitante" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Observaciones Adicionales</label>
+                <textarea name="comentario" rows="2" placeholder="Detalle técnico adicional..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white"></textarea>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+                <button type="button" onclick="cerrarModalCorreccion()" class="px-4 py-2 border rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50">Cancelar</button>
+                <button type="submit" class="px-5 py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl text-xs shadow-sm transition-all">
+                    Registrar Enmienda Oficial
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     function cambiarPestana(target) {
         document.querySelectorAll('.tab-button').forEach(btn => {
@@ -245,6 +326,34 @@
         if (activePane) {
             activePane.classList.remove('hidden');
         }
+    }
+
+    function abrirModalCorreccion(movimientoId, ubicacionId, puesto, estadoId, solicitante) {
+        document.getElementById('form-correccion').action = '/movimientos/' + movimientoId + '/correccion';
+        document.getElementById('correccion-titulo').innerText = 'Enmendar Movimiento #' + movimientoId;
+        
+        if (ubicacionId) {
+            document.getElementById('correccion-ubicacion').value = ubicacionId;
+        }
+        document.getElementById('correccion-puesto').value = puesto || '';
+        if (estadoId) {
+            document.getElementById('correccion-estado').value = estadoId;
+        }
+        
+        const wrapSolicitante = document.getElementById('campo-solicitante-correccion');
+        if (solicitante) {
+            wrapSolicitante.classList.remove('hidden');
+            document.getElementById('correccion-solicitante').value = solicitante;
+        } else {
+            wrapSolicitante.classList.add('hidden');
+        }
+
+        document.getElementById('modal-correccion').classList.remove('hidden');
+    }
+
+    function cerrarModalCorreccion() {
+        document.getElementById('modal-correccion').classList.add('hidden');
+        document.getElementById('form-correccion').reset();
     }
 </script>
 @endsection

@@ -16,13 +16,19 @@
         @csrf
         @method('PUT')
 
+        <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+            <span class="text-xs font-semibold text-gray-500">
+                Los campos marcados con <span class="text-red-500 font-bold text-sm">*</span> son obligatorios
+            </span>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label for="nombre" class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre y Apellido *</label>
+                <label for="nombre" class="block text-xs font-bold text-gray-700 uppercase mb-1">Nombre y Apellido <span class="text-red-500 font-bold">*</span></label>
                 <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $user->nombre) }}" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium" required>
             </div>
             <div>
-                <label for="email" class="block text-xs font-bold text-gray-700 uppercase mb-1">Email Institucional *</label>
+                <label for="email" class="block text-xs font-bold text-gray-700 uppercase mb-1">Email Institucional <span class="text-red-500 font-bold">*</span></label>
                 <input type="email" name="email" id="email" value="{{ old('email', $user->email) }}" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium" required>
             </div>
         </div>

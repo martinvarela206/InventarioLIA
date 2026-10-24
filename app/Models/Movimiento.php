@@ -25,14 +25,45 @@ class Movimiento extends Model
         'solicitante',
         'fecha_prestamo',
         'fecha_devolucion',
+        'correccion_de_id',
         'comentario',
     ];
+
+    protected static function booted()
+    {
+        static::updating(function ($movimiento) {
+            $dirtyKeys = array_keys($movimiento->getDirty());
+            // Únicamente se tolera actualizar fecha_devolucion al registrar el check-in de retorno
+            if (array_diff($dirtyKeys, ['fecha_devolucion'])) {
+                throw new \LogicException('Los movimientos del inventario son inmutables por política estricta de auditoría. Para enmendar datos de un movimiento previo, registre un movimiento de corrección.');
+            }
+        });
+
+        static::deleting(function ($movimiento) {
+            throw new \LogicException('Está terminantemente prohibido eliminar movimientos históricos del inventario por política de auditoría y trazabilidad forense.');
+        });
+    }
 
     protected $casts = [
         'fecha' => 'datetime',
         'fecha_prestamo' => 'date',
         'fecha_devolucion' => 'date',
     ];
+
+    public function correccionDe()
+    {
+        return $this->belongsTo(Movimiento::class, 'correccion_de_id');
+    }
+
+    public function correcciones()
+    {
+        return $this->hasMany(Movimiento::class, 'correccion_de_id');
+    }
+
+    public function esCorreccion(): bool
+    {
+        return !is_null($this->correccion_de_id);
+    }
 
     public function elemento()
     {

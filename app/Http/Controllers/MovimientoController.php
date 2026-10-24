@@ -205,4 +205,39 @@ class MovimientoController extends Controller
         return redirect()->route('elementos.show', $movimiento->elemento_id)
             ->with('success', 'Devolución registrada exitosamente. El equipo ha reingresado a la sala.');
     }
+
+    /**
+     * Registrar una corrección oficial sobre un movimiento previo
+     */
+    public function storeCorreccion(Request $request, Movimiento $movimiento)
+    {
+        $validated = $request->validate([
+            'motivo_correccion' => 'required|string|min:4|max:255',
+            'ubicacion_id' => 'nullable|exists:ubicaciones,id',
+            'puesto' => 'nullable|string|max:50',
+            'estado_id' => 'required|exists:estados,id',
+            'solicitante' => 'nullable|string|max:150',
+            'comentario' => 'nullable|string',
+        ]);
+
+        $tipoMovimiento = $movimiento->tipo_movimiento;
+
+        $nuevoMovimiento = Movimiento::create([
+            'elemento_id' => $movimiento->elemento_id,
+            'tipo_movimiento' => $tipoMovimiento,
+            'ubicacion_id' => $validated['ubicacion_id'] ?? $movimiento->ubicacion_id,
+            'puesto' => $validated['puesto'] ?? $movimiento->puesto,
+            'estado_id' => $validated['estado_id'],
+            'user_id' => auth()->id() ?? Usuario::first()->id,
+            'fecha' => now(),
+            'solicitante' => $validated['solicitante'] ?? $movimiento->solicitante,
+            'fecha_prestamo' => $movimiento->fecha_prestamo,
+            'fecha_devolucion' => $movimiento->fecha_devolucion,
+            'correccion_de_id' => $movimiento->id,
+            'comentario' => "ENMIENDA / CORRECCIÓN de Movimiento #{$movimiento->id}: " . $validated['motivo_correccion'] . ($request->filled('comentario') ? " | " . $request->comentario : ""),
+        ]);
+
+        return redirect()->route('elementos.show', $movimiento->elemento_id)
+            ->with('success', "Movimiento #{$movimiento->id} enmendado con éxito mediante el nuevo movimiento #{$nuevoMovimiento->id}.");
+    }
 }

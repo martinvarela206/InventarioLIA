@@ -14,6 +14,12 @@
         @csrf
         @method('PUT')
 
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+            <span class="text-xs font-semibold text-gray-500">
+                Los campos marcados con <span class="text-red-500 font-bold text-sm">*</span> son obligatorios
+            </span>
+        </div>
+
         <!-- Identificadores Oficiales -->
         <div class="bg-amber-50/60 p-4 rounded-xl border border-amber-200/80">
             <h3 class="text-xs font-bold text-amber-900 uppercase tracking-wider mb-2">
@@ -34,7 +40,7 @@
         <!-- Clasificación y Marca/Modelo -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo *</label>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo <span class="text-red-500 font-bold">*</span></label>
                 <select name="tipo_id" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold" required>
                     @foreach($tipos as $tipo)
                         <option value="{{ $tipo->id }}" {{ old('tipo_id', $elemento->tipo_id) == $tipo->id ? 'selected' : '' }}>{{ ucfirst($tipo->nombre) }}</option>

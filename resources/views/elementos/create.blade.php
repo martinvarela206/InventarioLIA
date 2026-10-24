@@ -13,6 +13,12 @@
     <form action="{{ route('elementos.store') }}" method="POST" class="bg-white shadow-sm border border-gray-200 rounded-2xl p-6 lg:p-8 space-y-6">
         @csrf
 
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+            <span class="text-xs font-semibold text-gray-500">
+                Los campos marcados con <span class="text-red-500 font-bold text-sm">*</span> son obligatorios
+            </span>
+        </div>
+
         <!-- 1. IDENTIFICACIÓN COMPUESTA OFICIAL -->
         <div class="bg-amber-50/60 p-4 rounded-xl border border-amber-200/80">
             <h3 class="text-xs font-bold text-amber-900 uppercase tracking-wider mb-2">
@@ -38,7 +44,7 @@
             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">2. Clasificación y Fabricante</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo de Activo *</label>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Tipo de Activo <span class="text-red-500 font-bold">*</span></label>
                     <select name="tipo_id" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold" required>
                         <option value="">Seleccione tipo...</option>
                         @foreach($tipos as $tipo)
@@ -93,7 +99,7 @@
             <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">4. Asignación y Movimiento Inicial Automático</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Sala o Armario Inicial *</label>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Sala o Armario Inicial <span class="text-red-500 font-bold">*</span></label>
                     <select name="ubicacion_id" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold">
                         @foreach($ubicaciones as $ub)
                             <option value="{{ $ub->id }}" {{ $ub->nombre === 'Armario de HW' ? 'selected' : '' }}>{{ $ub->nombre }}</option>
@@ -101,7 +107,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Estado Inicial *</label>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Estado Inicial <span class="text-red-500 font-bold">*</span></label>
                     <select name="estado_id" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold">
                         @foreach($estados as $est)
                             <option value="{{ $est->id }}" {{ $est->nombre === 'nuevo' ? 'selected' : '' }}>{{ ucfirst($est->nombre) }}</option>

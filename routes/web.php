@@ -39,6 +39,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/movimientos/rapido', [MovimientoController::class, 'rapido'])->name('movimientos.rapido');
     Route::get('/api/elementos/buscar-rapido', [MovimientoController::class, 'apiBuscar'])->name('api.elementos.buscar');
     Route::post('/movimientos/{movimiento}/devolucion', [MovimientoController::class, 'devolucion'])->name('movimientos.devolucion');
+    Route::post('/movimientos/{movimiento}/correccion', [MovimientoController::class, 'storeCorreccion'])->name('movimientos.correccion');
     Route::resource('movimientos', MovimientoController::class)->except(['edit', 'update', 'destroy']);
 
     // Módulo de Reportes Oficiales y Auditoría

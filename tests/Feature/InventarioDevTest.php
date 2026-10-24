@@ -204,4 +204,86 @@ class InventarioDevTest extends TestCase
             'cargo' => 'Becario de Investigación LIA',
         ]);
     }
+
+    public function test_inmutabilidad_de_movimientos_y_soporte_de_enmiendas(): void
+    {
+        $tec = Usuario::create([
+            'nombre' => 'Tecnico Inmutable',
+            'email' => 'tecinmutable@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $tec->roles()->attach(Rol::where('rol', 'tec')->first());
+
+        $tipo = Tipo::first();
+        $ubicacion1 = Ubicacion::first();
+        $ubicacion2 = Ubicacion::skip(1)->first();
+        $estado = Estado::first();
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'LIA-INMUTABLE-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+        ]);
+
+        $movimientoOriginal = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $ubicacion1->id,
+            'estado_id' => $estado->id,
+            'user_id' => $tec->id,
+            'fecha' => now(),
+            'comentario' => 'Movimiento con error de tipeo en puesto',
+        ]);
+
+        // 1. Probar que intentar mutar el registro original lanza excepción
+        try {
+            $movimientoOriginal->update(['comentario' => 'Intento de modificar historial']);
+            $this->fail('Se esperaba una LogicException ante intento de mutar un movimiento existente.');
+        } catch (\LogicException $e) {
+            $this->assertStringContainsString('inmutables', $e->getMessage());
+        }
+
+        // 2. Registrar enmienda oficial
+        $response = $this->actingAs($tec)->post(route('movimientos.correccion', $movimientoOriginal->id), [
+            'motivo_correccion' => 'Se corrigió la sala y puesto real del activo',
+            'ubicacion_id' => $ubicacion2->id,
+            'puesto' => 'Mesa 08',
+            'estado_id' => $estado->id,
+            'comentario' => 'Enmienda auditada',
+        ]);
+
+        $response->assertRedirect(route('elementos.show', $elemento->id));
+
+        $this->assertDatabaseHas('movimientos', [
+            'elemento_id' => $elemento->id,
+            'correccion_de_id' => $movimientoOriginal->id,
+            'ubicacion_id' => $ubicacion2->id,
+            'puesto' => 'Mesa 08',
+        ]);
+    }
+
+    public function test_perfil_usuario_restringe_modificacion_de_email_a_no_administradores(): void
+    {
+        $usuarioComun = Usuario::create([
+            'nombre' => 'Docente Comun',
+            'email' => 'docente@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $usuarioComun->roles()->attach(Rol::where('rol', 'registered')->first());
+
+        // El usuario comun intenta cambiar su propio email en /profile
+        $this->actingAs($usuarioComun)->put(route('profile.update'), [
+            'nombre' => 'Docente Modificado',
+            'email' => 'hacked@test.com',
+            'carrera' => 'Computacion',
+        ]);
+
+        $usuarioComun->refresh();
+        $this->assertEquals('Docente Modificado', $usuarioComun->nombre);
+        $this->assertEquals('Computacion', $usuarioComun->carrera);
+        // El email debe permanecer inalterado
+        $this->assertEquals('docente@test.com', $usuarioComun->email);
+    }
 }
