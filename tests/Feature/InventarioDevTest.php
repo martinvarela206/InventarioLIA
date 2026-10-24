@@ -830,5 +830,42 @@ class InventarioDevTest extends TestCase
 
         $this->actingAs($sinRegistered)->get(route('profile.edit'))->assertStatus(403);
     }
+
+    public function test_dashboard_kpi_taller_coincide_con_reporte_en_taller(): void
+    {
+        $revisor = Usuario::create([
+            'nombre' => 'Revisor Auditor',
+            'email' => 'auditor_taller@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $revisor->roles()->attach(Rol::where('rol', 'rev')->first()->id);
+
+        $responseDashboard = $this->actingAs($revisor)->get(route('dashboard.index'));
+        $responseDashboard->assertStatus(200);
+
+        $totalElementos = $responseDashboard->viewData('totalElementos');
+        $totalOperativos = $responseDashboard->viewData('totalOperativos');
+        $totalPrestados = $responseDashboard->viewData('totalPrestados');
+        $totalEnReparacion = $responseDashboard->viewData('totalEnReparacion');
+        $totalObsoletos = $responseDashboard->viewData('totalObsoletos');
+
+        // 1. El conteo de en reparación en el dashboard debe ser el número real de activos en taller
+        $esperadoEnTaller = Elemento::enTaller()->count();
+        $this->assertEquals($esperadoEnTaller, $totalEnReparacion);
+
+        // 2. Al ingresar al reporte 'en-taller', el total devuelto debe ser exactamente igual al KPI del dashboard
+        $responseReporte = $this->actingAs($revisor)->get(route('reportes.show', 'en-taller'));
+        $responseReporte->assertStatus(200);
+        $totalReporte = $responseReporte->viewData('total');
+        $this->assertEquals($totalEnReparacion, $totalReporte);
+
+        // 3. Operativos debe coincidir con Elemento::disponibles()
+        $this->assertEquals(Elemento::disponibles()->count(), $totalOperativos);
+
+        // 4. La suma de los cuatro estados debe igualar el 100% de los elementos
+        $this->assertEquals($totalElementos, $totalOperativos + $totalPrestados + $totalEnReparacion + $totalObsoletos);
+    }
 }
+
 

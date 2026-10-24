@@ -21,7 +21,7 @@ class DashboardController extends Controller
         // 0. Carga de alto rendimiento: obtener el último movimiento de cada activo en un único query indexado (<60ms)
         $ultimosMovimientos = Movimiento::whereIn('id', function ($q) {
             $q->select(DB::raw('MAX(id)'))->from('movimientos')->groupBy('elemento_id');
-        })->with(['elemento.tipo'])->get();
+        })->with(['elemento.tipo', 'ubicacion'])->get();
 
         // 1. KPI Cards Principales (procesamiento instantáneo en memoria)
         $totalElementos = Elemento::count();
@@ -34,7 +34,10 @@ class DashboardController extends Controller
             return $m->elemento?->tipo?->nombre === 'basura tecnologica';
         })->count();
 
-        $totalEnReparacion = 0;
+        $totalEnReparacion = $ultimosMovimientos->filter(function ($m) {
+            $nom = $m->ubicacion?->nombre ?? '';
+            return str_contains($nom, 'Armario de HW') || str_contains($nom, 'Taller');
+        })->count();
 
         $totalOperativos = max(0, $totalElementos - $totalPrestados - $totalObsoletos - $totalEnReparacion);
 

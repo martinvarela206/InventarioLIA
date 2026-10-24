@@ -195,10 +195,8 @@ class ReporteController extends Controller
 
             case 'en-taller':
             case 'en-reparacion':
-                $query = Elemento::whereHas('ultimoMovimiento.ubicacion', function ($q) {
-                    $q->where('nombre', 'like', '%Armario de HW%')
-                      ->orWhere('nombre', 'like', '%Taller%');
-                })->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.usuario']);
+                $query = Elemento::enTaller()
+                    ->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.usuario']);
 
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
 
