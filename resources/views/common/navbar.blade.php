@@ -50,7 +50,9 @@
                                         Movimiento Rápido
                                     </a>
                                 @endif
-                                <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('reportes.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Reportes</a>
+                                @if(Auth::user()->hasRole('rev'))
+                                    <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('reportes.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Reportes</a>
+                                @endif
                                 @if(Auth::user()->hasRole('item_admin'))
                                     <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('tipos.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Tipos</a>
                                 @endif
@@ -66,10 +68,17 @@
 
                     <div class="flex items-center gap-3 pl-4 border-l border-amber-500/40">
                         @auth
-                            <a href="{{ route('profile.edit') }}" class="text-[#111] font-medium text-sm px-3 py-1.5 rounded-lg bg-black/5 hover:bg-black/10 transition-all flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
-                                {{ Auth::user()->nombre }}
-                            </a>
+                            @if(Auth::user()->hasRole('registered'))
+                                <a href="{{ route('profile.edit') }}" class="text-[#111] font-medium text-sm px-3 py-1.5 rounded-lg bg-black/5 hover:bg-black/10 transition-all flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                                    {{ Auth::user()->nombre }}
+                                </a>
+                            @else
+                                <span class="text-[#111] font-medium text-sm px-3 py-1.5 rounded-lg bg-black/5 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-gray-600"></span>
+                                    {{ Auth::user()->nombre }}
+                                </span>
+                            @endif
                             <form action="{{ route('logout') }}" method="POST" class="inline">
                                 @csrf
                                 <button type="submit" class="flex items-center justify-center w-9 h-9 bg-[#c62828] text-white rounded-full hover:bg-[#8e1c1c] transition-colors shadow-sm" title="Cerrar sesión">
@@ -111,7 +120,9 @@
                             <a href="{{ route('movimientos.rapido') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg bg-amber-500/40">⚡ Movimiento Rápido (Móvil)</a>
                         @endif
                         <a href="{{ route('movimientos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Historial de Movimientos</a>
-                        <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Reportes Oficiales</a>
+                        @if(Auth::user()->hasRole('rev'))
+                            <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Reportes Oficiales</a>
+                        @endif
                         @if(Auth::user()->hasRole('item_admin'))
                             <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Tipos de Hardware</a>
                         @endif
@@ -124,7 +135,11 @@
                     @endif
                     <div class="h-px bg-amber-600/40 my-2"></div>
                     <div class="flex items-center justify-between px-3 py-2">
-                        <a href="{{ route('profile.edit') }}" class="font-medium text-sm text-[#111]">Perfil: {{ Auth::user()->nombre }}</a>
+                        @if(Auth::user()->hasRole('registered'))
+                            <a href="{{ route('profile.edit') }}" class="font-medium text-sm text-[#111]">Perfil: {{ Auth::user()->nombre }}</a>
+                        @else
+                            <span class="font-medium text-sm text-[#111]">Perfil: {{ Auth::user()->nombre }}</span>
+                        @endif
                         <form action="{{ route('logout') }}" method="POST" class="inline">
                             @csrf
                             <button type="submit" class="text-xs bg-[#c62828] text-white px-3 py-1.5 rounded-lg font-bold">Cerrar Sesión</button>

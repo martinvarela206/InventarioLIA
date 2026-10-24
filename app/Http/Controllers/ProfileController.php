@@ -16,6 +16,10 @@ class ProfileController extends Controller
      */
     public function edit(): View
     {
+        if (!auth()->user()->hasRole('registered')) {
+            abort(403, 'Requiere el rol registered para gestionar su perfil personal.');
+        }
+
         return view('profile.edit', [
             'user' => auth()->user()
         ]);
@@ -28,6 +32,10 @@ class ProfileController extends Controller
     {
         /** @var \App\Models\Usuario $user */
         $user = auth()->user();
+
+        if (!$user->hasRole('registered')) {
+            abort(403, 'Requiere el rol registered para gestionar su perfil personal.');
+        }
 
         $rules = [
             'nombre' => ['required', 'string', 'max:100'],

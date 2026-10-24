@@ -75,7 +75,7 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Cantidad</label>
-                <input type="number" name="cantidad" value="{{ old('cantidad', 1 grading) }}" min="1" class="w-full px-3 py-2 border rounded-lg bg-white font-bold">
+                <input type="number" name="cantidad" value="{{ old('cantidad', 1) }}" min="1" class="w-full px-3 py-2 border rounded-lg bg-white font-bold">
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Puesto Físico</label>

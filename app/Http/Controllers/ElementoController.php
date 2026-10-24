@@ -77,6 +77,10 @@ class ElementoController extends Controller
      */
     public function create(): View
     {
+        if (!auth()->user()?->canManageElementos()) {
+            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+        }
+
         $tipos = Tipo::with('atributos')->orderBy('nombre')->get();
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
 
@@ -88,6 +92,10 @@ class ElementoController extends Controller
      */
     public function store(StoreElementoRequest $request): RedirectResponse
     {
+        if (!auth()->user()?->canManageElementos()) {
+            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+        }
+
         $validated = $request->validated();
 
         $elemento = DB::transaction(function () use ($request, $validated) {
@@ -171,6 +179,10 @@ class ElementoController extends Controller
      */
     public function edit(Elemento $elemento): View
     {
+        if (!auth()->user()?->canManageElementos()) {
+            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+        }
+
         $elemento->load('valoresAtributos');
         $tipos = Tipo::with('atributos')->orderBy('nombre')->get();
         return view('elementos.edit', compact('elemento', 'tipos'));
@@ -181,6 +193,10 @@ class ElementoController extends Controller
      */
     public function update(UpdateElementoRequest $request, Elemento $elemento): RedirectResponse
     {
+        if (!auth()->user()?->canManageElementos()) {
+            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+        }
+
         $validated = $request->validated();
 
         $cleanLia = Elemento::normalizarIdentificador($validated['nro_lia'] ?? null);
@@ -233,6 +249,10 @@ class ElementoController extends Controller
      */
     public function destroy(Elemento $elemento): RedirectResponse
     {
+        if (!auth()->user()?->canManageElementos()) {
+            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+        }
+
         $elemento->delete();
 
         return redirect()->route('elementos.index')

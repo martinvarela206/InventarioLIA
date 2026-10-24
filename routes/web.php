@@ -44,23 +44,38 @@ Route::middleware('auth')->group(function () {
         return view('auth.bienvenida');
     })->name('bienvenida');
 
-    // Perfil de Usuario (accesible por todo usuario autenticado)
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    // Perfil de Usuario (requiere rol registered para gestionar sus datos personales)
+    Route::middleware('role:registered')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    });
 
-    // Módulos Operativos Protegidos (exclusivos para usuarios con permisos: rev, tec, item_admin, user_admin)
+    // Módulos Operativos Protegidos (usuarios con permisos: rev, tec, item_admin, user_admin, app_admin)
     Route::middleware('has_permissions')->group(function () {
         // Dashboard Operativo
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
-        // Catálogo de Elementos e Inspector Dual-Pane
-        Route::resource('elementos', ElementoController::class);
+        // Catálogo de Elementos e Inspector Dual-Pane (Lectura general para módulos operativos)
+        Route::get('/elementos', [ElementoController::class, 'index'])->name('elementos.index');
+
+        // Mutación de Inventario (Alta, Edición y Baja de Activos - exclusivo item_admin)
+        Route::middleware('role:item_admin')->group(function () {
+            Route::get('/elementos/create', [ElementoController::class, 'create'])->name('elementos.create');
+            Route::post('/elementos', [ElementoController::class, 'store'])->name('elementos.store');
+            Route::get('/elementos/{elemento}/edit', [ElementoController::class, 'edit'])->name('elementos.edit');
+            Route::put('/elementos/{elemento}', [ElementoController::class, 'update'])->name('elementos.update');
+            Route::delete('/elementos/{elemento}', [ElementoController::class, 'destroy'])->name('elementos.destroy');
+            Route::resource('tipos', \App\Http\Controllers\TipoController::class)->except(['show']);
+            Route::post('/atributos', [\App\Http\Controllers\TipoController::class, 'storeAtributo'])->name('atributos.store');
+        });
+
+        Route::get('/elementos/{elemento}', [ElementoController::class, 'show'])->name('elementos.show');
 
         // Historial y Consulta de Movimientos (Lectura general)
         Route::get('/movimientos', [MovimientoController::class, 'index'])->name('movimientos.index');
 
-        // Gestión Operativa de Movimientos y Préstamos (exclusivo tec, item_admin, user_admin - NO rev)
-        Route::middleware('role:tec,item_admin,user_admin')->group(function () {
+        // Gestión Operativa de Movimientos y Préstamos (exclusivo tec)
+        Route::middleware('role:tec')->group(function () {
             Route::get('/movimientos/rapido', [MovimientoController::class, 'rapido'])->name('movimientos.rapido');
             Route::get('/api/elementos/buscar-rapido', [MovimientoController::class, 'apiBuscar'])->name('api.elementos.buscar');
             Route::post('/movimientos', [MovimientoController::class, 'store'])->name('movimientos.store');
@@ -68,20 +83,16 @@ Route::middleware('auth')->group(function () {
             Route::post('/movimientos/{movimiento}/correccion', [MovimientoController::class, 'storeCorreccion'])->name('movimientos.correccion');
         });
 
-        // Módulo de Reportes Oficiales y Auditoría
-        Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
-        Route::get('/reportes/auditoria-sala/{ubicacion}', [ReporteController::class, 'auditoriaSala'])->name('reportes.auditoria');
-        Route::get('/reportes/{tipo}', [ReporteController::class, 'show'])->name('reportes.show');
-        Route::get('/reportes/{tipo}/export-csv', [ReporteController::class, 'exportCsv'])->name('reportes.exportCsv');
+        // Módulo de Reportes Oficiales y Auditoría (exclusivo rev)
+        Route::middleware('role:rev')->group(function () {
+            Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
+            Route::get('/reportes/auditoria-sala/{ubicacion}', [ReporteController::class, 'auditoriaSala'])->name('reportes.auditoria');
+            Route::get('/reportes/{tipo}', [ReporteController::class, 'show'])->name('reportes.show');
+            Route::get('/reportes/{tipo}/export-csv', [ReporteController::class, 'exportCsv'])->name('reportes.exportCsv');
+        });
 
         // API de Atributos por Tipo
         Route::get('/api/tipos/{tipo}/atributos', [\App\Http\Controllers\TipoController::class, 'apiAtributosPorTipo'])->name('api.tipos.atributos');
-
-        // Gestión de Tipos de Activos y Atributos Técnicos (exclusivo item_admin)
-        Route::middleware('role:item_admin')->group(function () {
-            Route::resource('tipos', \App\Http\Controllers\TipoController::class)->except(['show']);
-            Route::post('/atributos', [\App\Http\Controllers\TipoController::class, 'storeAtributo'])->name('atributos.store');
-        });
 
         // Gestión de Usuarios y Trayectorias (user_admin)
         Route::middleware('user_admin')->group(function () {

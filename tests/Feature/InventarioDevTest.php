@@ -59,7 +59,7 @@ class InventarioDevTest extends TestCase
             'password' => bcrypt('password'),
             'activo' => true,
         ]);
-        $rolAdmin = Rol::where('rol', 'user_admin')->first();
+        $rolAdmin = Rol::where('rol', 'item_admin')->first();
         $admin->roles()->attach($rolAdmin);
 
         $tipo = Tipo::where('nombre', 'computadora')->first();
@@ -133,7 +133,7 @@ class InventarioDevTest extends TestCase
             'password' => bcrypt('password'),
             'activo' => true,
         ]);
-        $admin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+        $admin->roles()->attach(Rol::where('rol', 'rev')->first());
 
         $tipo = Tipo::first();
         Elemento::create([
@@ -734,6 +734,101 @@ class InventarioDevTest extends TestCase
         $responseApp = $this->actingAs($docente->fresh())->get(route('app_admin.index'));
         $responseApp->assertStatus(200);
         $responseApp->assertSee('Panel de Gestión de la Aplicación');
+    }
+
+    public function test_interseccion_cero_de_permisos_y_reglas_estrictas_de_roles(): void
+    {
+        // CASO 1: Usuario con user_admin + item_admin pero SIN app_admin
+        // NO debe poder acceder a la gestión de la app
+        $userAdminItem = Usuario::create([
+            'nombre' => 'User e Item Admin',
+            'email' => 'user_item_admin@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $userAdminItem->roles()->attach([
+            Rol::where('rol', 'user_admin')->first()->id,
+            Rol::where('rol', 'item_admin')->first()->id,
+            Rol::where('rol', 'registered')->first()->id,
+        ]);
+
+        $this->assertFalse($userAdminItem->isAppAdmin());
+        $responseApp = $this->actingAs($userAdminItem)->get(route('app_admin.index'));
+        $responseApp->assertStatus(403);
+
+        $responseCarreras = $this->actingAs($userAdminItem)->get(route('app_admin.carreras'));
+        $responseCarreras->assertStatus(403);
+
+        // Sin embargo sí puede gestionar usuarios y activos
+        $this->actingAs($userAdminItem)->get(route('users.index'))->assertStatus(200);
+        $this->actingAs($userAdminItem)->get(route('elementos.create'))->assertStatus(200);
+
+        // Pero NO puede hacer movimientos (requiere rol tec)
+        $this->actingAs($userAdminItem)->get(route('movimientos.rapido'))->assertStatus(403);
+
+        // CASO 2: Usuario con tec pero SIN rev
+        $tecnicoSolo = Usuario::create([
+            'nombre' => 'Tecnico Puro',
+            'email' => 'tecpuro@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $tecnicoSolo->roles()->attach([
+            Rol::where('rol', 'tec')->first()->id,
+            Rol::where('rol', 'registered')->first()->id,
+        ]);
+
+        // Puede hacer movimientos
+        $this->actingAs($tecnicoSolo)->get(route('movimientos.rapido'))->assertStatus(200);
+
+        // NO puede ver reportes (requiere rol rev)
+        $this->actingAs($tecnicoSolo)->get(route('reportes.index'))->assertStatus(403);
+
+        // NO puede dar de alta activos (requiere rol item_admin)
+        $this->actingAs($tecnicoSolo)->get(route('elementos.create'))->assertStatus(403);
+
+        // CASO 3: Usuario que SOLO tiene registered
+        $soloRegistrado = Usuario::create([
+            'nombre' => 'Solo Registrado',
+            'email' => 'soloregistrado@test.com',
+            'password' => bcrypt('password'),
+            'activo' => false,
+        ]);
+        $soloRegistrado->roles()->attach(Rol::where('rol', 'registered')->first()->id);
+
+        $this->assertTrue($soloRegistrado->isOnlyRegistered());
+        $this->assertFalse($soloRegistrado->hasActivePermissions());
+
+        // Al intentar ir al dashboard, es redirigido a bienvenida
+        $this->actingAs($soloRegistrado)->get(route('dashboard.index'))->assertRedirect(route('bienvenida'));
+
+        // Puede editar sus datos personales en perfil
+        $this->actingAs($soloRegistrado)->get(route('profile.edit'))->assertStatus(200);
+
+        // CASO 4: Usuario con rol operativo que visita bienvenida es redirigido a dashboard
+        $revisor = Usuario::create([
+            'nombre' => 'Revisor Activo',
+            'email' => 'rev_activo@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $revisor->roles()->attach([
+            Rol::where('rol', 'rev')->first()->id,
+            Rol::where('rol', 'registered')->first()->id,
+        ]);
+
+        $this->actingAs($revisor)->get(route('bienvenida'))->assertRedirect(route('dashboard.index'));
+
+        // CASO 5: Usuario sin rol registered no puede editar su perfil
+        $sinRegistered = Usuario::create([
+            'nombre' => 'Sin Registered',
+            'email' => 'sinregistered@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $sinRegistered->roles()->attach(Rol::where('rol', 'rev')->first()->id);
+
+        $this->actingAs($sinRegistered)->get(route('profile.edit'))->assertStatus(403);
     }
 }
 

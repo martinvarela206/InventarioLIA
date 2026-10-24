@@ -24,7 +24,7 @@ class UserSeeder extends Seeder
                 'dni' => '30111222',
                 'cargo_actual' => 'Director LIA',
                 'activo' => true,
-                'roles' => ['user_admin', 'app_admin', 'item_admin', 'tec', 'rev'],
+                'roles' => ['registered', 'user_admin', 'app_admin', 'item_admin', 'tec', 'rev'],
             ],
             [
                 'nombre' => 'Administrador de Aplicación',
@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
                 'dni' => '31222333',
                 'cargo_actual' => 'Coordinador Web LIA',
                 'activo' => true,
-                'roles' => ['app_admin'],
+                'roles' => ['registered', 'app_admin'],
             ],
             [
                 'nombre' => 'Encargado de Inventario',
@@ -42,7 +42,7 @@ class UserSeeder extends Seeder
                 'dni' => '32333444',
                 'cargo_actual' => 'JTP Inventario',
                 'activo' => true,
-                'roles' => ['item_admin', 'tec', 'rev'],
+                'roles' => ['registered', 'item_admin'],
             ],
             [
                 'nombre' => 'Técnico de Laboratorio',
@@ -51,7 +51,7 @@ class UserSeeder extends Seeder
                 'dni' => '35555666',
                 'cargo_actual' => 'Ayudante de 1ra',
                 'activo' => true,
-                'roles' => ['tec', 'rev'],
+                'roles' => ['registered', 'tec', 'rev'],
             ],
             [
                 'nombre' => 'Revisor de Auditoría',
@@ -60,7 +60,7 @@ class UserSeeder extends Seeder
                 'dni' => '28777888',
                 'cargo_actual' => 'Docente Investigador',
                 'activo' => true,
-                'roles' => ['rev'],
+                'roles' => ['registered', 'rev'],
             ],
             [
                 'nombre' => 'Usuario Registrado',

@@ -16,7 +16,7 @@
                     Registrar Movimiento / Préstamo
                 </a>
             @endif
-            @if(Auth::user()->isItemAdmin() || Auth::user()->isAdmin())
+            @if(Auth::user()->canManageElementos())
                 <a href="{{ route('elementos.edit', $elemento->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-semibold py-2 px-3.5 rounded-lg shadow-sm text-sm transition-all">
                     <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                     Editar Ficha
@@ -232,7 +232,7 @@
                     @else
                         <div class="py-12 text-center text-gray-400 text-sm">
                             <p>No se cargaron especificaciones de hardware detalladas para este dispositivo.</p>
-                            @if(Auth::user()->isItemAdmin() || Auth::user()->isAdmin())
+                            @if(Auth::user()->canManageElementos())
                                 <a href="{{ route('elementos.edit', $elemento->id) }}" class="inline-block mt-3 text-xs text-amber-700 underline font-semibold">Configurar especificaciones</a>
                             @endif
                         </div>

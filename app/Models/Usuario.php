@@ -66,6 +66,11 @@ class Usuario extends Authenticatable
         return $this->roles->pluck('rol')->intersect($roleList)->isNotEmpty();
     }
 
+    public function isUserAdmin(): bool
+    {
+        return $this->hasRole('user_admin');
+    }
+
     public function isAdmin(): bool
     {
         return $this->hasRole('user_admin');
@@ -73,7 +78,7 @@ class Usuario extends Authenticatable
 
     public function isAppAdmin(): bool
     {
-        return $this->hasRole(['app_admin', 'user_admin']);
+        return $this->hasRole('app_admin');
     }
 
     public function isItemAdmin(): bool
@@ -91,19 +96,52 @@ class Usuario extends Authenticatable
         return $this->hasRole('rev');
     }
 
+    public function isRegistered(): bool
+    {
+        return $this->hasRole('registered');
+    }
+
     public function canManageMovimientos(): bool
     {
-        return $this->hasRole(['tec', 'item_admin', 'user_admin']);
+        return $this->hasRole('tec');
     }
 
     public function canManageElementos(): bool
     {
-        return $this->hasRole(['item_admin', 'user_admin']);
+        return $this->hasRole('item_admin');
     }
 
+    public function canManageUsers(): bool
+    {
+        return $this->hasRole('user_admin');
+    }
+
+    public function canManageApp(): bool
+    {
+        return $this->hasRole('app_admin');
+    }
+
+    public function canEditProfile(): bool
+    {
+        return $this->hasRole('registered');
+    }
+
+    /**
+     * Determina si el usuario tiene al menos un rol operativo más allá de registered.
+     * Si posee cualquier rol (rev, tec, item_admin, user_admin, app_admin), ingresa al panel y nunca ve bienvenida.
+     */
     public function hasActivePermissions(): bool
     {
         return $this->hasRole(['rev', 'tec', 'item_admin', 'user_admin', 'app_admin']);
+    }
+
+    /**
+     * Determina si el usuario posee EXCLUSIVAMENTE el rol registered.
+     */
+    public function isOnlyRegistered(): bool
+    {
+        $roles = $this->roles->pluck('rol');
+        return $roles->contains('registered') && $roles->diff(['registered'])->isEmpty();
     }
 
     public function movimientos(): HasMany
