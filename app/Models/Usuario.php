@@ -85,6 +85,11 @@ class Usuario extends Authenticatable
         return $this->hasRole(['item_admin', 'user_admin']);
     }
 
+    public function hasActivePermissions(): bool
+    {
+        return $this->hasRole(['rev', 'tec', 'item_admin', 'user_admin']);
+    }
+
     public function movimientos(): HasMany
     {
         return $this->hasMany(Movimiento::class, 'user_id');

@@ -540,5 +540,48 @@ class InventarioDevTest extends TestCase
         $allowedGet = $this->actingAs($tecnico)->get(route('movimientos.rapido'));
         $allowedGet->assertStatus(200);
     }
+
+    public function test_usuario_con_rol_registered_es_redirigido_a_bienvenida_y_no_ve_dashboard_ni_modulos(): void
+    {
+        $usuarioRegistrado = Usuario::create([
+            'nombre' => 'Estudiante Pendiente',
+            'email' => 'estudiante_pendiente@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $usuarioRegistrado->roles()->attach(Rol::where('rol', 'registered')->first());
+
+        // 1. Intento de acceder al Dashboard: Redirigido a /bienvenida
+        $responseDash = $this->actingAs($usuarioRegistrado)->get(route('dashboard.index'));
+        $responseDash->assertRedirect(route('bienvenida'));
+
+        // 2. Pantalla de Bienvenida contiene mensaje institucional y estado
+        $responseBienvenida = $this->actingAs($usuarioRegistrado)->get(route('bienvenida'));
+        $responseBienvenida->assertStatus(200);
+        $responseBienvenida->assertSee('¡Bienvenido a Nexo LIA!');
+        $responseBienvenida->assertSee('Cuenta Registrada: Esperando Asignación de Permisos');
+        $responseBienvenida->assertSee('Estudiante Pendiente');
+
+        // 3. Navbar NO muestra accesos a módulos operativos
+        $responseBienvenida->assertDontSee(route('dashboard.index'));
+        $responseBienvenida->assertDontSee(route('elementos.index'));
+        $responseBienvenida->assertDontSee(route('reportes.index'));
+        $responseBienvenida->assertDontSee(route('tipos.index'));
+
+        // 4. Intento de acceder a Inventario o Reportes: Redirigido a /bienvenida
+        $responseElementos = $this->actingAs($usuarioRegistrado)->get(route('elementos.index'));
+        $responseElementos->assertRedirect(route('bienvenida'));
+
+        $responseReportes = $this->actingAs($usuarioRegistrado)->get(route('reportes.index'));
+        $responseReportes->assertRedirect(route('bienvenida'));
+
+        // 5. Una vez que el administrador le asigna un rol operativo (ej: rev), puede acceder al dashboard
+        $usuarioRegistrado->roles()->attach(Rol::where('rol', 'rev')->first());
+        $usuarioRegistrado->refresh();
+
+        $responseHabilitado = $this->actingAs($usuarioRegistrado)->get(route('dashboard.index'));
+        $responseHabilitado->assertStatus(200);
+        $responseHabilitado->assertSee('Centro de Control Operativo LIA');
+    }
 }
 
