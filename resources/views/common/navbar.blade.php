@@ -26,14 +26,14 @@
 
                     <div class="flex items-center gap-3 pl-4 border-l border-amber-600/40">
                         @auth
-                            <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="text-[#111] font-bold text-sm px-3.5 py-1.5 rounded-lg bg-black/10 hover:bg-black/15 transition-all">
+                            <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="text-[#111] font-bold text-sm px-4 py-2 rounded-xl bg-black/10 hover:bg-black/15 transition-all">
                                 Ir al Panel
                             </a>
                         @else
-                            <a href="{{ route('login') }}" class="text-[#111] font-bold text-sm px-3.5 py-1.5 rounded-lg hover:bg-amber-400 transition-colors">
-                                Ingresar
+                            <a href="{{ route('login') }}" class="text-[#111] hover:text-black font-bold text-sm px-3.5 py-2 rounded-xl hover:bg-black/10 transition-all">
+                                Iniciar Sesión
                             </a>
-                            <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] hover:bg-black/80 font-extrabold text-sm px-4 py-1.5 rounded-lg transition-colors shadow-sm">
+                            <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] hover:bg-black/85 font-extrabold text-sm px-4 py-2 rounded-xl transition-all shadow-sm border border-black/20">
                                 Registrarse
                             </a>
                         @endauth
@@ -42,23 +42,23 @@
                     <nav class="flex items-center gap-2">
                         @auth
                             @if(Auth::user()->hasActivePermissions())
-                                <a href="{{ route('dashboard.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('dashboard.*') ? 'bg-amber-400/90 shadow-sm' : '' }}">Dashboard</a>
-                                <a href="{{ route('elementos.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('elementos.*') ? 'bg-amber-400/90 shadow-sm' : '' }}">Inventario</a>
+                                <a href="{{ route('dashboard.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('dashboard.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Dashboard</a>
+                                <a href="{{ route('elementos.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('elementos.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Inventario</a>
                                 @if(Auth::user()->canManageMovimientos())
-                                    <a href="{{ route('movimientos.rapido') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md bg-amber-500/50 hover:bg-amber-500/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('movimientos.rapido') ? 'ring-2 ring-amber-800' : '' }}">
+                                    <a href="{{ route('movimientos.rapido') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg bg-amber-500/50 hover:bg-amber-500/80 transition-colors flex items-center gap-1.5 {{ Request::routeIs('movimientos.rapido') ? 'ring-2 ring-amber-800 font-bold' : '' }}">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                                         Movimiento Rápido
                                     </a>
                                 @endif
-                                <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('reportes.*') ? 'bg-amber-400/90 shadow-sm' : '' }}">Reportes</a>
+                                <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('reportes.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Reportes</a>
                                 @if(Auth::user()->hasRole('item_admin'))
-                                    <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('tipos.*') ? 'bg-amber-400/90 shadow-sm' : '' }}">Tipos</a>
+                                    <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('tipos.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Tipos</a>
                                 @endif
                                 @if(Auth::user()->isAppAdmin())
-                                    <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md bg-amber-500/30 hover:bg-amber-500/60 transition-colors {{ Request::routeIs('app_admin.*') ? 'bg-amber-500 shadow-sm font-bold' : '' }}">Gestión App</a>
+                                    <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg bg-amber-500/30 hover:bg-amber-500/60 transition-colors {{ Request::routeIs('app_admin.*') ? 'bg-amber-500 shadow-sm font-bold' : '' }}">Gestión App</a>
                                 @endif
                                 @if(Auth::user()->isAdmin())
-                                    <a href="{{ route('users.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-md hover:bg-amber-400/80 transition-colors {{ Request::routeIs('users.*') ? 'bg-amber-400/90 shadow-sm' : '' }}">Usuarios</a>
+                                    <a href="{{ route('users.index') }}" class="text-[#111] font-semibold px-3 py-1.5 rounded-lg hover:bg-amber-400/80 transition-colors {{ Request::routeIs('users.*') ? 'bg-amber-400/90 shadow-sm font-bold' : '' }}">Usuarios</a>
                                 @endif
                             @endif
                         @endauth
@@ -77,8 +77,8 @@
                                 </button>
                             </form>
                         @else
-                            <a href="{{ route('login') }}" class="text-[#111] font-semibold px-3.5 py-1.5 rounded-lg hover:bg-amber-400 transition-colors text-sm">Iniciar sesión</a>
-                            <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] hover:bg-black/80 font-bold text-sm px-3.5 py-1.5 rounded-lg transition-colors shadow-sm">Registrarse</a>
+                            <a href="{{ route('login') }}" class="text-[#111] hover:text-black font-bold text-sm px-3.5 py-2 rounded-xl hover:bg-black/10 transition-all">Iniciar Sesión</a>
+                            <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] hover:bg-black/85 font-extrabold text-sm px-4 py-2 rounded-xl transition-all shadow-sm border border-black/20">Registrarse</a>
                         @endauth
                     </div>
                 @endif
@@ -88,38 +88,38 @@
         <!-- Mobile Menu (Hidden by default) -->
         <div id="mobile-menu" class="hidden lg:hidden flex flex-col gap-2 mt-4 pb-2 border-t border-amber-600/30 pt-3">
             @if(Request::is('/'))
-                <a href="#inicio" class="text-[#111] font-semibold py-1.5 px-3 rounded hover:bg-amber-400">Inicio</a>
-                <a href="#sistema-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded hover:bg-amber-400">Funcionalidades</a>
-                <a href="#espacios-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded hover:bg-amber-400">Espacios</a>
-                <a href="#personal-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded hover:bg-amber-400">Personal</a>
-                <a href="#actividades-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded hover:bg-amber-400">Actividades</a>
+                <a href="#inicio" class="text-[#111] font-semibold py-1.5 px-3 rounded-lg hover:bg-amber-400">Inicio</a>
+                <a href="#sistema-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded-lg hover:bg-amber-400">Funcionalidades</a>
+                <a href="#espacios-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded-lg hover:bg-amber-400">Espacios</a>
+                <a href="#personal-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded-lg hover:bg-amber-400">Personal</a>
+                <a href="#actividades-lia" class="text-[#111] font-semibold py-1.5 px-3 rounded-lg hover:bg-amber-400">Actividades</a>
                 <div class="h-px bg-amber-600/40 my-2"></div>
                 @auth
-                    <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="text-[#111] font-bold py-2 px-3 rounded bg-amber-400 text-center">Ir al Panel</a>
+                    <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="text-[#111] font-bold py-2 px-3 rounded-xl bg-amber-400 text-center">Ir al Panel</a>
                 @else
                     <div class="flex items-center gap-2 px-1 py-1">
-                        <a href="{{ route('login') }}" class="text-[#111] font-bold py-2 px-3 rounded bg-amber-400/80 hover:bg-amber-400 flex-1 text-center text-sm">Ingresar</a>
-                        <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] font-bold py-2 px-3 rounded flex-1 text-center text-sm shadow-sm">Registrarse</a>
+                        <a href="{{ route('login') }}" class="text-[#111] font-bold py-2 px-3 rounded-xl bg-amber-400/80 hover:bg-amber-400 flex-1 text-center text-sm">Iniciar Sesión</a>
+                        <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] hover:bg-black/85 font-extrabold py-2 px-3 rounded-xl flex-1 text-center text-sm shadow-sm border border-black/20">Registrarse</a>
                     </div>
                 @endauth
             @else
                 @auth
                     @if(Auth::user()->hasActivePermissions())
-                        <a href="{{ route('dashboard.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Dashboard</a>
-                        <a href="{{ route('elementos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Inventario Completo</a>
+                        <a href="{{ route('dashboard.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Dashboard</a>
+                        <a href="{{ route('elementos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Inventario Completo</a>
                         @if(Auth::user()->canManageMovimientos())
-                            <a href="{{ route('movimientos.rapido') }}" class="text-[#111] font-semibold py-2 px-3 rounded bg-amber-500/40">⚡ Movimiento Rápido (Móvil)</a>
+                            <a href="{{ route('movimientos.rapido') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg bg-amber-500/40">⚡ Movimiento Rápido (Móvil)</a>
                         @endif
-                        <a href="{{ route('movimientos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Historial de Movimientos</a>
-                        <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Reportes Oficiales</a>
+                        <a href="{{ route('movimientos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Historial de Movimientos</a>
+                        <a href="{{ route('reportes.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Reportes Oficiales</a>
                         @if(Auth::user()->hasRole('item_admin'))
-                            <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Tipos de Hardware</a>
+                            <a href="{{ route('tipos.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Tipos de Hardware</a>
                         @endif
                         @if(Auth::user()->isAppAdmin())
-                            <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded bg-amber-400/60 font-bold">⚙️ Gestión App</a>
+                            <a href="{{ route('app_admin.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg bg-amber-400/60 font-bold">⚙️ Gestión App</a>
                         @endif
                         @if(Auth::user()->isAdmin())
-                            <a href="{{ route('users.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded hover:bg-amber-400">Administración de Usuarios</a>
+                            <a href="{{ route('users.index') }}" class="text-[#111] font-semibold py-2 px-3 rounded-lg hover:bg-amber-400">Administración de Usuarios</a>
                         @endif
                     @endif
                     <div class="h-px bg-amber-600/40 my-2"></div>
@@ -127,13 +127,13 @@
                         <a href="{{ route('profile.edit') }}" class="font-medium text-sm text-[#111]">Perfil: {{ Auth::user()->nombre }}</a>
                         <form action="{{ route('logout') }}" method="POST" class="inline">
                             @csrf
-                            <button type="submit" class="text-xs bg-[#c62828] text-white px-3 py-1.5 rounded font-bold">Cerrar Sesión</button>
+                            <button type="submit" class="text-xs bg-[#c62828] text-white px-3 py-1.5 rounded-lg font-bold">Cerrar Sesión</button>
                         </form>
                     </div>
                 @else
                     <div class="flex items-center gap-2 px-1 py-1">
-                        <a href="{{ route('login') }}" class="text-[#111] font-semibold py-2 px-3 rounded bg-amber-400/80 hover:bg-amber-400 flex-1 text-center text-sm">Iniciar sesión</a>
-                        <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] font-bold py-2 px-3 rounded flex-1 text-center text-sm shadow-sm">Registrarse</a>
+                        <a href="{{ route('login') }}" class="text-[#111] font-bold py-2 px-3 rounded-xl bg-amber-400/80 hover:bg-amber-400 flex-1 text-center text-sm">Iniciar Sesión</a>
+                        <a href="{{ route('register') }}" class="bg-[#111] text-[#fbc101] hover:bg-black/85 font-extrabold py-2 px-3 rounded-xl flex-1 text-center text-sm shadow-sm border border-black/20">Registrarse</a>
                     </div>
                 @endauth
             @endif

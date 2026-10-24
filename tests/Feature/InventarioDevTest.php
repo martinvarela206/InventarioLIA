@@ -564,7 +564,7 @@ class InventarioDevTest extends TestCase
         $responseLanding->assertStatus(200);
         $responseLanding->assertSee(route('register'));
         $responseLanding->assertSee('Registrarse');
-        $responseLanding->assertSee('Ingresar');
+        $responseLanding->assertSee('Iniciar Sesión');
 
         // 2. Acceder al formulario de registro
         $responseForm = $this->get(route('register'));

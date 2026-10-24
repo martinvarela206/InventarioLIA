@@ -16,7 +16,7 @@
                     <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="nombre">
                         Nombre y Apellido *
                     </label>
-                    <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 @error('nombre') border-red-500 @enderror" id="nombre" type="text" name="nombre" value="{{ old('nombre') }}" required autofocus placeholder="Ej. Juan Pérez">
+                    <input class="w-full border rounded-xl px-3.5 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 @error('nombre') border-red-500 @enderror" id="nombre" type="text" name="nombre" value="{{ old('nombre') }}" required autofocus placeholder="Ej. Juan Pérez">
                     @error('nombre')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
@@ -26,7 +26,7 @@
                     <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="email">
                         Correo Institucional / Personal *
                     </label>
-                    <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 @error('email') border-red-500 @enderror" id="email" type="email" name="email" value="{{ old('email') }}" required placeholder="usuario@exactas.unsj.edu.ar">
+                    <input class="w-full border rounded-xl px-3.5 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 @error('email') border-red-500 @enderror" id="email" type="email" name="email" value="{{ old('email') }}" required placeholder="usuario@exactas.unsj.edu.ar">
                     @error('email')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
@@ -37,13 +37,13 @@
                         <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="dni">
                             DNI (Opcional)
                         </label>
-                        <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="dni" type="text" name="dni" value="{{ old('dni') }}" placeholder="35123456">
+                        <input class="w-full border rounded-xl px-3.5 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="dni" type="text" name="dni" value="{{ old('dni') }}" placeholder="35123456">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="carrera_id">
                             Carrera Universitaria
                         </label>
-                        <select class="w-full border rounded-lg px-2.5 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium" id="carrera_id" name="carrera_id">
+                        <select class="w-full border rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium" id="carrera_id" name="carrera_id">
                             <option value="">Selecciona tu carrera...</option>
                             @foreach($carreras as $c)
                                 <option value="{{ $c->id }}" {{ old('carrera_id') == $c->id ? 'selected' : '' }}>
@@ -58,7 +58,7 @@
                     <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="password">
                         Contraseña *
                     </label>
-                    <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 @error('password') border-red-500 @enderror" id="password" type="password" name="password" required placeholder="Mínimo 4 caracteres">
+                    <input class="w-full border rounded-xl px-3.5 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 @error('password') border-red-500 @enderror" id="password" type="password" name="password" required placeholder="Mínimo 4 caracteres">
                     @error('password')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
@@ -68,7 +68,7 @@
                     <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="password_confirmation">
                         Confirmar Contraseña *
                     </label>
-                    <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="password_confirmation" type="password" name="password_confirmation" required placeholder="Repita la contraseña">
+                    <input class="w-full border rounded-xl px-3.5 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="password_confirmation" type="password" name="password_confirmation" required placeholder="Repita la contraseña">
                 </div>
 
                 <div class="mb-4">

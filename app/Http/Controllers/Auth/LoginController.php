@@ -33,6 +33,10 @@ class LoginController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
             $target = Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida');
+            $intended = session()->get('url.intended');
+            if ($intended === url('/') || empty($intended)) {
+                return redirect($target);
+            }
             return redirect()->intended($target);
         }
 
@@ -41,6 +45,10 @@ class LoginController extends Controller
             if (Auth::attempt(['email' => $input, 'password' => $password], $request->boolean('remember'))) {
                 $request->session()->regenerate();
                 $target = Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida');
+                $intended = session()->get('url.intended');
+                if ($intended === url('/') || empty($intended)) {
+                    return redirect($target);
+                }
                 return redirect()->intended($target);
             }
         }

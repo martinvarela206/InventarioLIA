@@ -7,14 +7,14 @@
             
             <div class="flex gap-4 sm:gap-6 justify-center my-4 flex-wrap">
                 @auth
-                    <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="bg-[#dba800] text-[#111] px-6 py-2.5 rounded border-4 border-[#dba800] font-bold hover:bg-[#fbc101] hover:border-[#fbc101] transition-all duration-200">
+                    <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-6 py-3 rounded-xl shadow-lg transition-all text-sm">
                         Ir al Panel
                     </a>
                 @else
-                    <a href="{{ route('login') }}" class="bg-[#dba800] text-[#111] px-6 py-2.5 rounded border-4 border-[#dba800] font-bold hover:bg-[#fbc101] hover:border-[#fbc101] transition-all duration-200">
-                        Ingresar
+                    <a href="{{ route('login') }}" class="bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-6 py-3 rounded-xl shadow-lg transition-all text-sm">
+                        Iniciar Sesión
                     </a>
-                    <a href="{{ route('register') }}" class="bg-black/40 backdrop-blur-md text-[#dba800] px-6 py-2.5 rounded border-4 border-[#dba800] font-bold hover:bg-[#fbc101] hover:text-[#111] hover:border-[#fbc101] transition-all duration-200">
+                    <a href="{{ route('register') }}" class="bg-[#111] hover:bg-black/85 text-[#fbc101] font-extrabold px-6 py-3 rounded-xl shadow-lg transition-all text-sm border border-black/20">
                         Registrarse
                     </a>
                 @endauth
