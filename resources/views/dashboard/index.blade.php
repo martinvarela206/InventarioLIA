@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold text-amber-700 mb-8">Dashboard - Inventario LIA</h1>
+    <h1 class="text-3xl font-bold text-amber-700 mb-8">Dashboard - Nexo LIA</h1>
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

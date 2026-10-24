@@ -1,4 +1,4 @@
-# Inventario LIA (LIA Kairos)
+# Nexo LIA
 
 Sistema de Gestión de Inventario para el **Laboratorio de Informática Aplicada (LIA)** — Facultad de Ciencias Exactas, Físicas y Naturales (UNSJ).
 
