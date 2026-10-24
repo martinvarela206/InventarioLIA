@@ -100,7 +100,7 @@ class ReporteController extends Controller
     private function obtenerDatosReporte(string $tipo, Request $request): array
     {
         $columnasStandard = [
-            'Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Ubicación Física', 'Puesto', 'Estado Operativo', 'Solicitante (si prestado)', 'Garantía / Obs'
+            'Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Ubicación', 'Puesto', 'Estado', 'Solicitante', 'Garantía / Obs'
         ];
 
         switch ($tipo) {

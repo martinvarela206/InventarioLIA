@@ -103,33 +103,48 @@
         </table>
 
         <!-- RECUADRO DE CONFORMIDAD -->
-        <div class="mt-8 pt-4 border-t-2 border-gray-800 grid grid-cols-2 gap-8 text-xs text-gray-800">
+        <div class="mt-8 pt-4 border-t-2 border-gray-800 grid grid-cols-2 gap-8 text-[9pt] text-gray-800">
             <div class="border-t border-gray-800 pt-2 text-center mt-10">
                 <span class="block font-bold">Firma del Revisor / Auditor de Sala</span>
-                <span class="block text-gray-500 text-[10px]">Aclaración y DNI</span>
+                <span class="block text-gray-500 text-[8pt]">Aclaración y DNI</span>
             </div>
             <div class="border-t border-gray-800 pt-2 text-center mt-10">
                 <span class="block font-bold">Firma de Conformidad del Responsable LIA</span>
-                <span class="block text-gray-500 text-[10px]">Aclaración y Cargo</span>
+                <span class="block text-gray-500 text-[8pt]">Aclaración y Cargo</span>
             </div>
         </div>
     </div>
 </div>
 
 <style>
+@page {
+    size: landscape;
+    margin: 8mm 6mm;
+}
+
 @media print {
     body {
         background-color: #fff !important;
-        font-size: 9pt;
+        font-size: 8pt !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
-    header, footer, .print\:hidden {
+    header, footer, nav, .print\:hidden {
         display: none !important;
     }
     table {
         page-break-inside: auto;
+        width: 100% !important;
+        font-size: 8pt !important;
+        border-collapse: collapse !important;
     }
     tr {
         page-break-inside: avoid;
+    }
+    th, td {
+        font-size: 8pt !important;
+        padding: 2.5px 3.5px !important;
+        line-height: 1.15 !important;
     }
 }
 </style>
