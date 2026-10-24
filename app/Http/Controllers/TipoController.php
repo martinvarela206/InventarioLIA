@@ -47,6 +47,12 @@ class TipoController extends Controller
             'atributos.*' => 'exists:atributos,id',
             'nuevo_atributo_nombre' => 'nullable|string|max:100',
             'nuevo_atributo_unidad' => 'nullable|string|max:20',
+            'nuevos_atributos_nombre' => 'nullable|array',
+            'nuevos_atributos_nombre.*' => 'nullable|string|max:100',
+            'nuevos_atributos_unidad' => 'nullable|array',
+            'nuevos_atributos_unidad.*' => 'nullable|string|max:30',
+            'nuevos_atributos_tipo' => 'nullable|array',
+            'nuevos_atributos_tipo.*' => 'nullable|string',
         ]);
 
         $tipo = Tipo::create([
@@ -56,15 +62,8 @@ class TipoController extends Controller
 
         $atributoIds = $request->input('atributos', []);
 
-        // Si el usuario definió un nuevo atributo en el formulario
-        if ($request->filled('nuevo_atributo_nombre')) {
-            $nuevoAttr = Atributo::firstOrCreateNormalizado(
-                $request->nuevo_atributo_nombre,
-                'texto',
-                $request->nuevo_atributo_unidad ?: null
-            );
-            $atributoIds[] = $nuevoAttr->id;
-        }
+        // Procesar nuevos atributos dinámicos
+        $this->sincronizarNuevosAtributos($request, $atributoIds);
 
         if (!empty($atributoIds)) {
             $syncData = [];
@@ -103,6 +102,12 @@ class TipoController extends Controller
             'atributos.*' => 'exists:atributos,id',
             'nuevo_atributo_nombre' => 'nullable|string|max:100',
             'nuevo_atributo_unidad' => 'nullable|string|max:20',
+            'nuevos_atributos_nombre' => 'nullable|array',
+            'nuevos_atributos_nombre.*' => 'nullable|string|max:100',
+            'nuevos_atributos_unidad' => 'nullable|array',
+            'nuevos_atributos_unidad.*' => 'nullable|string|max:30',
+            'nuevos_atributos_tipo' => 'nullable|array',
+            'nuevos_atributos_tipo.*' => 'nullable|string',
         ]);
 
         $tipo->update([
@@ -112,14 +117,8 @@ class TipoController extends Controller
 
         $atributoIds = $request->input('atributos', []);
 
-        if ($request->filled('nuevo_atributo_nombre')) {
-            $nuevoAttr = Atributo::firstOrCreateNormalizado(
-                $request->nuevo_atributo_nombre,
-                'texto',
-                $request->nuevo_atributo_unidad ?: null
-            );
-            $atributoIds[] = $nuevoAttr->id;
-        }
+        // Procesar nuevos atributos dinámicos
+        $this->sincronizarNuevosAtributos($request, $atributoIds);
 
         $syncData = [];
         foreach (array_unique($atributoIds) as $idx => $attrId) {
@@ -132,6 +131,44 @@ class TipoController extends Controller
 
         return redirect()->route('tipos.index')
             ->with('success', "Especificaciones del tipo '{$tipo->nombre}' actualizadas correctamente.");
+    }
+
+    /**
+     * Procesa y persiste atributos nuevos creados al vuelo en el formulario.
+     */
+    private function sincronizarNuevosAtributos(Request $request, array &$atributoIds): void
+    {
+        // 1. Array de múltiples nuevos atributos dinámicos
+        $nuevosNombres = (array) $request->input('nuevos_atributos_nombre', []);
+        $nuevasUnidades = (array) $request->input('nuevos_atributos_unidad', []);
+        $nuevosTipos = (array) $request->input('nuevos_atributos_tipo', []);
+
+        foreach ($nuevosNombres as $i => $rawNombre) {
+            $nom = trim((string)$rawNombre);
+            if ($nom !== '') {
+                $uni = isset($nuevasUnidades[$i]) ? trim((string)$nuevasUnidades[$i]) : null;
+                $tipoDato = isset($nuevosTipos[$i]) && in_array($nuevosTipos[$i], ['texto', 'numero', 'fecha', 'booleano'])
+                    ? $nuevosTipos[$i]
+                    : 'texto';
+
+                $nuevoAttr = Atributo::firstOrCreateNormalizado(
+                    $nom,
+                    $tipoDato,
+                    $uni ?: null
+                );
+                $atributoIds[] = $nuevoAttr->id;
+            }
+        }
+
+        // 2. Campo individual legacy (por retrocompatibilidad)
+        if ($request->filled('nuevo_atributo_nombre')) {
+            $nuevoAttr = Atributo::firstOrCreateNormalizado(
+                $request->nuevo_atributo_nombre,
+                'texto',
+                $request->nuevo_atributo_unidad ?: null
+            );
+            $atributoIds[] = $nuevoAttr->id;
+        }
     }
 
     /**

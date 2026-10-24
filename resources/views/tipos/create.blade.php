@@ -63,12 +63,34 @@
                 @endforeach
             </div>
 
-            <!-- Opción para definir un nuevo atributo en el momento -->
-            <div class="p-3 bg-amber-50/60 rounded-xl border border-amber-200 space-y-2">
-                <span class="text-xs font-bold text-amber-900 block">¿Necesitas un atributo que no está en la lista? Añádelo aquí:</span>
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" name="nuevo_atributo_nombre" value="{{ old('nuevo_atributo_nombre') }}" placeholder="Nombre del nuevo atributo..." class="text-xs px-2.5 py-1.5 border rounded-lg bg-white">
-                    <input type="text" name="nuevo_atributo_unidad" value="{{ old('nuevo_atributo_unidad') }}" placeholder="Unidad (ej: Mbps, Watts, Pulgadas)..." class="text-xs px-2.5 py-1.5 border rounded-lg bg-white">
+            <!-- Sección Dinámica para definir múltiples nuevos atributos al vuelo -->
+            <div class="p-4 bg-amber-50/60 rounded-xl border border-amber-200 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-amber-900 block">¿Necesitas atributos que no están en la lista? Añádelos aquí:</span>
+                        <p class="text-[11px] text-amber-700">Puedes agregar todos los atributos técnicos que hagan falta y remover los que no correspondan.</p>
+                    </div>
+                    <button type="button" id="btn-agregar-atributo" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-amber-400 hover:bg-amber-500 text-black rounded-lg shadow-sm transition-all">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        + Añadir otro atributo
+                    </button>
+                </div>
+
+                <!-- Contenedor dinámico de filas de nuevos atributos -->
+                <div id="contenedor-nuevos-atributos" class="space-y-2">
+                    <div class="fila-nuevo-atributo flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 bg-white rounded-lg border border-amber-200 shadow-2xs">
+                        <input type="text" name="nuevos_atributos_nombre[]" placeholder="Nombre (ej: Tasa de Muestreo, Interfaz, Voltaje)..." class="flex-1 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-amber-400">
+                        <input type="text" name="nuevos_atributos_unidad[]" placeholder="Unidad (ej: MHz, V, Pulgadas)..." class="sm:w-44 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-amber-400">
+                        <select name="nuevos_atributos_tipo[]" class="sm:w-36 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white font-medium text-gray-700">
+                            <option value="texto">Texto</option>
+                            <option value="numero">Número</option>
+                            <option value="fecha">Fecha</option>
+                            <option value="booleano">Booleano (Sí/No)</option>
+                        </select>
+                        <button type="button" class="btn-eliminar-fila p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center self-end sm:self-center" title="Eliminar este atributo">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -83,4 +105,50 @@
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const contenedor = document.getElementById('contenedor-nuevos-atributos');
+        const btnAgregar = document.getElementById('btn-agregar-atributo');
+
+        if (btnAgregar && contenedor) {
+            btnAgregar.addEventListener('click', function () {
+                const fila = document.createElement('div');
+                fila.className = 'fila-nuevo-atributo flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 bg-white rounded-lg border border-amber-200 shadow-2xs animate-fadeIn';
+                fila.innerHTML = `
+                    <input type="text" name="nuevos_atributos_nombre[]" placeholder="Nombre (ej: Tasa de Muestreo, Interfaz, Voltaje)..." class="flex-1 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-amber-400">
+                    <input type="text" name="nuevos_atributos_unidad[]" placeholder="Unidad (ej: MHz, V, Pulgadas)..." class="sm:w-44 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-amber-400">
+                    <select name="nuevos_atributos_tipo[]" class="sm:w-36 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white font-medium text-gray-700">
+                        <option value="texto">Texto</option>
+                        <option value="numero">Número</option>
+                        <option value="fecha">Fecha</option>
+                        <option value="booleano">Booleano (Sí/No)</option>
+                    </select>
+                    <button type="button" class="btn-eliminar-fila p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center self-end sm:self-center" title="Eliminar este atributo">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                `;
+                contenedor.appendChild(fila);
+                fila.querySelector('input').focus();
+            });
+
+            // Delegación de eventos para eliminar filas
+            contenedor.addEventListener('click', function (e) {
+                const btnEliminar = e.target.closest('.btn-eliminar-fila');
+                if (btnEliminar) {
+                    const fila = btnEliminar.closest('.fila-nuevo-atributo');
+                    if (fila) {
+                        const todasFilas = contenedor.querySelectorAll('.fila-nuevo-atributo');
+                        if (todasFilas.length > 1) {
+                            fila.remove();
+                        } else {
+                            // Si es la única fila, limpiar los campos en lugar de remover el nodo
+                            fila.querySelectorAll('input').forEach(i => i.value = '');
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
 @endsection

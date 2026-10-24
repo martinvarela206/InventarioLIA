@@ -345,25 +345,24 @@ class InventarioDevTest extends TestCase
         $atributoExistente = \App\Models\Atributo::where('nombre', 'Procesador')->first();
         $this->assertNotNull($atributoExistente);
 
-        // Crear nuevo tipo con atributo existente y uno nuevo al vuelo
+        // Crear nuevo tipo con atributo existente y dos nuevos al vuelo en simultáneo
         $response = $this->actingAs($admin)->post(route('tipos.store'), [
             'nombre' => 'Instrumento de Medicion',
             'categoria' => 'Laboratorio',
             'descripcion' => 'Aparatos de medicion de precision',
             'atributos' => [$atributoExistente->id],
-            'requeridos' => [$atributoExistente->id => '1'],
-            'nuevo_atributo_nombre' => 'Tasa de Muestreo',
-            'nuevo_atributo_tipo' => 'texto',
-            'nuevo_atributo_unidad' => 'MS/s',
-            'nuevo_atributo_requerido' => '1',
+            'nuevos_atributos_nombre' => ['Tasa de Muestreo', 'Impedancia de Entrada'],
+            'nuevos_atributos_unidad' => ['MS/s', 'Ohms'],
+            'nuevos_atributos_tipo' => ['texto', 'numero'],
         ]);
 
         $response->assertRedirect(route('tipos.index'));
         $this->assertDatabaseHas('tipos', ['nombre' => 'instrumento de medicion']);
         $this->assertDatabaseHas('atributos', ['nombre' => 'Tasa de Muestreo']);
+        $this->assertDatabaseHas('atributos', ['nombre' => 'Impedancia de Entrada']);
 
         $tipoCreado = Tipo::where('nombre', 'instrumento de medicion')->first();
-        $this->assertCount(2, $tipoCreado->atributos);
+        $this->assertCount(3, $tipoCreado->atributos);
 
         // Verificar que item_admin ve el enlace a Tipos en navbar
         $responseNav = $this->actingAs($admin)->get(route('dashboard.index'));
