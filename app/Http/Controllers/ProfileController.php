@@ -6,12 +6,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+
 class ProfileController extends Controller
 {
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit()
+    public function edit(): View
     {
         return view('profile.edit', [
             'user' => auth()->user()
@@ -21,7 +24,7 @@ class ProfileController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request)
+    public function update(Request $request): RedirectResponse
     {
         /** @var \App\Models\Usuario $user */
         $user = auth()->user();

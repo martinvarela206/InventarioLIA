@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use App\Presenters\MovimientoPresenter;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
+
 class Movimiento extends Model
 {
     use HasFactory;
@@ -29,7 +33,7 @@ class Movimiento extends Model
         'comentario',
     ];
 
-    protected static function booted()
+    protected static function booted(): void
     {
         static::updating(function ($movimiento) {
             $dirtyKeys = array_keys($movimiento->getDirty());
@@ -50,12 +54,38 @@ class Movimiento extends Model
         'fecha_devolucion' => 'date',
     ];
 
-    public function correccionDe()
+    /**
+     * Registra un nuevo movimiento de enmienda / corrección enlazado auditadamente a este movimiento.
+     */
+    public function crearEnmienda(array $datos, int $usuarioId, string $motivo): self
+    {
+        $comentario = "ENMIENDA / CORRECCIÓN de Movimiento #{$this->id}: {$motivo}";
+        if (!empty($datos['comentario'])) {
+            $comentario .= " | {$datos['comentario']}";
+        }
+
+        return static::create([
+            'elemento_id' => $this->elemento_id,
+            'tipo_movimiento' => $this->tipo_movimiento,
+            'ubicacion_id' => $datos['ubicacion_id'] ?? $this->ubicacion_id,
+            'puesto' => array_key_exists('puesto', $datos) ? $datos['puesto'] : $this->puesto,
+            'estado_id' => $datos['estado_id'] ?? $this->estado_id,
+            'user_id' => $usuarioId,
+            'fecha' => now(),
+            'solicitante' => array_key_exists('solicitante', $datos) ? $datos['solicitante'] : $this->solicitante,
+            'fecha_prestamo' => $this->fecha_prestamo,
+            'fecha_devolucion' => $this->fecha_devolucion,
+            'correccion_de_id' => $this->id,
+            'comentario' => $comentario,
+        ]);
+    }
+
+    public function correccionDe(): BelongsTo
     {
         return $this->belongsTo(Movimiento::class, 'correccion_de_id');
     }
 
-    public function correcciones()
+    public function correcciones(): HasMany
     {
         return $this->hasMany(Movimiento::class, 'correccion_de_id');
     }
@@ -65,22 +95,22 @@ class Movimiento extends Model
         return !is_null($this->correccion_de_id);
     }
 
-    public function elemento()
+    public function elemento(): BelongsTo
     {
         return $this->belongsTo(Elemento::class, 'elemento_id');
     }
 
-    public function ubicacion()
+    public function ubicacion(): BelongsTo
     {
         return $this->belongsTo(Ubicacion::class, 'ubicacion_id');
     }
 
-    public function estado()
+    public function estado(): BelongsTo
     {
         return $this->belongsTo(Estado::class, 'estado_id');
     }
 
-    public function usuario()
+    public function usuario(): BelongsTo
     {
         return $this->belongsTo(Usuario::class, 'user_id');
     }
@@ -104,12 +134,12 @@ class Movimiento extends Model
         return (int)Carbon::parse($this->fecha_prestamo)->diffInDays($fin);
     }
 
-    public function scopePrestadosActivos($query)
+    public function scopePrestadosActivos(Builder $query): Builder
     {
         return $query->whereNotNull('fecha_prestamo')->whereNull('fecha_devolucion');
     }
 
-    public function scopeInternos($query)
+    public function scopeInternos(Builder $query): Builder
     {
         return $query->where('tipo_movimiento', 'interno');
     }

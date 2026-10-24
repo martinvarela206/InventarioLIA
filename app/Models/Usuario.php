@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 class Usuario extends Authenticatable
 {
     use HasFactory, Notifiable;
@@ -36,12 +39,12 @@ class Usuario extends Authenticatable
         'activo' => 'boolean',
     ];
 
-    public function roles()
+    public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Rol::class, 'usuario_roles', 'user_id', 'rol_id');
     }
 
-    public function trayectorias()
+    public function trayectorias(): HasMany
     {
         return $this->hasMany(UsuarioTrayectoria::class, 'user_id')->orderBy('fecha_inicio', 'desc');
     }
@@ -72,7 +75,7 @@ class Usuario extends Authenticatable
         return $this->hasRole('rev');
     }
 
-    public function movimientos()
+    public function movimientos(): HasMany
     {
         return $this->hasMany(Movimiento::class, 'user_id');
     }

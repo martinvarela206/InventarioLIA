@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 use App\Presenters\ElementoPresenter;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Builder;
+
 class Elemento extends Model
 {
     use HasFactory;
@@ -41,28 +46,54 @@ class Elemento extends Model
         'cantidad' => 'integer',
     ];
 
-    protected static function booted()
+    /**
+     * Normaliza un identificador patrimonial (LIA o UNSJ), convirtiendo strings vacíos,
+     * guiones o variantes 'S/N' en NULL de forma estandarizada.
+     */
+    public static function normalizarIdentificador(?string $valor): ?string
+    {
+        if ($valor === null) {
+            return null;
+        }
+        $limpio = trim($valor);
+        return ($limpio === '' || strtoupper($limpio) === 'S/N' || $limpio === '-') ? null : $limpio;
+    }
+
+    /**
+     * Transforma arrays paralelos de claves y valores de formulario en un array asociativo limpio.
+     */
+    public static function parsearDescripcion(array $keys = [], array $values = []): ?array
+    {
+        $descripcion = [];
+        foreach ($keys as $i => $k) {
+            $k = trim((string)$k);
+            $v = isset($values[$i]) ? trim((string)$values[$i]) : '';
+            if ($k !== '' && $v !== '') {
+                $descripcion[$k] = $v;
+            }
+        }
+        return !empty($descripcion) ? $descripcion : null;
+    }
+
+    protected static function booted(): void
     {
         static::saving(function ($elemento) {
-            $lia = trim((string)$elemento->nro_lia);
-            $unsj = trim((string)$elemento->nro_unsj);
-
-            $elemento->nro_lia = ($lia === '' || strtoupper($lia) === 'S/N' || $lia === '-') ? null : $lia;
-            $elemento->nro_unsj = ($unsj === '' || strtoupper($unsj) === 'S/N' || $unsj === '-') ? null : $unsj;
+            $elemento->nro_lia = static::normalizarIdentificador($elemento->nro_lia);
+            $elemento->nro_unsj = static::normalizarIdentificador($elemento->nro_unsj);
         });
     }
 
-    public function tipo()
+    public function tipo(): BelongsTo
     {
         return $this->belongsTo(Tipo::class, 'tipo_id');
     }
 
-    public function movimientos()
+    public function movimientos(): HasMany
     {
         return $this->hasMany(Movimiento::class, 'elemento_id')->orderBy('fecha', 'desc');
     }
 
-    public function ultimoMovimiento()
+    public function ultimoMovimiento(): HasOne
     {
         return $this->hasOne(Movimiento::class, 'elemento_id')->latestOfMany('id');
     }
@@ -72,7 +103,7 @@ class Elemento extends Model
         return new ElementoPresenter($this);
     }
 
-    public function getDescripcionTextoAttribute()
+    public function getDescripcionTextoAttribute(): string
     {
         if (is_array($this->descripcion)) {
             $parts = [];
@@ -83,12 +114,12 @@ class Elemento extends Model
             }
             return implode(' | ', $parts);
         }
-        return $this->descripcion ?? '';
+        return (string)($this->descripcion ?? '');
     }
 
     // --- QUERY SCOPES SEMÁNTICOS (SNIPE-IT PATTERN) ---
 
-    public function scopeDisponibles($query)
+    public function scopeDisponibles(Builder $query): Builder
     {
         return $query->whereHas('ultimoMovimiento', function ($q) {
             $q->whereHas('estado', function ($sq) {
@@ -97,7 +128,7 @@ class Elemento extends Model
         });
     }
 
-    public function scopePrestadosActivos($query)
+    public function scopePrestadosActivos(Builder $query): Builder
     {
         return $query->whereHas('ultimoMovimiento', function ($q) {
             $q->whereNotNull('fecha_prestamo')
@@ -105,7 +136,7 @@ class Elemento extends Model
         });
     }
 
-    public function scopeEnUbicacion($query, $ubicacionId, $puesto = null)
+    public function scopeEnUbicacion(Builder $query, int|string $ubicacionId, ?string $puesto = null): Builder
     {
         return $query->whereHas('ultimoMovimiento', function ($q) use ($ubicacionId, $puesto) {
             $q->where('ubicacion_id', $ubicacionId);
@@ -115,7 +146,7 @@ class Elemento extends Model
         });
     }
 
-    public function scopeObsoletos($query)
+    public function scopeObsoletos(Builder $query): Builder
     {
         return $query->where(function ($q) {
             $q->whereHas('tipo', function ($tq) {
@@ -128,7 +159,7 @@ class Elemento extends Model
         });
     }
 
-    public function scopeBuscarIdentificador($query, $term)
+    public function scopeBuscarIdentificador(Builder $query, string $term): Builder
     {
         $term = trim($term);
         return $query->where(function ($q) use ($term) {

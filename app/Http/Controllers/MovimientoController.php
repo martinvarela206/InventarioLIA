@@ -7,7 +7,14 @@ use App\Models\Elemento;
 use App\Models\Usuario;
 use App\Models\Ubicacion;
 use App\Models\Estado;
+use App\Http\Requests\StoreMovimientoRequest;
+use App\Http\Requests\DevolucionMovimientoRequest;
+use App\Http\Requests\StoreEnmiendaRequest;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class MovimientoController extends Controller
@@ -15,7 +22,7 @@ class MovimientoController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $query = Movimiento::with(['elemento.tipo', 'usuario', 'ubicacion', 'estado']);
 
@@ -70,7 +77,7 @@ class MovimientoController extends Controller
     /**
      * Show the rapid mobile-first view for technicians.
      */
-    public function rapido(Request $request)
+    public function rapido(Request $request): View
     {
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $estados = Estado::orderBy('nombre')->get();
@@ -90,7 +97,7 @@ class MovimientoController extends Controller
     /**
      * API search endpoint for live autocomplete on quick movements.
      */
-    public function apiBuscar(Request $request)
+    public function apiBuscar(Request $request): JsonResponse
     {
         $term = trim((string)$request->get('q', ''));
         if (strlen($term) < 1) {
@@ -126,7 +133,7 @@ class MovimientoController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(Request $request)
+    public function create(Request $request): View
     {
         return $this->rapido($request);
     }
@@ -134,108 +141,77 @@ class MovimientoController extends Controller
     /**
      * Store a newly created movement in storage.
      */
-    public function store(Request $request)
+    public function store(StoreMovimientoRequest $request): RedirectResponse
     {
-        $request->validate([
-            'elemento_id' => 'required|exists:elementos,id',
-            'tipo_movimiento' => 'required|in:interno,externo_prestamo',
-            'estado_id' => 'required|exists:estados,id',
-            'ubicacion_id' => 'nullable|exists:ubicaciones,id',
-            'puesto' => 'nullable|string|max:50',
-            'solicitante' => 'nullable|string|max:150',
-            'fecha_prestamo' => 'nullable|date',
-            'fecha' => 'nullable|date',
-            'comentario' => 'nullable|string',
-        ]);
-
-        $tipoMovimiento = $request->tipo_movimiento;
+        $validated = $request->validated();
+        $tipoMovimiento = $validated['tipo_movimiento'];
         $esPrestamo = $tipoMovimiento === 'externo_prestamo';
 
-        $fecha = $request->fecha ? Carbon::parse($request->fecha) : now();
+        $fecha = !empty($validated['fecha']) ? Carbon::parse($validated['fecha']) : now();
 
-        $movimiento = Movimiento::create([
-            'elemento_id' => $request->elemento_id,
+        Movimiento::create([
+            'elemento_id' => $validated['elemento_id'],
             'tipo_movimiento' => $tipoMovimiento,
-            'ubicacion_id' => $esPrestamo ? null : $request->ubicacion_id,
-            'puesto' => $esPrestamo ? null : $request->puesto,
-            'estado_id' => $request->estado_id,
+            'ubicacion_id' => $esPrestamo ? null : ($validated['ubicacion_id'] ?? null),
+            'puesto' => $esPrestamo ? null : ($validated['puesto'] ?? null),
+            'estado_id' => $validated['estado_id'],
             'user_id' => auth()->id() ?? Usuario::first()->id,
             'fecha' => $fecha,
-            'solicitante' => $esPrestamo ? $request->solicitante : null,
-            'fecha_prestamo' => $esPrestamo ? ($request->fecha_prestamo ? Carbon::parse($request->fecha_prestamo)->toDateString() : now()->toDateString()) : null,
-            'comentario' => $request->comentario,
+            'solicitante' => $esPrestamo ? ($validated['solicitante'] ?? null) : null,
+            'fecha_prestamo' => $esPrestamo ? (!empty($validated['fecha_prestamo']) ? Carbon::parse($validated['fecha_prestamo'])->toDateString() : now()->toDateString()) : null,
+            'comentario' => $validated['comentario'] ?? null,
         ]);
 
-        return redirect()->route('elementos.show', $request->elemento_id)
+        return redirect()->route('elementos.show', $validated['elemento_id'])
             ->with('success', 'Movimiento registrado con éxito.');
     }
 
     /**
-     * Check-in / Registro de devolución de préstamo
+     * Check-in / Registro de devolución de préstamo (Transacción atómica).
      */
-    public function devolucion(Request $request, Movimiento $movimiento)
+    public function devolucion(DevolucionMovimientoRequest $request, Movimiento $movimiento): RedirectResponse
     {
-        $request->validate([
-            'fecha_devolucion' => 'nullable|date',
-            'ubicacion_id' => 'required|exists:ubicaciones,id',
-            'puesto' => 'nullable|string|max:50',
-            'estado_id' => 'required|exists:estados,id',
-            'comentario' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
+        $fechaDev = !empty($validated['fecha_devolucion'])
+            ? Carbon::parse($validated['fecha_devolucion'])->toDateString()
+            : now()->toDateString();
 
-        $fechaDev = $request->fecha_devolucion ? Carbon::parse($request->fecha_devolucion)->toDateString() : now()->toDateString();
+        DB::transaction(function () use ($movimiento, $validated, $fechaDev, $request) {
+            // 1. Marcar fecha de devolución en el préstamo original
+            $movimiento->update([
+                'fecha_devolucion' => $fechaDev,
+            ]);
 
-        // 1. Marcar fecha de devolución en el préstamo original
-        $movimiento->update([
-            'fecha_devolucion' => $fechaDev,
-        ]);
-
-        // 2. Registrar el nuevo movimiento interno de reingreso al laboratorio
-        Movimiento::create([
-            'elemento_id' => $movimiento->elemento_id,
-            'tipo_movimiento' => 'interno',
-            'ubicacion_id' => $request->ubicacion_id,
-            'puesto' => $request->puesto,
-            'estado_id' => $request->estado_id,
-            'user_id' => auth()->id() ?? Usuario::first()->id,
-            'fecha' => now(),
-            'comentario' => 'Reingreso de préstamo externo. ' . ($request->comentario ?: ''),
-        ]);
+            // 2. Registrar el nuevo movimiento interno de reingreso al laboratorio
+            Movimiento::create([
+                'elemento_id' => $movimiento->elemento_id,
+                'tipo_movimiento' => 'interno',
+                'ubicacion_id' => $validated['ubicacion_id'],
+                'puesto' => $validated['puesto'] ?? null,
+                'estado_id' => $validated['estado_id'],
+                'user_id' => auth()->id() ?? Usuario::first()->id,
+                'fecha' => now(),
+                'comentario' => 'Reingreso de préstamo externo. ' . ($validated['comentario'] ?? ''),
+            ]);
+        });
 
         return redirect()->route('elementos.show', $movimiento->elemento_id)
             ->with('success', 'Devolución registrada exitosamente. El equipo ha reingresado a la sala.');
     }
 
     /**
-     * Registrar una corrección oficial sobre un movimiento previo
+     * Registrar una corrección oficial sobre un movimiento previo usando método de dominio.
      */
-    public function storeCorreccion(Request $request, Movimiento $movimiento)
+    public function storeCorreccion(StoreEnmiendaRequest $request, Movimiento $movimiento): RedirectResponse
     {
-        $validated = $request->validate([
-            'motivo_correccion' => 'required|string|min:4|max:255',
-            'ubicacion_id' => 'nullable|exists:ubicaciones,id',
-            'puesto' => 'nullable|string|max:50',
-            'estado_id' => 'required|exists:estados,id',
-            'solicitante' => 'nullable|string|max:150',
-            'comentario' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
+        $usuarioId = auth()->id() ?? Usuario::first()->id;
 
-        $tipoMovimiento = $movimiento->tipo_movimiento;
-
-        $nuevoMovimiento = Movimiento::create([
-            'elemento_id' => $movimiento->elemento_id,
-            'tipo_movimiento' => $tipoMovimiento,
-            'ubicacion_id' => $validated['ubicacion_id'] ?? $movimiento->ubicacion_id,
-            'puesto' => $validated['puesto'] ?? $movimiento->puesto,
-            'estado_id' => $validated['estado_id'],
-            'user_id' => auth()->id() ?? Usuario::first()->id,
-            'fecha' => now(),
-            'solicitante' => $validated['solicitante'] ?? $movimiento->solicitante,
-            'fecha_prestamo' => $movimiento->fecha_prestamo,
-            'fecha_devolucion' => $movimiento->fecha_devolucion,
-            'correccion_de_id' => $movimiento->id,
-            'comentario' => "ENMIENDA / CORRECCIÓN de Movimiento #{$movimiento->id}: " . $validated['motivo_correccion'] . ($request->filled('comentario') ? " | " . $request->comentario : ""),
-        ]);
+        $nuevoMovimiento = $movimiento->crearEnmienda(
+            $validated,
+            $usuarioId,
+            $validated['motivo_correccion']
+        );
 
         return redirect()->route('elementos.show', $movimiento->elemento_id)
             ->with('success', "Movimiento #{$movimiento->id} enmendado con éxito mediante el nuevo movimiento #{$nuevoMovimiento->id}.");

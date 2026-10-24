@@ -10,13 +10,14 @@ use App\Models\Estado;
 use App\Models\Tipo;
 use Carbon\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\View\View;
 
 class ReporteController extends Controller
 {
     /**
      * Hub principal de selección de reportes.
      */
-    public function index()
+    public function index(): View
     {
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $estados = Estado::orderBy('nombre')->get();
@@ -28,7 +29,7 @@ class ReporteController extends Controller
     /**
      * Vista de reporte individual sin paginación, preparada para pantalla e impresión.
      */
-    public function show(string $tipo, Request $request)
+    public function show(string $tipo, Request $request): View
     {
         $data = $this->obtenerDatosReporte($tipo, $request);
 
@@ -75,7 +76,7 @@ class ReporteController extends Controller
     /**
      * Modo Auditoría de Sala / Armario (Vista directa para resguardo físico en papel).
      */
-    public function auditoriaSala(Ubicacion $ubicacion, Request $request)
+    public function auditoriaSala(Ubicacion $ubicacion, Request $request): View
     {
         $query = Elemento::enUbicacion($ubicacion->id)->with(['tipo', 'ultimoMovimiento.estado']);
 

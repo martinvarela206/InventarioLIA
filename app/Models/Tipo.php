@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 class Tipo extends Model
 {
     protected $table = 'tipos';
@@ -14,7 +16,7 @@ class Tipo extends Model
         'descripcion',
     ];
 
-    public function elementos()
+    public function elementos(): HasMany
     {
         return $this->hasMany(Elemento::class, 'tipo_id');
     }

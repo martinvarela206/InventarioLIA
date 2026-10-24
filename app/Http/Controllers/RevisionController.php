@@ -7,9 +7,11 @@ use App\Models\Elemento;
 use App\Models\Tipo;
 use App\Models\Estado;
 
+use Illuminate\View\View;
+
 class RevisionController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $user = auth()->user();
 

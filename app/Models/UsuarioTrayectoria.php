@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 class UsuarioTrayectoria extends Model
 {
     use HasFactory;
@@ -24,7 +26,7 @@ class UsuarioTrayectoria extends Model
         'fecha_fin' => 'date',
     ];
 
-    public function usuario()
+    public function usuario(): BelongsTo
     {
         return $this->belongsTo(Usuario::class, 'user_id');
     }

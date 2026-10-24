@@ -6,23 +6,26 @@ use App\Models\Usuario;
 use App\Models\Rol;
 use App\Models\UsuarioTrayectoria;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $users = Usuario::with(['roles', 'trayectorias'])->paginate(15);
         $roles = Rol::all();
         return view('users.index', compact('users', 'roles'));
     }
 
-    public function edit(Usuario $user)
+    public function edit(Usuario $user): View
     {
         $roles = Rol::all();
         return view('users.edit', compact('user', 'roles'));
     }
 
-    public function update(Request $request, Usuario $user)
+    public function update(Request $request, Usuario $user): RedirectResponse
     {
         $validated = $request->validate([
             'nombre' => 'required|string|max:100',
@@ -47,7 +50,7 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'Usuario y perfil actualizados correctamente.');
     }
 
-    public function toggleRole(Request $request, Usuario $user)
+    public function toggleRole(Request $request, Usuario $user): JsonResponse
     {
         $request->validate([
             'role' => 'required|exists:roles,rol'
@@ -74,7 +77,7 @@ class UserController extends Controller
         return response()->json(['message' => $message, 'status' => $status]);
     }
 
-    public function toggleActivo(Request $request, Usuario $user)
+    public function toggleActivo(Request $request, Usuario $user): RedirectResponse
     {
         $user->activo = !$user->activo;
         $user->save();
@@ -83,13 +86,13 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', "Cuenta del usuario {$user->nombre} {$estado}.");
     }
 
-    public function trayectoria(Usuario $user)
+    public function trayectoria(Usuario $user): View
     {
         $user->load('trayectorias');
         return view('users.trayectoria', compact('user'));
     }
 
-    public function storeTrayectoria(Request $request, Usuario $user)
+    public function storeTrayectoria(Request $request, Usuario $user): RedirectResponse
     {
         $validated = $request->validate([
             'cargo' => 'required|string|max:100',
@@ -104,7 +107,7 @@ class UserController extends Controller
             ->with('success', 'Periodo de trayectoria registrado con éxito.');
     }
 
-    public function destroyTrayectoria(UsuarioTrayectoria $trayectoria)
+    public function destroyTrayectoria(UsuarioTrayectoria $trayectoria): RedirectResponse
     {
         $userId = $trayectoria->user_id;
         $trayectoria->delete();

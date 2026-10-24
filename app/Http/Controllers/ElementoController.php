@@ -7,7 +7,13 @@ use App\Models\Movimiento;
 use App\Models\Tipo;
 use App\Models\Estado;
 use App\Models\Ubicacion;
+use App\Models\Usuario;
+use App\Http\Requests\StoreElementoRequest;
+use App\Http\Requests\UpdateElementoRequest;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class ElementoController extends Controller
@@ -15,7 +21,7 @@ class ElementoController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $query = Elemento::with(['tipo', 'ultimoMovimiento.estado', 'ultimoMovimiento.ubicacion']);
 
@@ -69,7 +75,7 @@ class ElementoController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(): View
     {
         $tipos = Tipo::orderBy('nombre')->get();
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
@@ -79,91 +85,57 @@ class ElementoController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage and guarantee initial movement.
+     * Store a newly created resource in storage and guarantee initial movement with ACID atomicity.
      */
-    public function store(Request $request)
+    public function store(StoreElementoRequest $request): RedirectResponse
     {
-        $request->validate([
-            'nro_lia' => 'nullable|string|max:50',
-            'nro_unsj' => 'nullable|string|max:50',
-            'tipo_id' => 'required|exists:tipos,id',
-            'marca' => 'nullable|string|max:100',
-            'modelo' => 'nullable|string|max:100',
-            'nro_serie' => 'nullable|string|max:100',
-            'anio_compra' => 'nullable|integer|min:1980|max:' . (date('Y') + 1),
-            'puesto' => 'nullable|string|max:50',
-            'ubicacion_id' => 'nullable|exists:ubicaciones,id',
-            'estado_id' => 'nullable|exists:estados,id',
-            'cantidad' => 'required|integer|min:1',
-            'fecha_adquisicion' => 'nullable|date',
-            'fecha_vencimiento_garantia' => 'nullable|date|after_or_equal:fecha_adquisicion',
-            'observaciones' => 'nullable|string',
-            'descripcion_keys' => 'nullable|array',
-            'descripcion_values' => 'nullable|array',
-        ]);
+        $validated = $request->validated();
 
-        $lia = trim((string)$request->nro_lia);
-        $unsj = trim((string)$request->nro_unsj);
-        $cleanLia = ($lia === '' || strtoupper($lia) === 'S/N' || $lia === '-') ? null : $lia;
-        $cleanUnsj = ($unsj === '' || strtoupper($unsj) === 'S/N' || $unsj === '-') ? null : $unsj;
+        $elemento = DB::transaction(function () use ($request, $validated) {
+            $cleanLia = Elemento::normalizarIdentificador($validated['nro_lia'] ?? null);
+            $cleanUnsj = Elemento::normalizarIdentificador($validated['nro_unsj'] ?? null);
 
-        // Comprobar colisión de tupla compuesta
-        if ($cleanLia !== null && $cleanUnsj !== null) {
-            $exists = Elemento::where('nro_lia', $cleanLia)->where('nro_unsj', $cleanUnsj)->exists();
-            if ($exists) {
-                return back()->withInput()->withErrors([
-                    'nro_lia' => 'Ya existe un elemento registrado con la misma combinación de Nro LIA y Nro UNSJ.',
-                ]);
-            }
-        }
+            $descripcion = Elemento::parsearDescripcion(
+                $request->input('descripcion_keys', []),
+                $request->input('descripcion_values', [])
+            );
 
-        // Construir JSON de características técnicas
-        $descripcion = [];
-        if ($request->has('descripcion_keys') && $request->has('descripcion_values')) {
-            $keys = $request->input('descripcion_keys', []);
-            $values = $request->input('descripcion_values', []);
-            foreach ($keys as $i => $k) {
-                $k = trim((string)$k);
-                $v = isset($values[$i]) ? trim((string)$values[$i]) : '';
-                if ($k !== '' && $v !== '') {
-                    $descripcion[$k] = $v;
-                }
-            }
-        }
+            $elemento = Elemento::create([
+                'nro_lia' => $cleanLia,
+                'nro_unsj' => $cleanUnsj,
+                'tipo_id' => $validated['tipo_id'],
+                'marca' => $validated['marca'] ?? null,
+                'modelo' => $validated['modelo'] ?? null,
+                'nro_serie' => $validated['nro_serie'] ?? null,
+                'anio_compra' => $validated['anio_compra'] ?? null,
+                'puesto' => $validated['puesto'] ?? null,
+                'observaciones' => $validated['observaciones'] ?? null,
+                'descripcion' => $descripcion,
+                'cantidad' => $validated['cantidad'],
+                'fecha_adquisicion' => $validated['fecha_adquisicion'] ?? now()->toDateString(),
+                'fecha_vencimiento_garantia' => $validated['fecha_vencimiento_garantia'] ?? null,
+            ]);
 
-        $elemento = Elemento::create([
-            'nro_lia' => $cleanLia,
-            'nro_unsj' => $cleanUnsj,
-            'tipo_id' => $request->tipo_id,
-            'marca' => $request->marca,
-            'modelo' => $request->modelo,
-            'nro_serie' => $request->nro_serie,
-            'anio_compra' => $request->anio_compra,
-            'puesto' => $request->puesto,
-            'observaciones' => $request->observaciones,
-            'descripcion' => !empty($descripcion) ? $descripcion : null,
-            'cantidad' => $request->cantidad,
-            'fecha_adquisicion' => $request->fecha_adquisicion ?: now()->toDateString(),
-            'fecha_vencimiento_garantia' => $request->fecha_vencimiento_garantia,
-        ]);
+            // GARANTIZAR MOVIMIENTO INICIAL AUTOMÁTICO
+            $defaultEstado = Estado::where('nombre', 'nuevo')->first() ?? Estado::first();
+            $estadoId = !empty($validated['estado_id']) ? $validated['estado_id'] : $defaultEstado->id;
 
-        // GARANTIZAR MOVIMIENTO INICIAL AUTOMÁTICO
-        $defaultEstado = Estado::where('nombre', 'nuevo')->first() ?? Estado::first();
-        $estadoId = $request->estado_id ?: $defaultEstado->id;
+            $defaultUbicacion = Ubicacion::where('nombre', 'Armario de HW')->first() ?? Ubicacion::first();
+            $ubicacionId = !empty($validated['ubicacion_id']) ? $validated['ubicacion_id'] : $defaultUbicacion->id;
 
-        $defaultUbicacion = Ubicacion::where('nombre', 'Armario de HW')->first() ?? Ubicacion::first();
-        $ubicacionId = $request->ubicacion_id ?: $defaultUbicacion->id;
+            Movimiento::create([
+                'elemento_id' => $elemento->id,
+                'tipo_movimiento' => 'interno',
+                'ubicacion_id' => $ubicacionId,
+                'puesto' => $validated['puesto'] ?? null,
+                'estado_id' => $estadoId,
+                'user_id' => auth()->id() ?? Usuario::first()->id,
+                'fecha' => now(),
+                'comentario' => 'Alta inicial del elemento en el inventario',
+            ]);
 
-        Movimiento::create([
-            'elemento_id' => $elemento->id,
-            'tipo_movimiento' => 'interno',
-            'ubicacion_id' => $ubicacionId,
-            'puesto' => $request->puesto,
-            'estado_id' => $estadoId,
-            'user_id' => auth()->id() ?? Usuario::first()->id,
-            'fecha' => now(),
-            'comentario' => 'Alta inicial del elemento en el inventario',
-        ]);
+            return $elemento;
+        });
 
         return redirect()->route('elementos.show', $elemento->id)
             ->with('success', 'Elemento dado de alta exitosamente con su movimiento inicial registrado.');
@@ -172,7 +144,7 @@ class ElementoController extends Controller
     /**
      * Display the specified resource in Dual-Pane inspector.
      */
-    public function show(Elemento $elemento)
+    public function show(Elemento $elemento): View
     {
         $elemento->load([
             'tipo',
@@ -189,7 +161,7 @@ class ElementoController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Elemento $elemento)
+    public function edit(Elemento $elemento): View
     {
         $tipos = Tipo::orderBy('nombre')->get();
         return view('elementos.edit', compact('elemento', 'tipos'));
@@ -198,70 +170,32 @@ class ElementoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Elemento $elemento)
+    public function update(UpdateElementoRequest $request, Elemento $elemento): RedirectResponse
     {
-        $request->validate([
-            'nro_lia' => 'nullable|string|max:50',
-            'nro_unsj' => 'nullable|string|max:50',
-            'tipo_id' => 'required|exists:tipos,id',
-            'marca' => 'nullable|string|max:100',
-            'modelo' => 'nullable|string|max:100',
-            'nro_serie' => 'nullable|string|max:100',
-            'anio_compra' => 'nullable|integer',
-            'puesto' => 'nullable|string|max:50',
-            'cantidad' => 'required|integer|min:1',
-            'fecha_adquisicion' => 'nullable|date',
-            'fecha_vencimiento_garantia' => 'nullable|date',
-            'observaciones' => 'nullable|string',
-            'descripcion_keys' => 'nullable|array',
-            'descripcion_values' => 'nullable|array',
-        ]);
+        $validated = $request->validated();
 
-        $lia = trim((string)$request->nro_lia);
-        $unsj = trim((string)$request->nro_unsj);
-        $cleanLia = ($lia === '' || strtoupper($lia) === 'S/N' || $lia === '-') ? null : $lia;
-        $cleanUnsj = ($unsj === '' || strtoupper($unsj) === 'S/N' || $unsj === '-') ? null : $unsj;
+        $cleanLia = Elemento::normalizarIdentificador($validated['nro_lia'] ?? null);
+        $cleanUnsj = Elemento::normalizarIdentificador($validated['nro_unsj'] ?? null);
 
-        // Comprobar colisión de tupla compuesta ignorando el registro actual
-        if ($cleanLia !== null && $cleanUnsj !== null) {
-            $exists = Elemento::where('nro_lia', $cleanLia)
-                ->where('nro_unsj', $cleanUnsj)
-                ->where('id', '!=', $elemento->id)
-                ->exists();
-            if ($exists) {
-                return back()->withInput()->withErrors([
-                    'nro_lia' => 'Ya existe otro elemento registrado con la misma combinación de Nro LIA y Nro UNSJ.',
-                ]);
-            }
-        }
-
-        $descripcion = [];
-        if ($request->has('descripcion_keys') && $request->has('descripcion_values')) {
-            $keys = $request->input('descripcion_keys', []);
-            $values = $request->input('descripcion_values', []);
-            foreach ($keys as $i => $k) {
-                $k = trim((string)$k);
-                $v = isset($values[$i]) ? trim((string)$values[$i]) : '';
-                if ($k !== '' && $v !== '') {
-                    $descripcion[$k] = $v;
-                }
-            }
-        }
+        $descripcion = Elemento::parsearDescripcion(
+            $request->input('descripcion_keys', []),
+            $request->input('descripcion_values', [])
+        );
 
         $elemento->update([
             'nro_lia' => $cleanLia,
             'nro_unsj' => $cleanUnsj,
-            'tipo_id' => $request->tipo_id,
-            'marca' => $request->marca,
-            'modelo' => $request->modelo,
-            'nro_serie' => $request->nro_serie,
-            'anio_compra' => $request->anio_compra,
-            'puesto' => $request->puesto,
-            'observaciones' => $request->observaciones,
-            'descripcion' => !empty($descripcion) ? $descripcion : null,
-            'cantidad' => $request->cantidad,
-            'fecha_adquisicion' => $request->fecha_adquisicion,
-            'fecha_vencimiento_garantia' => $request->fecha_vencimiento_garantia,
+            'tipo_id' => $validated['tipo_id'],
+            'marca' => $validated['marca'] ?? null,
+            'modelo' => $validated['modelo'] ?? null,
+            'nro_serie' => $validated['nro_serie'] ?? null,
+            'anio_compra' => $validated['anio_compra'] ?? null,
+            'puesto' => $validated['puesto'] ?? null,
+            'observaciones' => $validated['observaciones'] ?? null,
+            'descripcion' => $descripcion,
+            'cantidad' => $validated['cantidad'],
+            'fecha_adquisicion' => $validated['fecha_adquisicion'] ?? null,
+            'fecha_vencimiento_garantia' => $validated['fecha_vencimiento_garantia'] ?? null,
         ]);
 
         return redirect()->route('elementos.show', $elemento->id)
@@ -271,7 +205,7 @@ class ElementoController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Elemento $elemento)
+    public function destroy(Elemento $elemento): RedirectResponse
     {
         $elemento->delete();
 

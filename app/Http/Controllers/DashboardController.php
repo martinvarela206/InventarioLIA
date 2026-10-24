@@ -11,9 +11,11 @@ use App\Models\Tipo;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
+use Illuminate\View\View;
+
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $hoy = Carbon::today()->toDateString();
 

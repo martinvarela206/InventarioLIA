@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
+
 class Estado extends Model
 {
     protected $table = 'estados';
@@ -19,12 +22,12 @@ class Estado extends Model
         'disponible' => 'boolean',
     ];
 
-    public function movimientos()
+    public function movimientos(): HasMany
     {
         return $this->hasMany(Movimiento::class, 'estado_id');
     }
 
-    public function scopeDisponibles($query)
+    public function scopeDisponibles(Builder $query): Builder
     {
         return $query->where('disponible', true);
     }

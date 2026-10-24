@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 class Ubicacion extends Model
 {
     protected $table = 'ubicaciones';
@@ -14,7 +16,7 @@ class Ubicacion extends Model
         'descripcion',
     ];
 
-    public function movimientos()
+    public function movimientos(): HasMany
     {
         return $this->hasMany(Movimiento::class, 'ubicacion_id');
     }
