@@ -10,6 +10,7 @@ use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Rol;
 use App\Models\Usuario;
+use App\Models\Atributo;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -1287,6 +1288,76 @@ class InventarioDevTest extends TestCase
         $resCsvRep = $this->actingAs($rev)->get(route('reportes.exportCsv', 'historial-reparaciones'));
         $resCsvRep->assertStatus(200);
         $this->assertEquals('text/csv; charset=UTF-8', $resCsvRep->headers->get('Content-Type'));
+    }
+
+    public function test_columnas_dinamicas_atributos_y_visibilidad_por_defecto_en_reportes(): void
+    {
+        $rev = Usuario::create([
+            'nombre' => 'Revisor Columnas',
+            'email' => 'rev.col@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $rev->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        $tipoPc = Tipo::where('nombre', 'computadora')->first() ?? Tipo::first();
+        $tipoPeriferico = Tipo::where('nombre', 'accesorio')->first() ?? Tipo::firstOrCreateNormalizado('accesorio');
+
+        $attrCpu = Atributo::firstOrCreateNormalizado('Procesador');
+        $attrRam = Atributo::firstOrCreateNormalizado('RAM');
+
+        $pc = Elemento::create([
+            'nro_lia' => 'LIA-COL-01',
+            'tipo_id' => $tipoPc->id,
+            'marca' => 'HP',
+            'modelo' => 'Z240',
+            'descripcion' => [
+                'Procesador' => 'Intel Core i7-7700',
+                'RAM' => '16GB',
+            ],
+        ]);
+
+        $mouse = Elemento::create([
+            'nro_lia' => 'LIA-COL-02',
+            'tipo_id' => $tipoPeriferico->id,
+            'marca' => 'Logitech',
+            'modelo' => 'M90',
+            'descripcion' => null,
+        ]);
+
+        $resShow = $this->actingAs($rev)->get(route('reportes.show', 'inventario-completo'));
+        $resShow->assertStatus(200);
+
+        // 1. Columnas de atributos dinámicos presentes en el HTML inicial
+        $resShow->assertSee('Procesador');
+        $resShow->assertSee('RAM');
+        $resShow->assertSee('Solicitante');
+        $resShow->assertSee('Garantía / Obs');
+
+        // 2. Verificar que los valores del activo con atributos se generan y el que no los tiene muestra '-'
+        $this->assertEquals('Intel Core i7-7700', $pc->getValorAtributo('Procesador'));
+        $this->assertEquals('16GB', $pc->getValorAtributo('RAM'));
+        $this->assertEquals('-', $mouse->getValorAtributo('Procesador'));
+        $this->assertEquals('-', $mouse->getValorAtributo('RAM'));
+
+        // 3. Export CSV sin parámetros oculta las columnas por defecto (sincronizado con pantalla)
+        $resCsv = $this->actingAs($rev)->get(route('reportes.exportCsv', 'inventario-completo'));
+        $resCsv->assertStatus(200);
+        $csvContent = $resCsv->streamedContent();
+        $this->assertStringContainsString('Nro LIA', $csvContent);
+        $this->assertStringContainsString('Marca', $csvContent);
+        $this->assertStringNotContainsString('Procesador;', $csvContent);
+        $this->assertStringNotContainsString('Solicitante;', $csvContent);
+
+        // 4. Export CSV si el usuario desoculta una columna específica (enviando columnas_ocultas sin Procesador)
+        $resCsvCustom = $this->actingAs($rev)->get(route('reportes.exportCsv', [
+            'tipo' => 'inventario-completo',
+            'columnas_ocultas' => 'Solicitante,Garantía / Obs',
+        ]));
+        $resCsvCustom->assertStatus(200);
+        $customContent = $resCsvCustom->streamedContent();
+        $this->assertStringContainsString('Procesador', $customContent);
+        $this->assertStringContainsString('Intel Core i7-7700', $customContent);
     }
 }
 

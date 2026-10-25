@@ -177,11 +177,17 @@ class ElementoController extends Controller
     public function imprimir(Request $request): View
     {
         $query = $this->construirConsultaInventario($request);
-        $items = $query->orderBy('id', 'asc')->get();
+        $items = $query->with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo'])->orderBy('id', 'asc')->get();
 
-        $columnas = ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Ubicación', 'Puesto', 'Situación', 'Solicitante / Préstamo', 'Garantía / Obs'];
+        $atributos = ReporteController::obtenerAtributosDinamicos();
+        $columnas = array_merge(
+            ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Ubicación', 'Puesto', 'Situación'],
+            $atributos,
+            ['Solicitante / Préstamo', 'Garantía / Obs']
+        );
+        $columnasOcultasDefecto = ReporteController::obtenerColumnasOcultasDefecto($atributos);
 
-        $filas = $items->map(function ($el) {
+        $filas = $items->map(function ($el) use ($atributos) {
             $u = $el->ultimoMovimiento;
             $situacion = 'En Sala';
             if ($u?->esPrestamo() && !$u?->fecha_devolucion) {
@@ -192,7 +198,7 @@ class ElementoController extends Controller
                 $situacion = 'En Reparación';
             }
 
-            return [
+            $fila = [
                 $el->tipo?->nombre ?? 'N/A',
                 $el->nro_lia ?? '-',
                 $el->nro_unsj ?? '-',
@@ -201,9 +207,16 @@ class ElementoController extends Controller
                 $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo Externo' : 'Sin asignar'),
                 $u?->puesto ?: ($el->puesto ?? '-'),
                 $situacion,
-                $u?->solicitante ?? '-',
-                $el->observaciones ?: ($el->descripcion_texto ?? '-'),
             ];
+
+            foreach ($atributos as $attr) {
+                $fila[] = $el->getValorAtributo($attr);
+            }
+
+            $fila[] = $u?->solicitante ?? '-';
+            $fila[] = $el->observaciones ?: ($el->descripcion_texto ?? '-');
+
+            return $fila;
         });
 
         return view('reportes.show', [
@@ -213,6 +226,9 @@ class ElementoController extends Controller
             'filas' => $filas,
             'tipoReporte' => 'inventario-completo',
             'request' => $request,
+            'columnasOcultasIniciales' => $request->has('columnas_ocultas')
+                ? array_filter(array_map('trim', explode(',', (string)$request->input('columnas_ocultas'))))
+                : $columnasOcultasDefecto,
         ]);
     }
 

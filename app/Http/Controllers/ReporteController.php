@@ -7,12 +7,39 @@ use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Ubicacion;
 use App\Models\Tipo;
+use App\Models\Atributo;
 use Carbon\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\View\View;
 
 class ReporteController extends Controller
 {
+    /**
+     * Obtiene los nombres de columnas de atributos específicos de tipos de activos.
+     */
+    public static function obtenerAtributosDinamicos(): array
+    {
+        try {
+            return Atributo::whereNotIn('nombre', ['Año', 'Año de Compra'])
+                ->orderBy('nombre', 'asc')
+                ->pluck('nombre')
+                ->toArray();
+        } catch (\Throwable $e) {
+            return ['Capacidad', 'Disco', 'Potencia', 'Procesador', 'Puertos', 'Pulgadas', 'RAM', 'Resolución', 'Velocidad'];
+        }
+    }
+
+    /**
+     * Lista de columnas que deben permanecer ocultas por defecto en la carga inicial.
+     */
+    public static function obtenerColumnasOcultasDefecto(array $atributos): array
+    {
+        return array_values(array_unique(array_merge(
+            $atributos,
+            ['Solicitante', 'Solicitante / Préstamo', 'Garantía', 'Garantía / Obs', 'Donante / Solicitante']
+        )));
+    }
+
     /**
      * Hub principal de selección de reportes.
      */
@@ -24,9 +51,6 @@ class ReporteController extends Controller
         return view('reportes.index', compact('ubicaciones', 'tipos'));
     }
 
-    /**
-     * Vista de reporte individual sin paginación, preparada para pantalla e impresión.
-     */
     /**
      * Filtra dinámicamente las columnas y filas según la lista de columnas ocultas solicitadas.
      */
@@ -59,9 +83,14 @@ class ReporteController extends Controller
         $data = $this->obtenerDatosReporte($tipo, $request);
         $this->filtrarColumnasOcultas($data, $request);
 
+        $columnasOcultasIniciales = $request->has('columnas_ocultas')
+            ? array_filter(array_map('trim', explode(',', (string)$request->input('columnas_ocultas'))))
+            : ($data['columnasOcultasDefecto'] ?? []);
+
         return view('reportes.show', array_merge($data, [
             'tipoReporte' => $tipo,
             'request' => $request,
+            'columnasOcultasIniciales' => $columnasOcultasIniciales,
         ]));
     }
 
@@ -71,6 +100,12 @@ class ReporteController extends Controller
     public function exportCsv(string $tipo, Request $request): StreamedResponse
     {
         $data = $this->obtenerDatosReporte($tipo, $request);
+
+        // Si la petición no especificó columnas_ocultas expresas, aplicar las columnas ocultas por defecto
+        if (!$request->has('columnas_ocultas') && !empty($data['columnasOcultasDefecto'])) {
+            $request->merge(['columnas_ocultas' => implode(',', $data['columnasOcultasDefecto'])]);
+        }
+
         $this->filtrarColumnasOcultas($data, $request);
 
         $filas = $data['filas'] ?? [];
@@ -123,35 +158,77 @@ class ReporteController extends Controller
     }
 
     /**
+     * Construye una fila estándar de activo con soporte para columnas diferenciales de atributos técnicos.
+     */
+    private function construirFilaElemento(
+        Elemento $el,
+        array $atributos,
+        ?string $situacionForzada = null,
+        ?string $solicitanteForzado = null,
+        ?string $ubicacionForzada = null,
+        ?string $obsForzada = null
+    ): array {
+        $u = $el->ultimoMovimiento;
+        $situacion = $situacionForzada;
+        if ($situacion === null) {
+            if ($u?->esPrestamo() && !$u?->fecha_devolucion) {
+                $situacion = 'Prestado';
+            } elseif ($u?->tipo_movimiento === 'baja' || $el->tipo?->nombre === 'basura tecnologica') {
+                $situacion = 'Basura Tecnológica / De Baja';
+            } elseif ($u?->esTicketAbierto()) {
+                $situacion = 'En Reparación';
+            } else {
+                $situacion = 'En Sala';
+            }
+        }
+
+        $ubicacionNombre = $ubicacionForzada ?: ($u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo externo' : 'Sin asignar'));
+        $puesto = $u?->puesto ?: ($el->puesto ?? '-');
+        $solicitante = $solicitanteForzado ?: ($u?->solicitante ?? '-');
+        $obs = $obsForzada ?: ($el->observaciones ?: ($el->descripcion_texto ?? '-'));
+
+        $fila = [
+            $el->tipo?->nombre ?? 'N/A',
+            $el->nro_lia ?? '-',
+            $el->nro_unsj ?? '-',
+            $el->marca ?? '-',
+            $el->modelo ?? '-',
+            $ubicacionNombre,
+            $puesto,
+            $situacion,
+        ];
+
+        foreach ($atributos as $attr) {
+            $fila[] = $el->getValorAtributo($attr);
+        }
+
+        $fila[] = $solicitante;
+        $fila[] = $obs;
+
+        return $fila;
+    }
+
+    /**
      * Construcción de dataset según el reporte solicitado.
      */
     private function obtenerDatosReporte(string $tipo, Request $request): array
     {
-        $columnasStandard = [
-            'Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Ubicación', 'Puesto', 'Situación', 'Solicitante', 'Garantía / Obs'
-        ];
+        $atributos = self::obtenerAtributosDinamicos();
+        $columnasStandard = array_merge(
+            ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Ubicación', 'Puesto', 'Situación'],
+            $atributos,
+            ['Solicitante', 'Garantía / Obs']
+        );
+        $columnasOcultasDefecto = self::obtenerColumnasOcultasDefecto($atributos);
 
         switch ($tipo) {
             case 'inventario-completo':
-                $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion']);
+                $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
 
                 $items = $query->orderBy('id', 'asc')->get();
-                $filas = $items->map(function ($el) {
-                    $u = $el->ultimoMovimiento;
-                    $situacion = ($u?->esPrestamo() && !$u?->fecha_devolucion) ? 'Prestado' : 'En Sala';
-                    return [
-                        $el->tipo?->nombre ?? 'N/A',
-                        $el->nro_lia ?? '-',
-                        $el->nro_unsj ?? '-',
-                        $el->marca ?? '-',
-                        $el->modelo ?? '-',
-                        $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo externo' : 'Sin asignar'),
-                        $u?->puesto ?: ($el->puesto ?? '-'),
-                        $situacion,
-                        $u?->solicitante ?? '-',
-                        $el->observaciones ?: ($el->descripcion_texto ?? '-'),
-                    ];
+                $filas = $items->map(function ($el) use ($atributos) {
+                    return $this->construirFilaElemento($el, $atributos);
                 });
 
                 return [
@@ -160,28 +237,17 @@ class ReporteController extends Controller
                     'columnas' => $columnasStandard,
                     'filas' => $filas,
                     'total' => $items->count(),
+                    'columnasOcultasDefecto' => $columnasOcultasDefecto,
                 ];
 
             case 'operativos':
-                $query = Elemento::disponibles()->with(['tipo', 'ultimoMovimiento.ubicacion']);
+                $query = Elemento::disponibles()->with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
                 if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
 
                 $items = $query->orderBy('id', 'asc')->get();
-                $filas = $items->map(function ($el) {
-                    $u = $el->ultimoMovimiento;
-                    return [
-                        $el->tipo?->nombre ?? 'N/A',
-                        $el->nro_lia ?? '-',
-                        $el->nro_unsj ?? '-',
-                        $el->marca ?? '-',
-                        $el->modelo ?? '-',
-                        $u?->ubicacion?->nombre ?? 'Sin asignar',
-                        $u?->puesto ?: ($el->puesto ?? '-'),
-                        'Operativo en Sala',
-                        $u?->solicitante ?? '-',
-                        $el->observaciones ?: ($el->descripcion_texto ?? '-'),
-                    ];
+                $filas = $items->map(function ($el) use ($atributos) {
+                    return $this->construirFilaElemento($el, $atributos, 'Operativo en Sala');
                 });
 
                 return [
@@ -190,29 +256,21 @@ class ReporteController extends Controller
                     'columnas' => $columnasStandard,
                     'filas' => $filas,
                     'total' => $items->count(),
+                    'columnasOcultasDefecto' => $columnasOcultasDefecto,
                 ];
 
             case 'prestados':
-                $query = Elemento::prestadosActivos()->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.usuario']);
+                $query = Elemento::prestadosActivos()->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.usuario', 'valoresAtributos.atributo']);
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
 
                 $items = $query->orderBy('id', 'asc')->get();
-                $filas = $items->map(function ($el) {
+                $filas = $items->map(function ($el) use ($atributos) {
                     $u = $el->ultimoMovimiento;
                     $fechaSalida = $u?->fecha_prestamo ? Carbon::parse($u->fecha_prestamo)->format('d/m/Y') : '-';
                     $dias = $u?->fecha_prestamo ? Carbon::parse($u->fecha_prestamo)->diffInDays(now()) . ' días' : '-';
-                    return [
-                        $el->tipo?->nombre ?? 'N/A',
-                        $el->nro_lia ?? '-',
-                        $el->nro_unsj ?? '-',
-                        $el->marca ?? '-',
-                        $el->modelo ?? '-',
-                        $u?->ubicacion?->nombre ?? 'Préstamo Externo',
-                        $u?->puesto ?: ($el->puesto ?? '-'),
-                        'Prestado',
-                        $u?->solicitante ? "{$u->solicitante} (Salida: {$fechaSalida} - {$dias})" : '-',
-                        $u?->comentario ?: ($el->observaciones ?: ($el->descripcion_texto ?? '-')),
-                    ];
+                    $sol = $u?->solicitante ? "{$u->solicitante} (Salida: {$fechaSalida} - {$dias})" : '-';
+                    $coment = $u?->comentario ?: ($el->observaciones ?: ($el->descripcion_texto ?? '-'));
+                    return $this->construirFilaElemento($el, $atributos, 'Prestado', $sol, null, $coment);
                 });
 
                 return [
@@ -221,29 +279,21 @@ class ReporteController extends Controller
                     'columnas' => $columnasStandard,
                     'filas' => $filas,
                     'total' => $items->count(),
+                    'columnasOcultasDefecto' => $columnasOcultasDefecto,
                 ];
 
             case 'bajas-basura':
             case 'bajas':
-                $query = Elemento::obsoletos()->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.usuario']);
+                $query = Elemento::obsoletos()->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.usuario', 'valoresAtributos.atributo']);
 
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
 
                 $items = $query->orderBy('id', 'asc')->get();
-                $filas = $items->map(function ($el) {
+                $filas = $items->map(function ($el) use ($atributos) {
                     $u = $el->ultimoMovimiento;
-                    return [
-                        $el->tipo?->nombre ?? 'N/A',
-                        $el->nro_lia ?? '-',
-                        $el->nro_unsj ?? '-',
-                        $el->marca ?? '-',
-                        $el->modelo ?? '-',
-                        $u?->ubicacion?->nombre ?? 'Depósito / Descarte',
-                        $u?->puesto ?: ($el->puesto ?? '-'),
-                        'Basura Tecnológica',
-                        $u?->usuario?->nombre ? "Registrado por: {$u->usuario->nombre}" : '-',
-                        $u?->comentario ?: ($el->observaciones ?: ($el->descripcion_texto ?? '-')),
-                    ];
+                    $sol = $u?->usuario?->nombre ? "Registrado por: {$u->usuario->nombre}" : '-';
+                    $coment = $u?->comentario ?: ($el->observaciones ?: ($el->descripcion_texto ?? '-'));
+                    return $this->construirFilaElemento($el, $atributos, 'Basura Tecnológica', $sol, 'Depósito / Descarte', $coment);
                 });
 
                 return [
@@ -252,6 +302,7 @@ class ReporteController extends Controller
                     'columnas' => $columnasStandard,
                     'filas' => $filas,
                     'total' => $items->count(),
+                    'columnasOcultasDefecto' => $columnasOcultasDefecto,
                 ];
 
             case 'historial-reparaciones':
@@ -395,22 +446,10 @@ class ReporteController extends Controller
             case 'auditoria-sala':
                 $ubicacionId = $request->ubicacion_id;
                 $ubicacion = Ubicacion::find($ubicacionId) ?? Ubicacion::first();
-                $items = Elemento::enUbicacion($ubicacion->id)->with(['tipo', 'ultimoMovimiento.ubicacion'])->orderBy('puesto', 'asc')->get();
+                $items = Elemento::enUbicacion($ubicacion->id)->with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo'])->orderBy('puesto', 'asc')->get();
 
-                $filas = $items->map(function ($el) use ($ubicacion) {
-                    $u = $el->ultimoMovimiento;
-                    return [
-                        $el->tipo?->nombre ?? 'N/A',
-                        $el->nro_lia ?? '-',
-                        $el->nro_unsj ?? '-',
-                        $el->marca ?? '-',
-                        $el->modelo ?? '-',
-                        $ubicacion->nombre,
-                        $u?->puesto ?: ($el->puesto ?? '-'),
-                        'En Sala',
-                        '-',
-                        $el->observaciones ?? '-',
-                    ];
+                $filas = $items->map(function ($el) use ($atributos, $ubicacion) {
+                    return $this->construirFilaElemento($el, $atributos, 'En Sala', '-', $ubicacion->nombre, $el->observaciones ?? '-');
                 });
 
                 return [
@@ -419,6 +458,7 @@ class ReporteController extends Controller
                     'columnas' => $columnasStandard,
                     'filas' => $filas,
                     'total' => $items->count(),
+                    'columnasOcultasDefecto' => $columnasOcultasDefecto,
                 ];
 
             case 'concepto-fechas':
@@ -460,24 +500,13 @@ class ReporteController extends Controller
 
                 $items = Elemento::whereNotNull('fecha_adquisicion')
                     ->whereBetween('fecha_adquisicion', [$desde, $hasta])
-                    ->with(['tipo', 'ultimoMovimiento.ubicacion'])
+                    ->with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo'])
                     ->orderBy('fecha_adquisicion', 'desc')
                     ->get();
 
-                $filas = $items->map(function ($el) {
-                    $u = $el->ultimoMovimiento;
-                    return [
-                        $el->tipo?->nombre ?? 'N/A',
-                        $el->nro_lia ?? '-',
-                        $el->nro_unsj ?? '-',
-                        $el->marca ?? '-',
-                        $el->modelo ?? '-',
-                        $u?->ubicacion?->nombre ?? '-',
-                        $u?->puesto ?? '-',
-                        'Registrado',
-                        "Alta: " . Carbon::parse($el->fecha_adquisicion)->format('d/m/Y'),
-                        $el->observaciones ?? '-',
-                    ];
+                $filas = $items->map(function ($el) use ($atributos) {
+                    $sol = "Alta: " . Carbon::parse($el->fecha_adquisicion)->format('d/m/Y');
+                    return $this->construirFilaElemento($el, $atributos, 'Registrado', $sol, null, $el->observaciones ?? '-');
                 });
 
                 return [
@@ -486,6 +515,7 @@ class ReporteController extends Controller
                     'columnas' => $columnasStandard,
                     'filas' => $filas,
                     'total' => $items->count(),
+                    'columnasOcultasDefecto' => $columnasOcultasDefecto,
                 ];
 
             case 'movimientos-fechas':
@@ -738,27 +768,14 @@ class ReporteController extends Controller
 
             case 'parametrizable':
             default:
-                $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion']);
+                $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
                 if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
                 if ($request->filled('anio')) $query->where('anio_compra', $request->anio);
 
                 $items = $query->orderBy('id', 'asc')->get();
-                $filas = $items->map(function ($el) {
-                    $u = $el->ultimoMovimiento;
-                    $situacion = ($u?->esPrestamo() && !$u?->fecha_devolucion) ? 'Prestado' : 'En Sala';
-                    return [
-                        $el->tipo?->nombre ?? 'N/A',
-                        $el->nro_lia ?? '-',
-                        $el->nro_unsj ?? '-',
-                        $el->marca ?? '-',
-                        $el->modelo ?? '-',
-                        $u?->ubicacion?->nombre ?? 'Sin asignar',
-                        $u?->puesto ?: ($el->puesto ?? '-'),
-                        $situacion,
-                        $u?->solicitante ?? '-',
-                        $el->observaciones ?: ($el->descripcion_texto ?? '-'),
-                    ];
+                $filas = $items->map(function ($el) use ($atributos) {
+                    return $this->construirFilaElemento($el, $atributos);
                 });
 
                 return [
@@ -767,6 +784,7 @@ class ReporteController extends Controller
                     'columnas' => $columnasStandard,
                     'filas' => $filas,
                     'total' => $items->count(),
+                    'columnasOcultasDefecto' => $columnasOcultasDefecto,
                 ];
         }
     }

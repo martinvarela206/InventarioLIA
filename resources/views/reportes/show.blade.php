@@ -94,8 +94,11 @@
                 </div>
                 <div class="space-y-1.5 max-h-60 overflow-y-auto">
                     @foreach($columnas as $cIdx => $col)
+                        @php
+                            $estaOculta = in_array($col, $columnasOcultasIniciales ?? []);
+                        @endphp
                         <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded font-medium text-gray-700">
-                            <input type="checkbox" checked id="chk-col-{{ $cIdx }}" onchange="toggleVisibilidadColumna({{ $cIdx }}, '{{ addslashes($col) }}', this.checked)" class="rounded text-amber-500 focus:ring-amber-400">
+                            <input type="checkbox" {{ $estaOculta ? '' : 'checked' }} id="chk-col-{{ $cIdx }}" onchange="toggleVisibilidadColumna({{ $cIdx }}, '{{ addslashes($col) }}', this.checked)" class="rounded text-amber-500 focus:ring-amber-400">
                             <span>{{ $col }}</span>
                         </label>
                     @endforeach
@@ -114,8 +117,9 @@
                         @foreach($columnas as $cIdx => $col)
                             @php
                                 $esColumnaIdentificadora = (str_contains(mb_strtolower($col), 'lia') || $cIdx === 0);
+                                $estaOculta = in_array($col, $columnasOcultasIniciales ?? []);
                             @endphp
-                            <th data-col-index="{{ $cIdx }}" data-col-name="{{ $col }}" class="py-1.5 px-2 print:py-1 print:px-1.5 border border-gray-300 print:text-[8pt] whitespace-nowrap">
+                            <th data-col-index="{{ $cIdx }}" data-col-name="{{ $col }}" style="{{ $estaOculta ? 'display: none;' : '' }}" class="py-1.5 px-2 print:py-1 print:px-1.5 border border-gray-300 print:text-[8pt] whitespace-nowrap">
                                 <div class="flex items-center justify-between gap-1">
                                     <div class="flex items-center gap-1.5">
                                         @if($esColumnaIdentificadora)
@@ -145,7 +149,11 @@
                                 {{ $idx + 1 }}
                             </td>
                             @foreach($fila as $cIdx => $celda)
-                                <td data-col-index="{{ $cIdx }}" class="py-1 px-2 print:py-1 print:px-1.5 border border-gray-300 font-medium print:text-[8pt] break-words">
+                                @php
+                                    $colName = $columnas[$cIdx] ?? '';
+                                    $estaOculta = in_array($colName, $columnasOcultasIniciales ?? []);
+                                @endphp
+                                <td data-col-index="{{ $cIdx }}" style="{{ $estaOculta ? 'display: none;' : '' }}" class="py-1 px-2 print:py-1 print:px-1.5 border border-gray-300 font-medium print:text-[8pt] break-words">
                                     {{ $celda }}
                                 </td>
                             @endforeach
@@ -176,7 +184,7 @@
 </div>
 
 <script>
-    const columnasOcultas = new Set();
+    const columnasOcultas = new Set(@json($columnasOcultasIniciales ?? []));
     const urlBaseExportCsv = "{{ route('reportes.exportCsv', array_merge(['tipo' => $tipoReporte], request()->except('columnas_ocultas')) ) }}";
 
     function abrirDropdownColumnas(event) {
@@ -259,6 +267,9 @@
                 : urlBaseExportCsv;
         }
     }
+
+    // Inicializar estado reactivo inicial en carga
+    actualizarEstadoGlobal();
 </script>
 
 <style>

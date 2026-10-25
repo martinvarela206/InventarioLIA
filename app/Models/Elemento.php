@@ -103,6 +103,39 @@ class Elemento extends Model
         return $this->hasMany(ElementoAtributoValor::class, 'elemento_id')->with('atributo');
     }
 
+    /**
+     * Obtiene el valor formateado de un atributo técnico específico (vía relación o JSON).
+     */
+    public function getValorAtributo(string $nombreAtributo): string
+    {
+        $nomLower = mb_strtolower(trim($nombreAtributo));
+
+        if ($this->relationLoaded('valoresAtributos') || $this->valoresAtributos()->exists()) {
+            foreach ($this->valoresAtributos as $va) {
+                if ($va->atributo && mb_strtolower(trim($va->atributo->nombre)) === $nomLower) {
+                    $val = trim((string)$va->valor);
+                    if ($val !== '') {
+                        $unidad = $va->atributo->unidad_medida ? ' ' . $va->atributo->unidad_medida : '';
+                        return $val . $unidad;
+                    }
+                }
+            }
+        }
+
+        if (is_array($this->descripcion)) {
+            foreach ($this->descripcion as $key => $val) {
+                if (mb_strtolower(trim((string)$key)) === $nomLower) {
+                    $v = trim((string)$val);
+                    if ($v !== '') {
+                        return $v;
+                    }
+                }
+            }
+        }
+
+        return '-';
+    }
+
     public function presenter(): ElementoPresenter
     {
         return new ElementoPresenter($this);
