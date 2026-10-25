@@ -151,7 +151,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/app-admin/reportes', [AppAdminController::class, 'reportesIndex'])->name('app_admin.reportes');
             Route::post('/app-admin/reportes', [AppAdminController::class, 'reporteStore'])->name('app_admin.reportes.store');
             Route::put('/app-admin/reportes/{reporte}', [AppAdminController::class, 'reporteUpdate'])->name('app_admin.reportes.update');
-            Route::post('/app-admin/reportes/{reporte}/toggle', [AppAdminController::class, 'reporteToggle'])->name('app_admin.reportes.toggle');
+            Route::match(['post', 'patch'], '/app-admin/reportes/{reporte}/toggle', [AppAdminController::class, 'reporteToggle'])->name('app_admin.reportes.toggle');
             Route::delete('/app-admin/reportes/{reporte}', [AppAdminController::class, 'reporteDestroy'])->name('app_admin.reportes.destroy');
         });
     });

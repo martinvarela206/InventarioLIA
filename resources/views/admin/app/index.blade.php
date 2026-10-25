@@ -29,7 +29,7 @@
     @endif
 
     <!-- KPI / Accesos Rápidos -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <!-- Carreras -->
         <a href="{{ route('app_admin.carreras') }}" class="bg-white rounded-2xl p-5 border border-gray-200 hover:border-amber-400 hover:shadow-md transition-all group block">
             <div class="flex justify-between items-start mb-3">
@@ -94,6 +94,23 @@
             <p class="text-xs text-gray-500 mt-1">Posteos estilo Instagram, eventos y anuncios.</p>
             <div class="mt-4 pt-2 border-t border-gray-100 text-xs text-amber-700 font-bold flex items-center justify-between">
                 <span>Crear publicación</span>
+                <span>→</span>
+            </div>
+        </a>
+
+        <!-- Reportes -->
+        <a href="{{ route('app_admin.reportes') }}" class="bg-white rounded-2xl p-5 border border-gray-200 hover:border-amber-400 hover:shadow-md transition-all group block">
+            <div class="flex justify-between items-start mb-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-900 rounded-xl font-bold text-xs">
+                    <svg class="w-4 h-4 text-emerald-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Reportes
+                </span>
+                <span class="text-2xl font-black text-gray-900">{{ $reportesActivos }} <span class="text-xs text-gray-400 font-normal">/ {{ $totalReportes }}</span></span>
+            </div>
+            <h3 class="font-bold text-gray-900 text-sm group-hover:text-amber-800 transition-colors">Gestión de Reportes</h3>
+            <p class="text-xs text-gray-500 mt-1">Catálogo oficial, reportes guardados y variables dinámicas.</p>
+            <div class="mt-4 pt-2 border-t border-gray-100 text-xs text-amber-700 font-bold flex items-center justify-between">
+                <span>Configurar catálogo</span>
                 <span>→</span>
             </div>
         </a>

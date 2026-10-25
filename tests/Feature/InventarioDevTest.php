@@ -1482,6 +1482,126 @@ class InventarioDevTest extends TestCase
         $this->assertTrue($reporteGuardado->requiereRangoFechas());
         $this->assertFalse($reporteGuardado->requiereNroLia());
     }
+
+    public function test_modulo_gestion_de_reportes_en_app_admin(): void
+    {
+        $this->seed(\Database\Seeders\ReporteConfiguradoSeeder::class);
+
+        $appAdmin = Usuario::create([
+            'nombre' => 'App Admin Gerente',
+            'email' => 'gerente_reportes@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $appAdmin->roles()->attach(Rol::where('rol', 'app_admin')->first()->id);
+
+        $usuarioComun = Usuario::create([
+            'nombre' => 'Revisor Base',
+            'email' => 'revisor_base@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $usuarioComun->roles()->attach(Rol::where('rol', 'rev')->first()->id);
+
+        // 1. Verificación de permisos y acceso al dashboard de App Admin
+        $resForbidden = $this->actingAs($usuarioComun)->get(route('app_admin.reportes'));
+        $resForbidden->assertStatus(403);
+
+        $resIndexApp = $this->actingAs($appAdmin)->get(route('app_admin.index'));
+        $resIndexApp->assertStatus(200);
+        $resIndexApp->assertSee('Gestión de Reportes');
+        $resIndexApp->assertSee(route('app_admin.reportes'));
+
+        $resIndex = $this->actingAs($appAdmin)->get(route('app_admin.reportes'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Catálogo y Configuración de Reportes');
+        $resIndex->assertSee('Listado completo del Inventario');
+        $resIndex->assertSee('Nuevo Reporte');
+
+        // 2. Creación de un nuevo reporte desde la gestión
+        $resStore = $this->actingAs($appAdmin)->post(route('app_admin.reportes.store'), [
+            'titulo' => 'Notebooks en Mantenimiento Preventivo',
+            'subtitulo' => 'Equipos portátiles en revisión',
+            'descripcion' => 'Seguimiento semestral de notebooks',
+            'categoria' => 'soporte',
+            'icono' => 'wrench',
+            'orden' => 45,
+            'variables_requeridas' => [
+                'ubicacion_id' => '1',
+            ],
+            'filtros_fijos' => [
+                'situacion' => 'en_reparacion',
+            ],
+            'activo' => '1',
+        ]);
+
+        $resStore->assertRedirect(route('app_admin.reportes'));
+        $resStore->assertSessionHas('success');
+
+        $this->assertDatabaseHas('reportes_configurados', [
+            'titulo' => 'Notebooks en Mantenimiento Preventivo',
+            'categoria' => 'soporte',
+            'es_sistema' => false,
+            'activo' => true,
+        ]);
+
+        $reporteNuevo = ReporteConfigurado::where('titulo', 'Notebooks en Mantenimiento Preventivo')->first();
+        $this->assertNotNull($reporteNuevo);
+        $this->assertEquals(45, $reporteNuevo->orden);
+        $this->assertTrue($reporteNuevo->requiereUbicacion());
+
+        // 3. Edición del reporte
+        $resUpdate = $this->actingAs($appAdmin)->put(route('app_admin.reportes.update', $reporteNuevo->id), [
+            'titulo' => 'Notebooks en Mantenimiento - Actualizado',
+            'subtitulo' => 'Subtítulo modificado',
+            'descripcion' => 'Descripción modificada',
+            'categoria' => 'patrimonio',
+            'icono' => 'shield',
+            'orden' => 12,
+            'variables_requeridas' => [
+                'nro_lia' => '1',
+            ],
+            'filtros_fijos' => [
+                'situacion' => 'operativo',
+            ],
+            'activo' => '1',
+        ]);
+
+        $resUpdate->assertRedirect(route('app_admin.reportes'));
+        $this->assertDatabaseHas('reportes_configurados', [
+            'id' => $reporteNuevo->id,
+            'titulo' => 'Notebooks en Mantenimiento - Actualizado',
+            'categoria' => 'patrimonio',
+            'orden' => 12,
+        ]);
+        $this->assertTrue($reporteNuevo->fresh()->requiereNroLia());
+        $this->assertFalse($reporteNuevo->fresh()->requiereUbicacion());
+
+        // 4. Toggle de activación/desactivación
+        $this->assertTrue($reporteNuevo->fresh()->activo);
+        $resToggle = $this->actingAs($appAdmin)->patch(route('app_admin.reportes.toggle', $reporteNuevo->id));
+        $resToggle->assertSessionHas('success');
+        $this->assertFalse($reporteNuevo->fresh()->activo);
+
+        // 5. Eliminación de reporte personalizado
+        $resDestroy = $this->actingAs($appAdmin)->delete(route('app_admin.reportes.destroy', $reporteNuevo->id));
+        $resDestroy->assertRedirect(route('app_admin.reportes'));
+        $resDestroy->assertSessionHas('success');
+        $this->assertDatabaseMissing('reportes_configurados', [
+            'id' => $reporteNuevo->id,
+        ]);
+
+        // 6. Reporte del sistema NO se elimina físicamente, solo se desactiva
+        $reporteSistema = ReporteConfigurado::where('slug', 'inventario-completo')->first();
+        $this->assertTrue($reporteSistema->es_sistema);
+        $resDestroySistema = $this->actingAs($appAdmin)->delete(route('app_admin.reportes.destroy', $reporteSistema->id));
+        $resDestroySistema->assertRedirect(route('app_admin.reportes'));
+        $this->assertDatabaseHas('reportes_configurados', [
+            'id' => $reporteSistema->id,
+            'slug' => 'inventario-completo',
+            'activo' => false,
+        ]);
+    }
 }
 
 

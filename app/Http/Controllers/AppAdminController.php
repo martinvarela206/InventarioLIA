@@ -26,6 +26,8 @@ class AppAdminController extends Controller
         $totalEspacios = EspacioLia::count();
         $totalPersonal = PersonalLia::count();
         $totalActividades = ActividadLia::count();
+        $totalReportes = ReporteConfigurado::count();
+        $reportesActivos = ReporteConfigurado::activos()->count();
 
         $ultimasActividades = ActividadLia::with('autor')->latest()->take(3)->get();
         $ultimosEspacios = EspacioLia::orderBy('orden')->take(4)->get();
@@ -37,6 +39,8 @@ class AppAdminController extends Controller
             'totalEspacios',
             'totalPersonal',
             'totalActividades',
+            'totalReportes',
+            'reportesActivos',
             'ultimasActividades',
             'ultimosEspacios',
             'personalDestacado'
