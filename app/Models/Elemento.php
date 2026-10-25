@@ -140,7 +140,7 @@ class Elemento extends Model
             $q->where(function ($sub) {
                 $sub->whereNull('fecha_prestamo')
                     ->orWhereNotNull('fecha_devolucion');
-            });
+            })->whereNotIn('tipo_movimiento', ['baja', 'reparacion']);
         });
     }
 
@@ -164,8 +164,23 @@ class Elemento extends Model
 
     public function scopeObsoletos(Builder $query): Builder
     {
-        return $query->whereHas('tipo', function ($tq) {
-            $tq->where('nombre', 'basura tecnologica');
+        return $query->where(function ($q) {
+            $q->whereHas('ultimoMovimiento', function ($mq) {
+                $mq->where('tipo_movimiento', 'baja');
+            })->orWhereHas('tipo', function ($tq) {
+                $tq->where('nombre', 'basura tecnologica');
+            });
+        });
+    }
+
+    public function scopeEnReparacion(Builder $query): Builder
+    {
+        return $query->whereHas('ultimoMovimiento', function ($mq) {
+            $mq->where('tipo_movimiento', 'reparacion')
+               ->where(function ($sub) {
+                   $sub->whereNull('estado_ticket')
+                       ->orWhere('estado_ticket', 'abierto');
+               });
         });
     }
 
@@ -177,7 +192,25 @@ class Elemento extends Model
               ->orWhere('nro_unsj', 'LIKE', "%{$term}%")
               ->orWhere('marca', 'LIKE', "%{$term}%")
               ->orWhere('modelo', 'LIKE', "%{$term}%")
-              ->orWhere('nro_serie', 'LIKE', "%{$term}%");
+              ->orWhere('nro_serie', 'LIKE', "%{$term}%")
+              ->orWhere('puesto', 'LIKE', "%{$term}%")
+              ->orWhere('observaciones', 'LIKE', "%{$term}%")
+              ->orWhere('descripcion', 'LIKE', "%{$term}%")
+              ->orWhere('anio_compra', 'LIKE', "%{$term}%")
+              ->orWhereHas('tipo', function ($tq) use ($term) {
+                  $tq->where('nombre', 'LIKE', "%{$term}%");
+              })
+              ->orWhereHas('valoresAtributos', function ($vaq) use ($term) {
+                  $vaq->where('valor', 'LIKE', "%{$term}%");
+              })
+              ->orWhereHas('ultimoMovimiento', function ($mq) use ($term) {
+                  $mq->where('solicitante', 'LIKE', "%{$term}%")
+                     ->orWhere('comentario', 'LIKE', "%{$term}%")
+                     ->orWhere('puesto', 'LIKE', "%{$term}%")
+                     ->orWhereHas('ubicacion', function ($uq) use ($term) {
+                         $uq->where('nombre', 'LIKE', "%{$term}%");
+                     });
+              });
         });
     }
 }

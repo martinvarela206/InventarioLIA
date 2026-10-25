@@ -13,6 +13,10 @@
             </h1>
         </div>
         <div class="flex items-center gap-3">
+            <a href="{{ route('tickets.create') }}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                Iniciar Ticket
+            </a>
             @if(Auth::user()->canManageMovimientos())
                 <a href="{{ route('movimientos.rapido') }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -26,8 +30,8 @@
         </div>
     </div>
 
-    <!-- 1. 4 KPI CARDS -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- 1. 5 KPI CARDS -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <!-- Total Activos -->
         <a href="{{ route('reportes.show', 'inventario-completo') }}" title="Ver reporte digital de todos los activos" class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm relative overflow-hidden block hover:-translate-y-1 hover:shadow-md hover:border-gray-400 transition-all group cursor-pointer">
             <div class="absolute right-3 top-3 text-gray-100 group-hover:text-amber-100 transition-colors -z-0">
@@ -69,6 +73,21 @@
             </div>
             <div class="text-3xl font-black text-amber-600 mt-2 relative z-10">{{ number_format($totalPrestados) }}</div>
             <span class="text-xs text-amber-700 mt-1 block relative z-10">Fuera del laboratorio</span>
+        </a>
+
+        <!-- En Reparación / Tickets -->
+        <a href="{{ Auth::user()->hasRole('tec') ? route('tickets.index') : route('reportes.show', 'historial-reparaciones') }}" title="Ver tickets y reparaciones técnicas" class="bg-white rounded-2xl p-5 border border-indigo-200 shadow-sm relative overflow-hidden block hover:-translate-y-1 hover:shadow-md hover:border-indigo-400 transition-all group cursor-pointer">
+            <div class="absolute right-3 top-3 text-indigo-100 group-hover:text-indigo-200 transition-colors -z-0">
+                <svg class="w-16 h-16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+            </div>
+            <div class="flex items-center justify-between relative z-10">
+                <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider block">En Reparación</span>
+                <span class="text-xs font-semibold text-indigo-600 group-hover:text-indigo-900 transition-colors flex items-center gap-0.5">Tickets <span class="group-hover:translate-x-0.5 transition-transform">→</span></span>
+            </div>
+            <div class="text-3xl font-black text-indigo-700 mt-2 relative z-10">{{ number_format($totalEnReparacion) }}</div>
+            <span class="text-xs text-indigo-600 mt-1 block relative z-10">Taller y diagnóstico</span>
         </a>
 
         <!-- Obsoletos / Bajas -->

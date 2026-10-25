@@ -18,14 +18,17 @@ use Carbon\Carbon;
 use App\Models\Atributo;
 use App\Models\ElementoAtributoValor;
 
+use Illuminate\Database\Eloquent\Builder;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
 class ElementoController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Construye la consulta filtrada de inventario completo reutilizable.
      */
-    public function index(Request $request): View
+    private function construirConsultaInventario(Request $request): Builder
     {
-        $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion']);
+        $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
 
         if ($request->filled('search')) {
             $search = trim($request->input('search'));
@@ -39,9 +42,31 @@ class ElementoController extends Controller
         }
 
         if ($request->filled('ubicacion')) {
-            $query->whereHas('ultimoMovimiento', function ($q) use ($request) {
-                $q->where('ubicacion_id', $request->ubicacion);
-            });
+            if ($request->ubicacion === 'prestamo_externo') {
+                $query->whereHas('ultimoMovimiento', function ($q) {
+                    $q->whereNotNull('fecha_prestamo')->whereNull('fecha_devolucion');
+                });
+            } else {
+                $query->whereHas('ultimoMovimiento', function ($q) use ($request) {
+                    $q->where('ubicacion_id', $request->ubicacion);
+                });
+            }
+        }
+
+        if ($request->filled('situacion')) {
+            if ($request->situacion === 'operativo') {
+                $query->disponibles();
+            } elseif ($request->situacion === 'prestado') {
+                $query->prestadosActivos();
+            } elseif ($request->situacion === 'baja') {
+                $query->obsoletos();
+            } elseif ($request->situacion === 'reparacion') {
+                $query->enReparacion();
+            }
+        }
+
+        if ($request->filled('anio')) {
+            $query->where('anio_compra', $request->anio);
         }
 
         if ($request->filled('gb')) {
@@ -65,11 +90,130 @@ class ElementoController extends Controller
             }
         }
 
-        $elementos = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
-        $tipos = Tipo::all();
-        $ubicaciones = Ubicacion::all();
+        return $query;
+    }
 
-        return view('elementos.index', compact('elementos', 'tipos', 'ubicaciones'));
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request): View
+    {
+        $query = $this->construirConsultaInventario($request);
+
+        $elementos = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
+        $tipos = Tipo::orderBy('nombre')->get();
+        $ubicaciones = Ubicacion::orderBy('nombre')->get();
+        $anios = Elemento::whereNotNull('anio_compra')->distinct()->orderBy('anio_compra', 'desc')->pluck('anio_compra');
+
+        return view('elementos.index', compact('elementos', 'tipos', 'ubicaciones', 'anios'));
+    }
+
+    /**
+     * Exportación a CSV del inventario filtrado.
+     */
+    public function exportCsv(Request $request): StreamedResponse
+    {
+        $query = $this->construirConsultaInventario($request);
+        $items = $query->orderBy('id', 'asc')->get();
+
+        $columnas = ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Nro Serie', 'Ubicación', 'Puesto', 'Situación', 'Solicitante / Préstamo', 'Garantía', 'Año Compra', 'Observaciones'];
+
+        $filas = $items->map(function ($el) {
+            $u = $el->ultimoMovimiento;
+            $situacion = 'En Sala';
+            if ($u?->esPrestamo() && !$u?->fecha_devolucion) {
+                $situacion = 'Prestado (' . $u->diasPrestado() . ' d)';
+            } elseif ($u?->tipo_movimiento === 'baja' || $el->tipo?->nombre === 'basura tecnologica') {
+                $situacion = 'Basura Tecnológica / De Baja';
+            } elseif ($u?->esTicketAbierto()) {
+                $situacion = 'En Reparación';
+            }
+
+            $garantia = 'Sin datos';
+            if ($el->fecha_vencimiento_garantia) {
+                $venc = Carbon::parse($el->fecha_vencimiento_garantia);
+                $garantia = $venc->isPast() ? 'Vencida (' . $venc->format('d/m/Y') . ')' : 'Vigente (' . $venc->format('d/m/Y') . ')';
+            }
+
+            return [
+                $el->tipo?->nombre ?? 'N/A',
+                $el->nro_lia ?? '-',
+                $el->nro_unsj ?? '-',
+                $el->marca ?? '-',
+                $el->modelo ?? '-',
+                $el->nro_serie ?? '-',
+                $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo Externo' : 'Sin asignar'),
+                $u?->puesto ?: ($el->puesto ?? '-'),
+                $situacion,
+                $u?->solicitante ?? '-',
+                $garantia,
+                $el->anio_compra ? (string)$el->anio_compra : '-',
+                $el->observaciones ?: ($el->descripcion_texto ?? '-'),
+            ];
+        });
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="Inventario_Completo_' . date('Ymd_His') . '.csv"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        return response()->stream(function () use ($filas, $columnas) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, $columnas, ';');
+            foreach ($filas as $fila) {
+                fputcsv($handle, $fila, ';');
+            }
+            fclose($handle);
+        }, 200, $headers);
+    }
+
+    /**
+     * Vista de impresión / PDF del inventario completo filtrado.
+     */
+    public function imprimir(Request $request): View
+    {
+        $query = $this->construirConsultaInventario($request);
+        $items = $query->orderBy('id', 'asc')->get();
+
+        $columnas = ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Ubicación', 'Puesto', 'Situación', 'Solicitante / Préstamo', 'Garantía / Obs'];
+
+        $filas = $items->map(function ($el) {
+            $u = $el->ultimoMovimiento;
+            $situacion = 'En Sala';
+            if ($u?->esPrestamo() && !$u?->fecha_devolucion) {
+                $situacion = 'Prestado (' . $u->diasPrestado() . ' d)';
+            } elseif ($u?->tipo_movimiento === 'baja' || $el->tipo?->nombre === 'basura tecnologica') {
+                $situacion = 'Basura Tecnológica / De Baja';
+            } elseif ($u?->esTicketAbierto()) {
+                $situacion = 'En Reparación';
+            }
+
+            return [
+                $el->tipo?->nombre ?? 'N/A',
+                $el->nro_lia ?? '-',
+                $el->nro_unsj ?? '-',
+                $el->marca ?? '-',
+                $el->modelo ?? '-',
+                $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo Externo' : 'Sin asignar'),
+                $u?->puesto ?: ($el->puesto ?? '-'),
+                $situacion,
+                $u?->solicitante ?? '-',
+                $el->observaciones ?: ($el->descripcion_texto ?? '-'),
+            ];
+        });
+
+        return view('reportes.show', [
+            'titulo' => 'Informe de Inventario Completo',
+            'subtitulo' => 'Reporte consolidado generado a partir de los filtros activos del catálogo',
+            'columnas' => $columnas,
+            'filas' => $filas,
+            'tipoReporte' => 'inventario-completo',
+            'request' => $request,
+        ]);
     }
 
     /**

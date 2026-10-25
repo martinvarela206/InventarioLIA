@@ -31,10 +31,14 @@ class DashboardController extends Controller
         })->count();
 
         $totalObsoletos = $ultimosMovimientos->filter(function ($m) {
-            return $m->elemento?->tipo?->nombre === 'basura tecnologica';
+            return $m->tipo_movimiento === 'baja' || $m->elemento?->tipo?->nombre === 'basura tecnologica';
         })->count();
 
-        $totalOperativos = max(0, $totalElementos - $totalPrestados - $totalObsoletos);
+        $totalEnReparacion = $ultimosMovimientos->filter(function ($m) {
+            return $m->tipo_movimiento === 'reparacion' && ($m->estado_ticket === 'abierto' || empty($m->estado_ticket));
+        })->count();
+
+        $totalOperativos = max(0, $totalElementos - $totalPrestados - $totalObsoletos - $totalEnReparacion);
 
         // 2. Widget de Préstamos Activos con cálculo de días y acción de devolución
         $prestamosActivos = Movimiento::prestadosActivos()
@@ -66,6 +70,7 @@ class DashboardController extends Controller
             'totalOperativos',
             'totalPrestados',
             'totalObsoletos',
+            'totalEnReparacion',
             'prestamosActivos',
             'distribucionSalas',
             'alertasGarantiaVencida'

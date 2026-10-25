@@ -20,10 +20,19 @@ class MovimientoPresenter
             $badge .= '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-900 border border-purple-300 mr-1.5">Enmienda de #' . $this->movimiento->correccion_de_id . '</span> ';
         }
 
-        if ($this->movimiento->esPrestamo()) {
-            return $badge . '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">Préstamo Externo</span>';
+        if ($this->movimiento->esBaja()) {
+            return $badge . '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">Baja / Basura Tec.</span>';
         }
-        return $badge . '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">Movimiento Interno</span>';
+
+        if ($this->movimiento->esReparacion()) {
+            $estadoTxt = $this->movimiento->estado_ticket ? ucfirst($this->movimiento->estado_ticket) : 'Abierto';
+            return $badge . '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">Ticket (' . $estadoTxt . ')</span>';
+        }
+
+        if ($this->movimiento->esPrestamo()) {
+            return $badge . '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">Préstamo Externo</span>';
+        }
+        return $badge . '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">Movimiento Interno</span>';
     }
 
     public function correccionBadge(): string

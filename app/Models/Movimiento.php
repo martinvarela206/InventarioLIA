@@ -21,6 +21,7 @@ class Movimiento extends Model
     protected $fillable = [
         'elemento_id',
         'tipo_movimiento',
+        'estado_ticket',
         'ubicacion_id',
         'puesto',
         'user_id',
@@ -29,6 +30,7 @@ class Movimiento extends Model
         'fecha_prestamo',
         'fecha_devolucion',
         'correccion_de_id',
+        'ticket_id',
         'comentario',
     ];
 
@@ -36,8 +38,8 @@ class Movimiento extends Model
     {
         static::updating(function ($movimiento) {
             $dirtyKeys = array_keys($movimiento->getDirty());
-            // Únicamente se tolera actualizar fecha_devolucion al registrar el check-in de retorno
-            if (array_diff($dirtyKeys, ['fecha_devolucion'])) {
+            // Únicamente se tolera actualizar fecha_devolucion y estado_ticket al registrar check-in o cierre de ticket
+            if (array_diff($dirtyKeys, ['fecha_devolucion', 'estado_ticket'])) {
                 throw new \LogicException('Los movimientos del inventario son inmutables por política estricta de auditoría. Para enmendar datos de un movimiento previo, registre un movimiento de corrección.');
             }
         });
@@ -130,6 +132,55 @@ class Movimiento extends Model
     public function scopePrestadosActivos(Builder $query): Builder
     {
         return $query->whereNotNull('fecha_prestamo')->whereNull('fecha_devolucion');
+    }
+
+    public function adjuntos(): HasMany
+    {
+        return $this->hasMany(MovimientoAdjunto::class, 'movimiento_id');
+    }
+
+    public function ticket(): BelongsTo
+    {
+        return $this->belongsTo(Movimiento::class, 'ticket_id');
+    }
+
+    public function resoluciones(): HasMany
+    {
+        return $this->hasMany(Movimiento::class, 'ticket_id');
+    }
+
+    public function esReparacion(): bool
+    {
+        return $this->tipo_movimiento === 'reparacion';
+    }
+
+    public function esBaja(): bool
+    {
+        return $this->tipo_movimiento === 'baja';
+    }
+
+    public function esTicketAbierto(): bool
+    {
+        return $this->tipo_movimiento === 'reparacion' && ($this->estado_ticket === 'abierto' || empty($this->estado_ticket));
+    }
+
+    public function scopeTicketsAbiertos(Builder $query): Builder
+    {
+        return $query->where('tipo_movimiento', 'reparacion')
+            ->where(function ($q) {
+                $q->whereNull('estado_ticket')
+                  ->orWhere('estado_ticket', 'abierto');
+            });
+    }
+
+    public function scopeTickets(Builder $query): Builder
+    {
+        return $query->where('tipo_movimiento', 'reparacion');
+    }
+
+    public function scopeBajas(Builder $query): Builder
+    {
+        return $query->where('tipo_movimiento', 'baja');
     }
 
     public function scopeInternos(Builder $query): Builder

@@ -11,6 +11,8 @@ use App\Models\Ubicacion;
 use App\Models\Rol;
 use App\Models\Usuario;
 use Carbon\Carbon;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 class InventarioDevTest extends TestCase
 {
@@ -983,6 +985,308 @@ class InventarioDevTest extends TestCase
             'nombre' => 'Sala Hack',
         ]);
         $responseForbidden->assertStatus(403);
+    }
+
+    public function test_inventario_completo_filtros_multicriterio_export_csv_e_imprimir(): void
+    {
+        $tec = Usuario::create([
+            'nombre' => 'Tecnico Test',
+            'email' => 'tec.inv@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $rolTec = Rol::where('rol', 'tec')->first();
+        $this->assertNotNull($rolTec);
+        $tec->roles()->attach($rolTec);
+
+        $tipoAccesorio = Tipo::where('nombre', 'accesorio')->first();
+        $this->assertNotNull($tipoAccesorio);
+
+        $elAccesorio = Elemento::create([
+            'nro_lia' => 'LIA-ACC-99',
+            'tipo_id' => $tipoAccesorio->id,
+            'marca' => 'Genius',
+            'modelo' => 'Cable HDMI',
+            'anio_compra' => 2024,
+        ]);
+
+        // 1. Búsqueda por término "accesorio" encuentra el elemento cuyo tipo es accesorio
+        $resBusqueda = $this->actingAs($tec)->get(route('elementos.index', ['search' => 'accesorio']));
+        $resBusqueda->assertStatus(200);
+        $resBusqueda->assertSee('LIA-ACC-99');
+        $resBusqueda->assertSee('Cable HDMI');
+
+        // 2. Exportación CSV de la vista filtrada
+        $resCsv = $this->actingAs($tec)->get(route('elementos.exportCsv', ['search' => 'accesorio']));
+        $resCsv->assertStatus(200);
+        $this->assertEquals('text/csv; charset=UTF-8', $resCsv->headers->get('Content-Type'));
+
+        // 3. Vista de impresión / PDF de la vista filtrada
+        $resPrint = $this->actingAs($tec)->get(route('elementos.imprimir', ['search' => 'accesorio']));
+        $resPrint->assertStatus(200);
+        $resPrint->assertSee('Informe de Inventario Completo');
+        $resPrint->assertSee('LIA-ACC-99');
+    }
+
+    public function test_nuevos_reportes_fechas_donados_altas_ingreso_garantias_y_columnas_ocultas(): void
+    {
+        $rev = Usuario::create([
+            'nombre' => 'Revisor Reportes',
+            'email' => 'rev.rep@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $rolRev = Rol::where('rol', 'rev')->first();
+        $rev->roles()->attach($rolRev);
+
+        $tipo = Tipo::first();
+        $el = Elemento::create([
+            'nro_lia' => 'LIA-REP-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'Optiplex',
+            'fecha_adquisicion' => now()->subMonth()->toDateString(),
+            'fecha_vencimiento_garantia' => now()->addMonths(6)->toDateString(),
+            'observaciones' => 'Donación de empresa tecnológica',
+        ]);
+
+        // 1. Reporte de Donados entre Fechas
+        $resDonados = $this->actingAs($rev)->get(route('reportes.show', [
+            'tipo' => 'donados-fechas',
+            'fecha_desde' => now()->subYear()->toDateString(),
+            'fecha_hasta' => now()->toDateString(),
+        ]));
+        $resDonados->assertStatus(200);
+        $resDonados->assertSee('LIA-REP-01');
+        $resDonados->assertSee('Reporte de Activos Donados entre Fechas');
+
+        // 2. Reporte de Altas entre Fechas
+        $resAltas = $this->actingAs($rev)->get(route('reportes.show', [
+            'tipo' => 'altas-fechas',
+            'fecha_desde' => now()->subYear()->toDateString(),
+            'fecha_hasta' => now()->toDateString(),
+        ]));
+        $resAltas->assertStatus(200);
+        $resAltas->assertSee('LIA-REP-01');
+
+        // 3. Reporte de Estado según Fecha de Ingreso al LIA
+        $resIngreso = $this->actingAs($rev)->get(route('reportes.show', [
+            'tipo' => 'ingreso-estado-fechas',
+            'fecha_desde' => now()->subYear()->toDateString(),
+            'fecha_hasta' => now()->toDateString(),
+        ]));
+        $resIngreso->assertStatus(200);
+        $resIngreso->assertSee('Estado de Activos según Fecha de Ingreso al LIA');
+        $resIngreso->assertSee('LIA-REP-01');
+
+        // 4. Reporte de Garantías por Rango de Fechas
+        $resGarantias = $this->actingAs($rev)->get(route('reportes.show', [
+            'tipo' => 'garantias-fechas',
+            'fecha_desde' => now()->subMonth()->toDateString(),
+            'fecha_hasta' => now()->addYear()->toDateString(),
+        ]));
+        $resGarantias->assertStatus(200);
+        $resGarantias->assertSee('Reporte de Estado de Garantías de Activos');
+        $resGarantias->assertSee('LIA-REP-01');
+
+        // 5. Ocultamiento de Columnas en CSV
+        $resCsvOcultas = $this->actingAs($rev)->get(route('reportes.exportCsv', [
+            'tipo' => 'donados-fechas',
+            'columnas_ocultas' => 'Nro UNSJ,Donante / Solicitante',
+        ]));
+        $resCsvOcultas->assertStatus(200);
+    }
+
+    public function test_modulo_tickets_reparaciones_basura_tecnologica_y_reportes(): void
+    {
+        Storage::fake('public');
+
+        $rolTec = Rol::where('rol', 'tec')->first();
+        $rolRev = Rol::where('rol', 'rev')->first();
+
+        $tec = Usuario::create([
+            'nombre' => 'Tecnico Taller',
+            'email' => 'tec.taller@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $tec->roles()->attach($rolTec);
+
+        $rev = Usuario::create([
+            'nombre' => 'Revisor Auditor',
+            'email' => 'rev.auditor@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $rev->roles()->attach($rolRev);
+
+        $lab = Ubicacion::first();
+        $tipoPC = Tipo::where('nombre', 'computadora')->first();
+
+        // -------------------------------------------------------------
+        // 1. REESTRUCTURACIÓN DE BASURA TECNOLÓGICA COMO ESTADO OPERATIVO
+        // -------------------------------------------------------------
+        $pcBaja = Elemento::create([
+            'nro_lia' => 'LIA-BAJA-01',
+            'tipo_id' => $tipoPC->id, // Categoría física real: computadora
+            'marca' => 'Lenovo',
+            'modelo' => 'ThinkCentre',
+        ]);
+        Movimiento::create([
+            'elemento_id' => $pcBaja->id,
+            'tipo_movimiento' => 'baja',
+            'estado_ticket' => 'baja',
+            'ubicacion_id' => $lab->id,
+            'puesto' => 'Descarte',
+            'user_id' => $tec->id,
+            'fecha' => now(),
+            'comentario' => 'Baja por obsolescencia institucional',
+        ]);
+
+        $this->assertTrue(Elemento::obsoletos()->where('id', $pcBaja->id)->exists());
+        $this->assertFalse(Elemento::disponibles()->where('id', $pcBaja->id)->exists());
+        $this->assertStringContainsString('Basura Tecnológica', $pcBaja->presenter()->statusBadge());
+
+        // -------------------------------------------------------------
+        // 2. FORMULARIO "INICIAR TICKET" Y CREACIÓN CON FOTOS
+        // -------------------------------------------------------------
+        $pcReparar = Elemento::create([
+            'nro_lia' => 'LIA-TICKET-01',
+            'nro_unsj' => 'UNSJ-9988',
+            'tipo_id' => $tipoPC->id,
+            'marca' => 'Dell',
+            'modelo' => 'Optiplex 7050',
+            'puesto' => 'Mesa 04',
+        ]);
+        // Movimiento inicial previo en sala
+        Movimiento::create([
+            'elemento_id' => $pcReparar->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $lab->id,
+            'puesto' => 'Mesa 04',
+            'user_id' => $tec->id,
+            'fecha' => now()->subDays(10),
+            'comentario' => 'Asignación regular a laboratorio',
+        ]);
+
+        // Formulario accesible para Revisor y Técnico
+        $resFormRev = $this->actingAs($rev)->get(route('tickets.create', ['elemento_id' => $pcReparar->id]));
+        $resFormRev->assertStatus(200);
+        $resFormRev->assertSee('Apertura de Ticket de Reparación Técnica');
+        $resFormRev->assertSee('LIA-TICKET-01');
+        $resFormRev->assertSee('Revisor Auditor');
+
+        // Registro de Ticket con imagen adjunta
+        $fotoFake = UploadedFile::fake()->image('falla_fuente.jpg', 600, 400);
+        $resStore = $this->actingAs($rev)->post(route('tickets.store'), [
+            'elemento_id' => $pcReparar->id,
+            'comentario' => 'Capacitor de fuente de poder inflado, produce reinicios intermitentes.',
+            'fotos' => [$fotoFake],
+        ]);
+        $resStore->assertRedirect(route('dashboard.index'));
+
+        // Verificar persistencia de ticket, estado y adjunto
+        $ticketMov = Movimiento::where('elemento_id', $pcReparar->id)
+            ->where('tipo_movimiento', 'reparacion')
+            ->first();
+        $this->assertNotNull($ticketMov);
+        $this->assertEquals('abierto', $ticketMov->estado_ticket);
+        $this->assertEquals('Revisor Auditor', $ticketMov->solicitante);
+        $this->assertCount(1, $ticketMov->adjuntos);
+
+        $pcReparar->refresh();
+        $this->assertStringContainsString('En Reparación', $pcReparar->presenter()->statusBadge());
+        $this->assertTrue(Elemento::enReparacion()->where('id', $pcReparar->id)->exists());
+
+        // -------------------------------------------------------------
+        // 3. BANDEJA Y GESTIÓN DE TICKETS PARA TÉCNICOS
+        // -------------------------------------------------------------
+        // Revisor bloqueado de la bandeja de gestión de tickets
+        $resRevBandeja = $this->actingAs($rev)->get(route('tickets.index'));
+        $resRevBandeja->assertStatus(403);
+
+        // Técnico accede y ve el ticket abierto
+        $resTecBandeja = $this->actingAs($tec)->get(route('tickets.index'));
+        $resTecBandeja->assertStatus(200);
+        $resTecBandeja->assertSee('LIA-TICKET-01');
+        $resTecBandeja->assertSee('Capacitor de fuente de poder inflado');
+
+        // Ver detalle del ticket
+        $resShowTicket = $this->actingAs($tec)->get(route('tickets.show', $ticketMov->id));
+        $resShowTicket->assertStatus(200);
+        $resShowTicket->assertSee('Resolución Técnica del Ticket');
+        $resShowTicket->assertSee('Mesa 04'); // Ubicación previa heredada
+
+        // Resolución de Ticket por el Técnico
+        $resResolver = $this->actingAs($tec)->post(route('tickets.resolver', $ticketMov->id), [
+            'accion' => 'resolver',
+            'solucion' => 'Se reemplazó fuente de poder por modelo ATX 500W nueva. Pruebas de carga de 2 horas sin fallas.',
+            'ubicacion_id' => $lab->id,
+            'puesto' => 'Mesa 04',
+        ]);
+        $resResolver->assertRedirect(route('tickets.index'));
+
+        $ticketMov->refresh();
+        $this->assertEquals('resuelto', $ticketMov->estado_ticket);
+
+        $pcReparar->refresh();
+        $this->assertStringContainsString('En Sala / Operativo', $pcReparar->presenter()->statusBadge());
+
+        // -------------------------------------------------------------
+        // 4. RESOLUCIÓN DE TICKET COMO BAJA / IRREPARABLE
+        // -------------------------------------------------------------
+        $pcIrreparable = Elemento::create([
+            'nro_lia' => 'LIA-IRREP-02',
+            'tipo_id' => $tipoPC->id,
+            'marca' => 'Asus',
+            'modelo' => 'Prime',
+        ]);
+        $ticket2 = Movimiento::create([
+            'elemento_id' => $pcIrreparable->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'ubicacion_id' => $lab->id,
+            'user_id' => $tec->id,
+            'fecha' => now(),
+            'solicitante' => 'Tecnico Taller',
+            'comentario' => 'Cortocircuito en placa madre con quemadura en chipset principal.',
+        ]);
+
+        $resBajaTicket = $this->actingAs($tec)->post(route('tickets.resolver', $ticket2->id), [
+            'accion' => 'baja',
+            'solucion' => 'Daño irreparable en capas internas de PCB tras cortocircuito. Se declara baja definitiva.',
+        ]);
+        $resBajaTicket->assertRedirect(route('tickets.index'));
+
+        $ticket2->refresh();
+        $this->assertEquals('baja', $ticket2->estado_ticket);
+        $pcIrreparable->refresh();
+        $this->assertStringContainsString('Basura Tecnológica', $pcIrreparable->presenter()->statusBadge());
+
+        // -------------------------------------------------------------
+        // 5. CONSULTA DE HISTORIAL DE TICKETS EN REPORTES
+        // -------------------------------------------------------------
+        // Listado general de reparaciones
+        $resRepGral = $this->actingAs($rev)->get(route('reportes.show', 'historial-reparaciones'));
+        $resRepGral->assertStatus(200);
+        $resRepGral->assertSee('Historial General de Reparaciones');
+        $resRepGral->assertSee('LIA-TICKET-01');
+        $resRepGral->assertSee('LIA-IRREP-02');
+
+        // Historial consolidado de un activo específico
+        $resRepEspecifico = $this->actingAs($rev)->get(route('reportes.show', [
+            'tipo' => 'historial-reparaciones',
+            'nro_lia' => 'LIA-TICKET-01',
+        ]));
+        $resRepEspecifico->assertStatus(200);
+        $resRepEspecifico->assertSee('Historial Consolidado de Tickets: LIA-TICKET-01');
+        $resRepEspecifico->assertSee('Ubicación Previa a Taller');
+        $resRepEspecifico->assertSee('Capacitor de fuente de poder inflado');
+
+        // Export CSV de historial de reparaciones
+        $resCsvRep = $this->actingAs($rev)->get(route('reportes.exportCsv', 'historial-reparaciones'));
+        $resCsvRep->assertStatus(200);
+        $this->assertEquals('text/csv; charset=UTF-8', $resCsvRep->headers->get('Content-Type'));
     }
 }
 

@@ -34,13 +34,17 @@ class ElementoPresenter
             return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">Sin historial</span>';
         }
 
-        if ($ultimo->esPrestamo() && !$ultimo->fecha_devolucion) {
-            $dias = $ultimo->diasPrestado();
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">Prestado (' . $dias . ' d)</span>';
+        if ($ultimo->tipo_movimiento === 'baja' || $this->elemento->tipo?->nombre === 'basura tecnologica') {
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">Basura Tecnológica</span>';
         }
 
-        if ($this->elemento->tipo?->nombre === 'basura tecnologica') {
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">Basura Tecnológica</span>';
+        if ($ultimo->esTicketAbierto()) {
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">En Reparación</span>';
+        }
+
+        if ($ultimo->esPrestamo() && !$ultimo->fecha_devolucion) {
+            $dias = $ultimo->diasPrestado();
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">Prestado (' . $dias . ' d)</span>';
         }
 
         return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">En Sala / Operativo</span>';

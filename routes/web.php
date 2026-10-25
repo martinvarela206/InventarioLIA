@@ -11,6 +11,7 @@ use App\Http\Controllers\RevisionController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AppAdminController;
+use App\Http\Controllers\TicketController;
 use App\Models\EspacioLia;
 use App\Models\PersonalLia;
 use App\Models\ActividadLia;
@@ -57,6 +58,8 @@ Route::middleware('auth')->group(function () {
 
         // Catálogo de Elementos e Inspector Dual-Pane (Lectura general para módulos operativos)
         Route::get('/elementos', [ElementoController::class, 'index'])->name('elementos.index');
+        Route::get('/elementos/export-csv', [ElementoController::class, 'exportCsv'])->name('elementos.exportCsv');
+        Route::get('/elementos/imprimir', [ElementoController::class, 'imprimir'])->name('elementos.imprimir');
 
         // Mutación de Inventario (Alta, Edición y Baja de Activos - exclusivo item_admin)
         Route::middleware('role:item_admin')->group(function () {
@@ -74,14 +77,23 @@ Route::middleware('auth')->group(function () {
 
         // Historial y Consulta de Movimientos (Lectura general)
         Route::get('/movimientos', [MovimientoController::class, 'index'])->name('movimientos.index');
+        Route::get('/movimientos/buscar-rapido', [MovimientoController::class, 'apiBuscar'])->name('movimientos.buscar-rapido');
 
-        // Gestión Operativa de Movimientos y Préstamos (exclusivo tec)
+        // Apertura de Tickets de Reparación (accesible para técnicos y revisores autorizados)
+        Route::get('/tickets/create', [TicketController::class, 'create'])->name('tickets.create');
+        Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
+
+        // Gestión Operativa de Movimientos, Préstamos y Tickets (exclusivo tec)
         Route::middleware('role:tec')->group(function () {
             Route::get('/movimientos/rapido', [MovimientoController::class, 'rapido'])->name('movimientos.rapido');
-            Route::get('/movimientos/buscar-rapido', [MovimientoController::class, 'apiBuscar'])->name('movimientos.buscar-rapido');
             Route::post('/movimientos', [MovimientoController::class, 'store'])->name('movimientos.store');
             Route::post('/movimientos/{movimiento}/devolucion', [MovimientoController::class, 'devolucion'])->name('movimientos.devolucion');
             Route::post('/movimientos/{movimiento}/correccion', [MovimientoController::class, 'storeCorreccion'])->name('movimientos.correccion');
+
+            // Bandeja y Resolución de Tickets para Técnicos
+            Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
+            Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+            Route::post('/tickets/{ticket}/resolver', [TicketController::class, 'resolver'])->name('tickets.resolver');
         });
 
         // Módulo de Reportes Oficiales y Auditoría (exclusivo rev)

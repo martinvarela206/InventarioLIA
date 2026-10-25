@@ -207,15 +207,19 @@ class ImportarInventarioOdsCommand extends Command
                     }
                 }
 
-                // Registrar movimiento inicial histórico
+                // Registrar movimiento inicial histórico (baja patrimonial para basura tecnológica)
+                $esBajaHistorica = (mb_strtolower($sheetName) === 'basura tecnologica');
                 Movimiento::create([
                     'elemento_id' => $elemento->id,
-                    'tipo_movimiento' => 'interno',
+                    'tipo_movimiento' => $esBajaHistorica ? 'baja' : 'interno',
+                    'estado_ticket' => $esBajaHistorica ? 'baja' : null,
                     'ubicacion_id' => $ubicacionModel->id,
                     'puesto' => $puesto,
                     'user_id' => $defaultUser->id,
                     'fecha' => $fechaMovimiento,
-                    'comentario' => "Carga inicial histórica desde planilla ODS ({$sheetName})",
+                    'comentario' => $esBajaHistorica
+                        ? "Baja patrimonial histórica / Basura tecnológica desde planilla ODS ({$sheetName})"
+                        : "Carga inicial histórica desde planilla ODS ({$sheetName})",
                 ]);
 
                 $sheetCount++;
@@ -355,7 +359,7 @@ class ImportarInventarioOdsCommand extends Command
             'notebook' => 'notebook',
             'tv' => 'monitor',
             'laboratorio' => 'computadora',
-            'basura tecnologica' => 'basura tecnologica',
+            'basura tecnologica' => 'computadora',
             'monitor' => 'monitor',
             'pendiente' => 'computadora',
             'mouse' => 'mouse',

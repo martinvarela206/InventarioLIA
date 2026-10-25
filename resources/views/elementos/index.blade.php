@@ -15,7 +15,19 @@
                 </span>
             </h1>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Botón Exportar CSV -->
+            <a href="{{ route('elementos.exportCsv', request()->all()) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold py-2.5 px-3.5 rounded-xl shadow-sm transition-all text-sm" title="Descargar vista filtrada en CSV">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Exportar CSV</span>
+            </a>
+
+            <!-- Botón Imprimir / PDF -->
+            <a href="{{ route('elementos.imprimir', request()->all()) }}" target="_blank" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold py-2.5 px-3.5 rounded-xl shadow-sm transition-all text-sm" title="Generar informe imprimible / PDF">
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Imprimir / PDF</span>
+            </a>
+
             @if(Auth::user()->canManageElementos())
                 <a href="{{ route('elementos.create') }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -36,7 +48,7 @@
         <form action="{{ route('elementos.index') }}" method="GET" class="space-y-3">
             <div class="flex gap-2 items-center">
                 <div class="relative flex-1">
-                    <input type="text" name="search" placeholder="Buscar por LIA, UNSJ, marca, modelo, Nro de serie o características..." 
+                    <input type="text" name="search" placeholder="Buscar por LIA, UNSJ, marca, modelo, Nro de serie, puesto, tipo o características..." 
                         value="{{ request('search') }}" 
                         class="w-full rounded-xl border border-gray-300 pl-10 pr-4 py-2.5 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 font-medium" />
                     <svg class="w-5 h-5 text-gray-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -45,7 +57,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     Buscar
                 </button>
-                @if(request()->hasAny(['search', 'tipo', 'ubicacion', 'gb', 'garantia']))
+                @if(request()->hasAny(['search', 'tipo', 'ubicacion', 'situacion', 'anio', 'gb', 'garantia']))
                     <a href="{{ route('elementos.index') }}" class="inline-flex items-center gap-1.5 px-3 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs shadow-xs transition-colors">
                         <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         Limpiar filtros
@@ -56,6 +68,15 @@
             <!-- Filters Pill Row -->
             <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100 text-xs">
                 <span class="font-bold text-gray-400 uppercase tracking-wider mr-1">Filtros:</span>
+
+                <!-- Filter Situación -->
+                <select name="situacion" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100">
+                    <option value="">Situación: Todas</option>
+                    <option value="operativo" {{ request('situacion') === 'operativo' ? 'selected' : '' }}>En Sala / Operativo</option>
+                    <option value="prestado" {{ request('situacion') === 'prestado' ? 'selected' : '' }}>Prestados Activos</option>
+                    <option value="reparacion" {{ request('situacion') === 'reparacion' ? 'selected' : '' }}>En Reparación / Ticket</option>
+                    <option value="baja" {{ request('situacion') === 'baja' ? 'selected' : '' }}>Basura Tecnológica / De Baja</option>
+                </select>
 
                 <!-- Filter Tipo -->
                 <select name="tipo" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100">
@@ -70,10 +91,19 @@
                 <!-- Filter Ubicación -->
                 <select name="ubicacion" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100">
                     <option value="">Todas las Salas</option>
+                    <option value="prestamo_externo" {{ request('ubicacion') === 'prestamo_externo' ? 'selected' : '' }}>Préstamo Externo</option>
                     @foreach($ubicaciones as $ub)
                         <option value="{{ $ub->id }}" {{ request('ubicacion') == $ub->id ? 'selected' : '' }}>
                             {{ $ub->nombre }}
                         </option>
+                    @endforeach
+                </select>
+
+                <!-- Filter Año Compra -->
+                <select name="anio" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100">
+                    <option value="">Año de Compra: Todos</option>
+                    @foreach($anios as $a)
+                        <option value="{{ $a }}" {{ request('anio') == $a ? 'selected' : '' }}>{{ $a }}</option>
                     @endforeach
                 </select>
 
@@ -118,11 +148,11 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100 text-gray-700">
                     @forelse($elementos as $el)
-                        <tr class="hover:bg-amber-50/50 transition-colors">
+                        <tr onclick="window.location='{{ route('elementos.show', $el->id) }}'" class="hover:bg-amber-50/60 transition-colors cursor-pointer group">
                             <td class="py-3 px-4 whitespace-nowrap">
-                                <a href="{{ route('elementos.show', $el->id) }}" class="font-mono font-bold text-gray-900 hover:text-amber-600 block">
+                                <span class="font-mono font-bold text-gray-900 group-hover:text-amber-700 block">
                                     {{ $el->nro_lia ?: 'LIA: -' }}
-                                </a>
+                                </span>
                                 <span class="font-mono text-xs text-gray-500">
                                     UNSJ: {{ $el->nro_unsj ?: '-' }}
                                 </span>
@@ -145,11 +175,8 @@
                             <td class="py-3 px-4 whitespace-nowrap text-xs">
                                 {!! $el->presenter()->garantiaBadge() !!}
                             </td>
-                            <td class="py-3 px-4 text-right whitespace-nowrap">
+                            <td class="py-3 px-4 text-right whitespace-nowrap" onclick="event.stopPropagation()">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <a href="{{ route('elementos.show', $el->id) }}" class="p-1.5 text-gray-500 hover:text-black hover:bg-gray-100 rounded-md transition-colors" title="Ver detalle dual-pane">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                    </a>
                                     @if(Auth::user()->canManageMovimientos())
                                         <a href="{{ route('movimientos.rapido', ['elemento_id' => $el->id]) }}" class="p-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-100 rounded-md transition-colors" title="Mover o prestar">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
