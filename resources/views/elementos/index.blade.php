@@ -5,16 +5,15 @@
     <!-- Header bar -->
     <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
                 <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
-                <span>Catálogo de Activos e Inventario LIA</span>
-                <span class="text-sm font-semibold bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-300">
+                <span>Inventario</span>
+                <span class="text-xs font-bold bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-300">
                     {{ $elementos->total() }} registros
                 </span>
             </h1>
-            <p class="text-sm text-gray-600 mt-0.5">Gestión y control patrimonial de computadoras, periféricos y equipamiento</p>
         </div>
         <div class="flex items-center gap-3">
             @if(Auth::user()->canManageElementos())

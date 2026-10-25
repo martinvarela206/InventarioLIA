@@ -125,8 +125,8 @@ class ReporteController extends Controller
                 });
 
                 return [
-                    'titulo' => 'Listado de Inventario Completo (~1.150 Activos)',
-                    'subtitulo' => 'Catálogo exhaustivo de activos del Laboratorio de Informática Aplicada',
+                    'titulo' => 'Listado completo del Inventario',
+                    'subtitulo' => 'Catálogo completo de todos los activos del LIA.',
                     'columnas' => $columnasStandard,
                     'filas' => $filas,
                     'total' => $items->count(),
@@ -186,8 +186,8 @@ class ReporteController extends Controller
                 });
 
                 return [
-                    'titulo' => 'Equipos en Préstamo Externo a Cátedras / Docentes',
-                    'subtitulo' => 'Activos patrimoniales actualmente fuera del laboratorio bajo préstamo docente',
+                    'titulo' => 'Historial de Préstamos',
+                    'subtitulo' => 'Historial de elementos prestados.',
                     'columnas' => $columnasStandard,
                     'filas' => $filas,
                     'total' => $items->count(),
@@ -248,8 +248,8 @@ class ReporteController extends Controller
                 });
 
                 return [
-                    'titulo' => "Auditoría de Ubicación: {$ubicacion->nombre}",
-                    'subtitulo' => 'Verificación física y control patrimonial en sala/armario',
+                    'titulo' => "Inventario por ubicación: {$ubicacion->nombre}",
+                    'subtitulo' => "Listado de activos en {$ubicacion->nombre}.",
                     'columnas' => $columnasStandard,
                     'filas' => $filas,
                     'total' => $items->count(),
@@ -349,8 +349,8 @@ class ReporteController extends Controller
                 });
 
                 return [
-                    'titulo' => 'Detalle Histórico de Movimientos entre Fechas',
-                    'subtitulo' => "Bitácora cronológica de traslados y préstamos entre {$desde} y {$hasta}",
+                    'titulo' => 'Auditoría de movimientos entre fechas',
+                    'subtitulo' => "Movimientos realizados entre {$desde} y {$hasta}.",
                     'columnas' => $columnasMov,
                     'filas' => $filas,
                     'total' => $items->count(),
@@ -406,8 +406,8 @@ class ReporteController extends Controller
                 $ident = $elemento ? "{$elemento->presenter()->identificadorCompleto()} ({$elemento->tipo?->nombre} {$elemento->marca} {$elemento->modelo})" : 'Ninguno';
 
                 return [
-                    'titulo' => "Trazabilidad Completa del Activo: {$ident}",
-                    'subtitulo' => 'Línea de tiempo inmutable de todos los traslados y préstamos desde su alta',
+                    'titulo' => "Ubicación e Historial de Movimientos: {$ident}",
+                    'subtitulo' => 'Ubicación exacta e historial de movimiento del activo.',
                     'columnas' => $columnasTraza,
                     'filas' => $filas,
                     'total' => $items->count(),

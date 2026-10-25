@@ -4,17 +4,13 @@
 <div class="max-w-[1240px] mx-auto px-2 space-y-6">
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
                 <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-                <span>Administración de Usuarios y Permisos</span>
+                <span>Usuarios</span>
             </h1>
-            <p class="text-sm text-gray-600 mt-0.5">Asignación de roles oficiales, activación de cuentas y trayectorias</p>
         </div>
-        <span class="text-xs bg-amber-100 text-amber-900 font-bold px-3 py-1 rounded-full border border-amber-300">
-            6 Roles Oficiales
-        </span>
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -25,7 +21,7 @@
                         <th class="py-3 px-4">Usuario / Email</th>
                         <th class="py-3 px-4">Cargo / Carrera</th>
                         <th class="py-3 px-4">Estado Cuenta</th>
-                        <th class="py-3 px-4">Roles Oficiales Asignados (Clic para Modificar)</th>
+                        <th class="py-3 px-4">Roles Asignados</th>
                         <th class="py-3 px-4 text-right">Acciones</th>
                     </tr>
                 </thead>

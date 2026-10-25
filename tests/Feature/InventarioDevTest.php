@@ -149,7 +149,7 @@ class InventarioDevTest extends TestCase
         // Reporte digital completo
         $responseShow = $this->actingAs($admin)->get(route('reportes.show', 'inventario-completo'));
         $responseShow->assertStatus(200);
-        $responseShow->assertSee('Listado de Inventario Completo');
+        $responseShow->assertSee('Listado completo del Inventario');
 
         // Reportes específicos vinculados a KPI cards del dashboard
         $responseOp = $this->actingAs($admin)->get(route('reportes.show', 'operativos'));
@@ -158,7 +158,7 @@ class InventarioDevTest extends TestCase
 
         $responsePrest = $this->actingAs($admin)->get(route('reportes.show', 'prestados'));
         $responsePrest->assertStatus(200);
-        $responsePrest->assertSee('Equipos en Préstamo Externo');
+        $responsePrest->assertSee('Historial de Préstamos');
 
         $responseBajas = $this->actingAs($admin)->get(route('reportes.show', 'bajas-basura'));
         $responseBajas->assertStatus(200);
@@ -549,7 +549,7 @@ class InventarioDevTest extends TestCase
 
         $responseHabilitado = $this->actingAs($usuarioRegistrado)->get(route('dashboard.index'));
         $responseHabilitado->assertStatus(200);
-        $responseHabilitado->assertSee('Centro de Control Operativo LIA');
+        $responseHabilitado->assertSee('Dashboard');
     }
 
     public function test_landing_page_posee_boton_registro_y_permite_registro_de_nuevos_usuarios(): void
@@ -709,10 +709,10 @@ class InventarioDevTest extends TestCase
         ]);
         $docente->roles()->attach(Rol::where('rol', 'registered')->first());
 
-        // 1. Acceder al listado de usuarios y verificar presencia del rol app_admin y badge de 6 roles
+        // 1. Acceder al listado de usuarios y verificar presencia del rol app_admin
         $responseList = $this->actingAs($admin)->get(route('users.index'));
         $responseList->assertStatus(200);
-        $responseList->assertSee('6 Roles Oficiales');
+        $responseList->assertSee('Usuarios');
         $responseList->assertSee('app_admin');
 
         // 2. Asignar rol app_admin al docente mediante toggleRole
@@ -728,7 +728,7 @@ class InventarioDevTest extends TestCase
         // 3. Verificar que ahora el docente puede acceder a la gestión de la app y landing
         $responseApp = $this->actingAs($docente->fresh())->get(route('app_admin.index'));
         $responseApp->assertStatus(200);
-        $responseApp->assertSee('Panel de Gestión de la Aplicación');
+        $responseApp->assertSee('Gestión de la Aplicación');
     }
 
     public function test_interseccion_cero_de_permisos_y_reglas_estrictas_de_roles(): void
@@ -921,7 +921,7 @@ class InventarioDevTest extends TestCase
         // 1. Acceder al índice de salas como item_admin
         $responseIndex = $this->actingAs($itemAdmin)->get(route('ubicaciones.index'));
         $responseIndex->assertStatus(200);
-        $responseIndex->assertSee('Salas, Laboratorios y Depósitos del LIA');
+        $responseIndex->assertSee('Salas y Espacios');
 
         // 2. Crear una nueva sala
         $responseStore = $this->actingAs($itemAdmin)->post(route('ubicaciones.store'), [

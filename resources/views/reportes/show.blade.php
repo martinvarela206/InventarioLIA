@@ -8,24 +8,24 @@
         <div class="flex items-center gap-2">
             <a href="{{ route('reportes.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
                 <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                <span>Volver al Hub de Reportes</span>
+                <span>Volver a Reportes</span>
             </a>
             <span class="text-xs bg-amber-100 text-amber-900 font-extrabold px-2.5 py-1 rounded-xl border border-amber-300">
-                Sin paginación ({{ count($filas) }} registros)
+                {{ count($filas) }} registros
             </span>
         </div>
 
         <div class="flex items-center gap-3">
-            <!-- Botón Imprimir en Papel A4 -->
+            <!-- Botón Imprimir -->
             <button type="button" onclick="window.print()" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition-all">
                 <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                <span>Imprimir en Papel A4</span>
+                <span>Imprimir</span>
             </button>
 
             <!-- Botón Exportar CSV -->
             <a href="{{ route('reportes.exportCsv', array_merge(['tipo' => $tipoReporte], request()->all())) }}" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs shadow-sm transition-all">
                 <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span>Exportar CSV Completo</span>
+                <span>Exportar CSV</span>
             </a>
         </div>
     </div>

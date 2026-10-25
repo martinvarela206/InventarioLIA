@@ -6,21 +6,12 @@
     <!-- Header del Panel -->
     <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-5">
         <div>
-            <div class="flex items-center gap-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2.5 py-1 rounded-md">
-                    Gestión de Espacios Físicos
-                </span>
-                <span class="text-xs text-gray-500 font-semibold">item_admin</span>
-            </div>
-            <h1 class="text-2xl font-black text-gray-900 mt-1 flex items-center gap-2">
+            <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
                 <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                 </svg>
-                <span>Salas, Laboratorios y Depósitos del LIA</span>
+                <span>Salas y Espacios</span>
             </h1>
-            <p class="text-xs text-gray-500 mt-0.5">
-                Administra los espacios físicos donde se localizan y trasladan los activos patrimoniales.
-            </p>
         </div>
 
         <div class="flex items-center gap-3">
