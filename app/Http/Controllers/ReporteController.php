@@ -8,6 +8,7 @@ use App\Models\Movimiento;
 use App\Models\Ubicacion;
 use App\Models\Tipo;
 use App\Models\Atributo;
+use App\Models\ReporteConfigurado;
 use Carbon\Carbon;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\View\View;
@@ -47,8 +48,9 @@ class ReporteController extends Controller
     {
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $tipos = Tipo::orderBy('nombre')->get();
+        $reportesPersonalizados = ReporteConfigurado::activos()->where('es_sistema', false)->ordenados()->get();
 
-        return view('reportes.index', compact('ubicaciones', 'tipos'));
+        return view('reportes.index', compact('ubicaciones', 'tipos', 'reportesPersonalizados'));
     }
 
     /**
@@ -768,6 +770,11 @@ class ReporteController extends Controller
 
             case 'parametrizable':
             default:
+                $reporteConfigurado = ReporteConfigurado::where('slug', $tipo)->first();
+                if ($reporteConfigurado) {
+                    return $this->ejecutarReporteConfigurado($reporteConfigurado, $request, $atributos, $columnasStandard, $columnasOcultasDefecto);
+                }
+
                 $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
                 if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
@@ -787,6 +794,90 @@ class ReporteController extends Controller
                     'columnasOcultasDefecto' => $columnasOcultasDefecto,
                 ];
         }
+    }
+
+    /**
+     * Ejecuta un reporte configurado aplicando de forma combinada sus filtros fijos y parámetros del request.
+     */
+    private function ejecutarReporteConfigurado(
+        ReporteConfigurado $reporte,
+        Request $request,
+        array $atributos,
+        array $columnasStandard,
+        array $columnasOcultasDefecto
+    ): array {
+        $filtros = $reporte->filtros_fijos ?? [];
+
+        $tipoId = $request->input('tipo_id', $filtros['tipo_id'] ?? null);
+        $ubicacionId = $request->input('ubicacion_id', $filtros['ubicacion_id'] ?? null);
+        $situacion = $request->input('situacion', $filtros['situacion'] ?? null);
+        $anio = $request->input('anio', $filtros['anio'] ?? null);
+        $search = $request->input('search', $filtros['search'] ?? null);
+        $nroLia = $request->input('nro_lia', $filtros['nro_lia'] ?? null);
+        $fechaDesde = $request->input('fecha_desde', $filtros['fecha_desde'] ?? null);
+        $fechaHasta = $request->input('fecha_hasta', $filtros['fecha_hasta'] ?? null);
+
+        $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
+
+        if (!empty($tipoId)) {
+            $query->where('tipo_id', $tipoId);
+        }
+
+        if (!empty($ubicacionId)) {
+            $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $ubicacionId));
+        }
+
+        if (!empty($situacion)) {
+            if ($situacion === 'operativo') {
+                $query->disponibles();
+            } elseif ($situacion === 'prestado') {
+                $query->prestados();
+            } elseif ($situacion === 'baja') {
+                $query->bajas();
+            } elseif ($situacion === 'en_reparacion') {
+                $query->whereHas('ultimoMovimiento', fn($q) => $q->where('tipo_movimiento', 'reparacion')->whereNull('fecha_devolucion'));
+            }
+        }
+
+        if (!empty($anio)) {
+            $query->where('anio_compra', $anio);
+        }
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nro_lia', 'like', "%{$search}%")
+                  ->orWhere('nro_unsj', 'like', "%{$search}%")
+                  ->orWhere('marca', 'like', "%{$search}%")
+                  ->orWhere('modelo', 'like', "%{$search}%")
+                  ->orWhere('observaciones', 'like', "%{$search}%");
+            });
+        }
+
+        if (!empty($nroLia)) {
+            $query->where('nro_lia', 'like', "%{$nroLia}%");
+        }
+
+        if (!empty($fechaDesde) && !empty($fechaHasta)) {
+            $query->whereBetween('fecha_adquisicion', [$fechaDesde, $fechaHasta]);
+        } elseif (!empty($fechaDesde)) {
+            $query->where('fecha_adquisicion', '>=', $fechaDesde);
+        } elseif (!empty($fechaHasta)) {
+            $query->where('fecha_adquisicion', '<=', $fechaHasta);
+        }
+
+        $items = $query->orderBy('id', 'asc')->get();
+        $filas = $items->map(function ($el) use ($atributos) {
+            return $this->construirFilaElemento($el, $atributos);
+        });
+
+        return [
+            'titulo' => $reporte->titulo,
+            'subtitulo' => $reporte->subtitulo ?: $reporte->descripcion,
+            'columnas' => $columnasStandard,
+            'filas' => $filas,
+            'total' => $items->count(),
+            'columnasOcultasDefecto' => $columnasOcultasDefecto,
+        ];
     }
 
     /**

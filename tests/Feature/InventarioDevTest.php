@@ -1602,6 +1602,132 @@ class InventarioDevTest extends TestCase
             'activo' => false,
         ]);
     }
+
+    public function test_motor_de_reportes_dinamicos_y_hub_de_reportes_personalizados(): void
+    {
+        $this->seed(\Database\Seeders\ReporteConfiguradoSeeder::class);
+
+        $appAdmin = Usuario::create([
+            'nombre' => 'App Admin Dynamic',
+            'email' => 'admin_dynamic@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $appAdmin->roles()->attach([
+            Rol::where('rol', 'app_admin')->first()->id,
+            Rol::where('rol', 'rev')->first()->id,
+        ]);
+
+        $revisor = Usuario::create([
+            'nombre' => 'Revisor User',
+            'email' => 'revisor_dyn@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $revisor->roles()->attach(Rol::where('rol', 'rev')->first()->id);
+
+        // Crear ubicaciones y tipos
+        $salaA = Ubicacion::firstOrCreate(['nombre' => 'Sala A - Microelectrónica']);
+        $salaB = Ubicacion::firstOrCreate(['nombre' => 'Sala B - Servidores']);
+        $tipoPC = Tipo::firstOrCreate(['nombre' => 'computadora escritorio', 'tipo' => 'computadora escritorio']);
+
+        // Crear elementos de prueba
+        $pcSalaA = Elemento::create([
+            'nro_lia' => 'LIA-DYN-01',
+            'nro_unsj' => 'UNSJ-DYN-01',
+            'tipo_id' => $tipoPC->id,
+            'marca' => 'Dell',
+            'modelo' => 'Optiplex 7050',
+            'observaciones' => 'Equipo de laboratorio principal',
+        ]);
+        Movimiento::create([
+            'elemento_id' => $pcSalaA->id,
+            'ubicacion_id' => $salaA->id,
+            'tipo_movimiento' => 'creacion',
+            'user_id' => $appAdmin->id,
+            'fecha' => Carbon::now()->subMonths(2),
+        ]);
+
+        $pcSalaB = Elemento::create([
+            'nro_lia' => 'LIA-DYN-02',
+            'nro_unsj' => 'UNSJ-DYN-02',
+            'tipo_id' => $tipoPC->id,
+            'marca' => 'HP',
+            'modelo' => 'ProDesk 400',
+            'observaciones' => 'Equipo secundario en sala B',
+        ]);
+        Movimiento::create([
+            'elemento_id' => $pcSalaB->id,
+            'ubicacion_id' => $salaB->id,
+            'tipo_movimiento' => 'creacion',
+            'user_id' => $appAdmin->id,
+            'fecha' => Carbon::now()->subMonths(2),
+        ]);
+
+        // Crear reporte configurado dinámico con filtro fijo (tipo PC) y variable requerida (ubicacion_id)
+        $reporteCustom = ReporteConfigurado::create([
+            'slug' => 'computadoras-por-sala-especifica',
+            'titulo' => 'Computadoras por Sala Específica',
+            'subtitulo' => 'Filtro automático de PCs con selección de laboratorio',
+            'descripcion' => 'Muestra únicamente computadoras de escritorio asignadas a la sala seleccionada',
+            'icono' => 'cubes',
+            'categoria' => 'custom',
+            'filtros_fijos' => [
+                'tipo_id' => $tipoPC->id,
+            ],
+            'variables_requeridas' => [
+                'ubicacion_id' => true,
+            ],
+            'es_sistema' => false,
+            'activo' => true,
+            'orden' => 10,
+        ]);
+
+        // 1. Hub de Reportes: Usuario Revisor ve la sección de Reportes Personalizados
+        $resHub = $this->actingAs($revisor)->get(route('reportes.index'));
+        $resHub->assertStatus(200);
+        $resHub->assertSee('Reportes Personalizados y Guardados');
+        $resHub->assertSee('Computadoras por Sala Específica');
+        $resHub->assertSee($salaA->nombre);
+        $resHub->assertDontSee('Configurar Catálogo de Reportes'); // Revisor no ve botón de gestión
+
+        // App Admin ve el botón de configuración de catálogo
+        $resHubAdmin = $this->actingAs($appAdmin)->get(route('reportes.index'));
+        $resHubAdmin->assertStatus(200);
+        $resHubAdmin->assertSee('Configurar Catálogo de Reportes');
+
+        // 2. Ejecución dinámica de reporte con variable de entrada ubicacion_id = Sala A
+        $resShowSalaA = $this->actingAs($revisor)->get(route('reportes.show', [
+            'tipo' => 'computadoras-por-sala-especifica',
+            'ubicacion_id' => $salaA->id,
+        ]));
+        $resShowSalaA->assertStatus(200);
+        $resShowSalaA->assertSee('Computadoras por Sala Específica');
+        $resShowSalaA->assertSee('LIA-DYN-01');
+        $resShowSalaA->assertSee('Dell');
+        $resShowSalaA->assertDontSee('LIA-DYN-02'); // Sala B excluida por la variable de entrada
+
+        // 3. Ejecución dinámica con variable de entrada ubicacion_id = Sala B
+        $resShowSalaB = $this->actingAs($revisor)->get(route('reportes.show', [
+            'tipo' => 'computadoras-por-sala-especifica',
+            'ubicacion_id' => $salaB->id,
+        ]));
+        $resShowSalaB->assertStatus(200);
+        $resShowSalaB->assertSee('LIA-DYN-02');
+        $resShowSalaB->assertSee('HP');
+        $resShowSalaB->assertDontSee('LIA-DYN-01');
+
+        // 4. Exportación a CSV de reporte dinámico
+        $resCsv = $this->actingAs($revisor)->get(route('reportes.exportCsv', [
+            'tipo' => 'computadoras-por-sala-especifica',
+            'ubicacion_id' => $salaA->id,
+        ]));
+        $resCsv->assertStatus(200);
+        $csvContent = $resCsv->streamedContent();
+        $this->assertStringContainsString('LIA-DYN-01', $csvContent);
+        $this->assertStringContainsString('Dell', $csvContent);
+        $this->assertStringNotContainsString('LIA-DYN-02', $csvContent);
+    }
 }
 
 
