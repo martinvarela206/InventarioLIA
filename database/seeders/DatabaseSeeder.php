@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             InventarioOdsSeeder::class,
             MovimientoFakeSeeder::class,
             AppAdminSeeder::class,
+            ReporteConfiguradoSeeder::class,
         ]);
     }
 }

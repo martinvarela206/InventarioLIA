@@ -11,6 +11,7 @@ use App\Models\Ubicacion;
 use App\Models\Rol;
 use App\Models\Usuario;
 use App\Models\Atributo;
+use App\Models\ReporteConfigurado;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -1358,6 +1359,55 @@ class InventarioDevTest extends TestCase
         $customContent = $resCsvCustom->streamedContent();
         $this->assertStringContainsString('Procesador', $customContent);
         $this->assertStringContainsString('Intel Core i7-7700', $customContent);
+    }
+
+    public function test_modelo_y_persistencia_de_reportes_configurados(): void
+    {
+        $this->seed(\Database\Seeders\ReporteConfiguradoSeeder::class);
+
+        // 1. Verificar catálogo sembrado con los 11 reportes oficiales
+        $this->assertEquals(11, ReporteConfigurado::count());
+        $auditoriaSala = ReporteConfigurado::where('slug', 'auditoria-sala')->first();
+        $this->assertNotNull($auditoriaSala);
+        $this->assertTrue($auditoriaSala->es_sistema);
+        $this->assertTrue($auditoriaSala->requiereUbicacion());
+        $this->assertFalse($auditoriaSala->requiereNroLia());
+        $this->assertFalse($auditoriaSala->requiereRangoFechas());
+
+        $trazabilidad = ReporteConfigurado::where('slug', 'ubicacion-trazabilidad')->first();
+        $this->assertTrue($trazabilidad->requiereNroLia());
+
+        $donados = ReporteConfigurado::where('slug', 'donados-fechas')->first();
+        $this->assertTrue($donados->requiereRangoFechas());
+
+        // 2. Creación y generación de slug único para reporte personalizado
+        $customSlug = ReporteConfigurado::generarSlug('Auditoría Notebooks Docentes');
+        $this->assertEquals('auditoria-notebooks-docentes', $customSlug);
+
+        $customRep = ReporteConfigurado::create([
+            'slug' => $customSlug,
+            'titulo' => 'Auditoría Notebooks Docentes',
+            'subtitulo' => 'Reporte específico de notebooks prestadas a docentes',
+            'descripcion' => 'Filtro automático de inventario',
+            'icono' => 'laptop',
+            'categoria' => 'custom',
+            'filtros_fijos' => ['tipo_id' => 1, 'situacion' => 'prestado'],
+            'variables_requeridas' => ['fechas' => true],
+            'es_sistema' => false,
+            'activo' => true,
+            'orden' => 99,
+        ]);
+
+        $this->assertDatabaseHas('reportes_configurados', [
+            'slug' => 'auditoria-notebooks-docentes',
+            'es_sistema' => false,
+        ]);
+        $this->assertEquals(['tipo_id' => 1, 'situacion' => 'prestado'], $customRep->filtros_fijos);
+        $this->assertTrue($customRep->requiereRangoFechas());
+
+        // Slug incremental si ya existe
+        $slugDuplicado = ReporteConfigurado::generarSlug('Auditoría Notebooks Docentes');
+        $this->assertEquals('auditoria-notebooks-docentes-1', $slugDuplicado);
     }
 }
 
