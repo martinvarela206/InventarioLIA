@@ -7,6 +7,9 @@ use App\Models\Carrera;
 use App\Models\EspacioLia;
 use App\Models\PersonalLia;
 use App\Models\ActividadLia;
+use App\Models\ReporteConfigurado;
+use App\Models\Tipo;
+use App\Models\Ubicacion;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -336,5 +339,155 @@ class AppAdminController extends Controller
         $actividad->delete();
         return redirect()->route('app_admin.actividades')
             ->with('success', 'Publicación eliminada del feed.');
+    }
+
+    // ==========================================
+    // 5. GESTIÓN DE REPORTES CONFIGURADOS
+    // ==========================================
+    public function reportesIndex(): View
+    {
+        $reportes = ReporteConfigurado::with('creador')
+            ->orderBy('es_sistema', 'desc')
+            ->orderBy('orden', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $totalReportes = $reportes->count();
+        $reportesSistema = $reportes->where('es_sistema', true)->count();
+        $reportesPersonalizados = $reportes->where('es_sistema', false)->count();
+        $reportesActivos = $reportes->where('activo', true)->count();
+
+        $tipos = Tipo::orderBy('nombre')->get();
+        $ubicaciones = Ubicacion::orderBy('nombre')->get();
+
+        return view('admin.app.reportes', compact(
+            'reportes',
+            'totalReportes',
+            'reportesSistema',
+            'reportesPersonalizados',
+            'reportesActivos',
+            'tipos',
+            'ubicaciones'
+        ));
+    }
+
+    public function guardarDesdeInventario(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'titulo' => 'required|string|max:150',
+            'subtitulo' => 'nullable|string|max:255',
+            'descripcion' => 'nullable|string',
+            'icono' => 'nullable|string|max:50',
+            'categoria' => 'nullable|string|max:50',
+            'filtros_fijos' => 'nullable|array',
+            'variables_requeridas' => 'nullable|array',
+        ]);
+
+        $slug = ReporteConfigurado::generarSlug($validated['titulo']);
+
+        $reporte = ReporteConfigurado::create([
+            'slug' => $slug,
+            'titulo' => $validated['titulo'],
+            'subtitulo' => $validated['subtitulo'] ?? null,
+            'descripcion' => $validated['descripcion'] ?? 'Reporte configurado desde vista de Inventario',
+            'icono' => $validated['icono'] ?: 'cubes',
+            'categoria' => $validated['categoria'] ?: 'personalizado',
+            'filtros_fijos' => $validated['filtros_fijos'] ?? [],
+            'variables_requeridas' => $validated['variables_requeridas'] ?? [],
+            'es_sistema' => false,
+            'activo' => true,
+            'creado_por' => auth()->id(),
+            'orden' => (ReporteConfigurado::max('orden') ?? 0) + 1,
+        ]);
+
+        return redirect()->back()->with('success', "Reporte \"{$reporte->titulo}\" creado y registrado exitosamente en el catálogo de Reportes.");
+    }
+
+    public function reporteStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'titulo' => 'required|string|max:150',
+            'subtitulo' => 'nullable|string|max:255',
+            'descripcion' => 'nullable|string',
+            'icono' => 'nullable|string|max:50',
+            'categoria' => 'nullable|string|max:50',
+            'filtros_fijos' => 'nullable|array',
+            'variables_requeridas' => 'nullable|array',
+            'activo' => 'nullable|boolean',
+            'orden' => 'nullable|integer',
+        ]);
+
+        $slug = ReporteConfigurado::generarSlug($validated['titulo']);
+
+        ReporteConfigurado::create([
+            'slug' => $slug,
+            'titulo' => $validated['titulo'],
+            'subtitulo' => $validated['subtitulo'] ?? null,
+            'descripcion' => $validated['descripcion'] ?? null,
+            'icono' => $validated['icono'] ?: 'cubes',
+            'categoria' => $validated['categoria'] ?: 'general',
+            'filtros_fijos' => $validated['filtros_fijos'] ?? [],
+            'variables_requeridas' => $validated['variables_requeridas'] ?? [],
+            'es_sistema' => false,
+            'activo' => $request->has('activo'),
+            'orden' => (int)($validated['orden'] ?? ((ReporteConfigurado::max('orden') ?? 0) + 1)),
+            'creado_por' => auth()->id(),
+        ]);
+
+        return redirect()->route('app_admin.reportes')->with('success', 'Reporte añadido correctamente.');
+    }
+
+    public function reporteUpdate(ReporteConfigurado $reporte, Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'titulo' => 'required|string|max:150',
+            'subtitulo' => 'nullable|string|max:255',
+            'descripcion' => 'nullable|string',
+            'icono' => 'nullable|string|max:50',
+            'categoria' => 'nullable|string|max:50',
+            'filtros_fijos' => 'nullable|array',
+            'variables_requeridas' => 'nullable|array',
+            'activo' => 'nullable|boolean',
+            'orden' => 'nullable|integer',
+        ]);
+
+        $data = [
+            'titulo' => $validated['titulo'],
+            'subtitulo' => $validated['subtitulo'] ?? null,
+            'descripcion' => $validated['descripcion'] ?? null,
+            'icono' => $validated['icono'] ?: $reporte->icono,
+            'categoria' => $validated['categoria'] ?: $reporte->categoria,
+            'filtros_fijos' => $validated['filtros_fijos'] ?? [],
+            'variables_requeridas' => $validated['variables_requeridas'] ?? [],
+            'activo' => $request->has('activo'),
+            'orden' => (int)($validated['orden'] ?? $reporte->orden),
+        ];
+
+        $reporte->update($data);
+
+        return redirect()->route('app_admin.reportes')->with('success', "Reporte \"{$reporte->titulo}\" actualizado correctamente.");
+    }
+
+    public function reporteToggle(ReporteConfigurado $reporte): RedirectResponse
+    {
+        $reporte->activo = !$reporte->activo;
+        $reporte->save();
+
+        $estado = $reporte->activo ? 'activado' : 'desactivado';
+        return redirect()->back()->with('success', "El reporte \"{$reporte->titulo}\" ha sido {$estado}.");
+    }
+
+    public function reporteDestroy(ReporteConfigurado $reporte): RedirectResponse
+    {
+        if ($reporte->es_sistema) {
+            $reporte->activo = false;
+            $reporte->save();
+            return redirect()->route('app_admin.reportes')->with('success', "El reporte del sistema \"{$reporte->titulo}\" ha sido desactivado.");
+        }
+
+        $nombre = $reporte->titulo;
+        $reporte->delete();
+
+        return redirect()->route('app_admin.reportes')->with('success', "Reporte \"{$nombre}\" eliminado exitosamente.");
     }
 }

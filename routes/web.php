@@ -145,6 +145,14 @@ Route::middleware('auth')->group(function () {
             Route::post('/app-admin/actividades', [AppAdminController::class, 'actividadStore'])->name('app_admin.actividades.store');
             Route::put('/app-admin/actividades/{actividad}', [AppAdminController::class, 'actividadUpdate'])->name('app_admin.actividades.update');
             Route::delete('/app-admin/actividades/{actividad}', [AppAdminController::class, 'actividadDestroy'])->name('app_admin.actividades.destroy');
+
+            // Gestión y Configuración de Reportes (app_admin)
+            Route::post('/app-admin/reportes/guardar-desde-inventario', [AppAdminController::class, 'guardarDesdeInventario'])->name('app_admin.reportes.guardarDesdeInventario');
+            Route::get('/app-admin/reportes', [AppAdminController::class, 'reportesIndex'])->name('app_admin.reportes');
+            Route::post('/app-admin/reportes', [AppAdminController::class, 'reporteStore'])->name('app_admin.reportes.store');
+            Route::put('/app-admin/reportes/{reporte}', [AppAdminController::class, 'reporteUpdate'])->name('app_admin.reportes.update');
+            Route::post('/app-admin/reportes/{reporte}/toggle', [AppAdminController::class, 'reporteToggle'])->name('app_admin.reportes.toggle');
+            Route::delete('/app-admin/reportes/{reporte}', [AppAdminController::class, 'reporteDestroy'])->name('app_admin.reportes.destroy');
         });
     });
 });

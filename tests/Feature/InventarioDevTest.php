@@ -1409,6 +1409,79 @@ class InventarioDevTest extends TestCase
         $slugDuplicado = ReporteConfigurado::generarSlug('Auditoría Notebooks Docentes');
         $this->assertEquals('auditoria-notebooks-docentes-1', $slugDuplicado);
     }
+
+    public function test_app_admin_puede_guardar_reporte_desde_inventario(): void
+    {
+        $appAdmin = Usuario::create([
+            'nombre' => 'App Admin Reportero',
+            'email' => 'appadmin_rep@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $appAdmin->roles()->attach(Rol::where('rol', 'app_admin')->first()->id);
+
+        $usuarioComun = Usuario::create([
+            'nombre' => 'Revisor Comun',
+            'email' => 'revisor_comun@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $usuarioComun->roles()->attach(Rol::where('rol', 'rev')->first()->id);
+
+        // 1. Usuario común no ve el botón y no puede enviar POST
+        $resComun = $this->actingAs($usuarioComun)->get(route('elementos.index'));
+        $resComun->assertStatus(200);
+        $resComun->assertDontSee('Guardar como Reporte');
+
+        $resForbidden = $this->actingAs($usuarioComun)->post(route('app_admin.reportes.guardarDesdeInventario'), [
+            'titulo' => 'Reporte No Autorizado',
+        ]);
+        $resForbidden->assertStatus(403);
+
+        // 2. App Admin ve el botón y el modal en Inventario
+        $payload = [
+            'titulo' => 'Equipos Dell Operativos',
+            'subtitulo' => 'Listado de equipos Dell en funcionamiento',
+            'descripcion' => 'Filtro guardado desde Inventario Completo',
+            'icono' => 'desktop',
+            'categoria' => 'custom',
+            'filtros_fijos' => [
+                'search' => 'Optiplex',
+                'situacion' => 'operativo',
+                'anio' => '2024',
+            ],
+            'variables_requeridas' => [
+                'ubicacion_id' => '1',
+                'fechas' => '1',
+            ],
+        ];
+
+        $resAdmin = $this->actingAs($appAdmin)->get(route('elementos.index', $payload['filtros_fijos']));
+        $resAdmin->assertStatus(200);
+        $resAdmin->assertSee('Guardar como Reporte');
+        $resAdmin->assertSee('modal-guardar-reporte');
+
+        // 3. App Admin guarda el reporte desde el inventario
+        $postRes = $this->actingAs($appAdmin)->from(route('elementos.index', $payload['filtros_fijos']))->post(route('app_admin.reportes.guardarDesdeInventario'), $payload);
+        $postRes->assertRedirect(route('elementos.index', $payload['filtros_fijos']));
+        $postRes->assertSessionHas('success');
+
+        // 4. Verificar existencia en la base de datos
+        $this->assertDatabaseHas('reportes_configurados', [
+            'titulo' => 'Equipos Dell Operativos',
+            'slug' => 'equipos-dell-operativos',
+            'categoria' => 'custom',
+            'es_sistema' => false,
+            'activo' => true,
+        ]);
+
+        $reporteGuardado = ReporteConfigurado::where('slug', 'equipos-dell-operativos')->first();
+        $this->assertNotNull($reporteGuardado);
+        $this->assertEquals(['search' => 'Optiplex', 'situacion' => 'operativo', 'anio' => '2024'], $reporteGuardado->filtros_fijos);
+        $this->assertTrue($reporteGuardado->requiereUbicacion());
+        $this->assertTrue($reporteGuardado->requiereRangoFechas());
+        $this->assertFalse($reporteGuardado->requiereNroLia());
+    }
 }
 
 

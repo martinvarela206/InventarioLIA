@@ -28,6 +28,14 @@
                 <span>Imprimir / PDF</span>
             </a>
 
+            @if(Auth::user()->isAppAdmin())
+                <!-- Botón Guardar Filtros como Reporte (app_admin) -->
+                <button type="button" onclick="abrirModalGuardarReporte()" class="inline-flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-extrabold py-2.5 px-3.5 rounded-xl shadow-sm transition-all text-sm" title="Guardar filtros activos como nuevo Reporte">
+                    <svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <span>Guardar como Reporte</span>
+                </button>
+            @endif
+
             @if(Auth::user()->canManageElementos())
                 <a href="{{ route('elementos.create') }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -209,4 +217,137 @@
         @endif
     </div>
 </div>
+
+@if(Auth::user()->isAppAdmin())
+    <!-- Modal Guardar como Reporte (Exclusivo app_admin) -->
+    <div id="modal-guardar-reporte" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 overflow-hidden">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                        <svg class="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-gray-900 text-base">Guardar Vista como Reporte</h3>
+                        <p class="text-[11px] text-gray-500">Registra un nuevo reporte reutilizable en el Hub de Reportes</p>
+                    </div>
+                </div>
+                <button type="button" onclick="cerrarModalGuardarReporte()" class="text-gray-400 hover:text-black p-1 rounded-lg">✕</button>
+            </div>
+
+            <form action="{{ route('app_admin.reportes.guardarDesdeInventario') }}" method="POST" class="space-y-4 text-xs">
+                @csrf
+                
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase tracking-wider text-[10px] mb-1">Título del Reporte <span class="text-rose-500">*</span></label>
+                    <input type="text" name="titulo" required placeholder="Ej: Auditoría de Laptops en Sala 1" class="w-full px-3 py-2 border border-gray-300 rounded-xl bg-white text-xs font-semibold focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-gray-700 uppercase tracking-wider text-[10px] mb-1">Subtítulo / Breve Descripción</label>
+                    <input type="text" name="descripcion" placeholder="Ej: Control de activos filtrados del catálogo" class="w-full px-3 py-2 border border-gray-300 rounded-xl bg-white text-xs focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-gray-700 uppercase tracking-wider text-[10px] mb-1">Categoría</label>
+                        <select name="categoria" class="w-full px-3 py-2 border border-gray-300 rounded-xl bg-gray-50 font-medium">
+                            <option value="inventario">Inventario General</option>
+                            <option value="auditoria">Auditoría de Sala</option>
+                            <option value="prestamos">Préstamos</option>
+                            <option value="mantenimiento">Mantenimiento</option>
+                            <option value="patrimonio">Patrimonio</option>
+                            <option value="personalizado" selected>Personalizado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-700 uppercase tracking-wider text-[10px] mb-1">Icono</label>
+                        <select name="icono" class="w-full px-3 py-2 border border-gray-300 rounded-xl bg-gray-50 font-medium">
+                            <option value="cubes">📦 Inventario / Cubos</option>
+                            <option value="building">🏢 Edificio / Sala</option>
+                            <option value="location">📍 Ubicación / Trazabilidad</option>
+                            <option value="wrench">🔧 Reparación / Taller</option>
+                            <option value="arrows-right-left">🔄 Préstamos</option>
+                            <option value="shield">🛡️ Garantías</option>
+                            <option value="calendar-plus">📅 Calendario / Fechas</option>
+                            <option value="trash">🗑️ Bajas / Basura</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Resumen de filtros fijos capturados -->
+                <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3">
+                    <span class="block font-bold text-amber-900 text-[11px] mb-1.5">📌 Filtros Activos Capturados:</span>
+                    <div class="flex flex-wrap gap-1.5 text-[11px]">
+                        @if(request('search'))
+                            <span class="bg-white px-2 py-0.5 rounded border border-amber-200 text-gray-700">Texto: <strong>{{ request('search') }}</strong></span>
+                            <input type="hidden" name="filtros_fijos[search]" value="{{ request('search') }}">
+                        @endif
+                        @if(request('situacion'))
+                            <span class="bg-white px-2 py-0.5 rounded border border-amber-200 text-gray-700">Situación: <strong>{{ request('situacion') }}</strong></span>
+                            <input type="hidden" name="filtros_fijos[situacion]" value="{{ request('situacion') }}">
+                        @endif
+                        @if(request('tipo'))
+                            <span class="bg-white px-2 py-0.5 rounded border border-amber-200 text-gray-700">Tipo: <strong>{{ request('tipo') }}</strong></span>
+                            <input type="hidden" name="filtros_fijos[tipo]" value="{{ request('tipo') }}">
+                        @endif
+                        @if(request('ubicacion'))
+                            <span class="bg-white px-2 py-0.5 rounded border border-amber-200 text-gray-700">Sala: <strong>{{ request('ubicacion') }}</strong></span>
+                            <input type="hidden" name="filtros_fijos[ubicacion]" value="{{ request('ubicacion') }}">
+                        @endif
+                        @if(request('anio'))
+                            <span class="bg-white px-2 py-0.5 rounded border border-amber-200 text-gray-700">Año: <strong>{{ request('anio') }}</strong></span>
+                            <input type="hidden" name="filtros_fijos[anio]" value="{{ request('anio') }}">
+                        @endif
+                        @if(!request()->hasAny(['search', 'situacion', 'tipo', 'ubicacion', 'anio']))
+                            <span class="text-amber-800 italic">Sin filtros específicos aplicados (abarca todo el inventario).</span>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Variables de Entrada Dinámicas -->
+                <div class="border border-gray-200 rounded-xl p-3 bg-gray-50/60">
+                    <span class="block font-bold text-gray-800 text-[11px] mb-1">⚙️ Variables de entrada requeridas al emitir:</span>
+                    <p class="text-[10px] text-gray-500 mb-2">Marca si deseas que el usuario deba seleccionar alguna de estas variables al consultar el reporte:</p>
+                    <div class="space-y-1.5">
+                        <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
+                            <input type="checkbox" name="variables_requeridas[ubicacion_id]" value="1" class="rounded text-amber-500 focus:ring-amber-400">
+                            <span>El usuario seleccionará la <strong>Sala / Armario</strong></span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
+                            <input type="checkbox" name="variables_requeridas[tipo_id]" value="1" class="rounded text-amber-500 focus:ring-amber-400">
+                            <span>El usuario seleccionará el <strong>Tipo de Activo</strong></span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
+                            <input type="checkbox" name="variables_requeridas[nro_lia]" value="1" class="rounded text-amber-500 focus:ring-amber-400">
+                            <span>El usuario ingresará un <strong>N° LIA / Activo específico</strong></span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
+                            <input type="checkbox" name="variables_requeridas[fechas]" value="1" class="rounded text-amber-500 focus:ring-amber-400">
+                            <span>El usuario definirá un <strong>Rango de Fechas (Desde / Hasta)</strong></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                    <button type="button" onclick="cerrarModalGuardarReporte()" class="px-4 py-2 border border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl shadow-xs transition-colors">
+                        Guardar Reporte
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function abrirModalGuardarReporte() {
+            document.getElementById('modal-guardar-reporte').classList.remove('hidden');
+        }
+        function cerrarModalGuardarReporte() {
+            document.getElementById('modal-guardar-reporte').classList.add('hidden');
+        }
+    </script>
+@endif
 @endsection
