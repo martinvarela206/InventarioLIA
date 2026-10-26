@@ -16,4 +16,6 @@ Cuando el usuario solicite sincronizar `main` hacia `produccion`:
    - `.env.example` (versión de producción)
    - `DEPLOY.md`
    - Cualquier archivo o script de orquestación de Docker / MariaDB de producción.
-3. **Resolución de Conflictos**: Ante cualquier divergencia durante el merge o rebase en los archivos protegidos de infraestructura, prevalece siempre la versión existente en `produccion`.
+   - Configuraciones o validaciones de seguridad exclusivas de entorno productivo (ej. política estricta de contraseñas robustas, mientras que `main` conserva validaciones simples `min:4` para facilitar el testing ágil de usuarios).
+3. **Resolución de Conflictos**: Ante cualquier divergencia durante el merge o rebase en los archivos protegidos de infraestructura o configuraciones exclusivas de producción, prevalece siempre la versión existente en `produccion`.
+
