@@ -100,6 +100,10 @@
                                             </button>
                                         </form>
                                     @endif
+                                    <a href="{{ route('users.reporte', $user->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs transition-all" title="Ver informe integral de auditoría y trazabilidad (Tickets, Reportes y Movimientos)">
+                                        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Informe</span>
+                                    </a>
                                     <a href="{{ route('users.trayectoria', $user->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs transition-all" title="Ver y gestionar periodos de trayectoria">
                                         <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         <span>Trayectoria ({{ $user->trayectorias->count() }})</span>

@@ -6,6 +6,8 @@ use App\Models\Usuario;
 use App\Models\Rol;
 use App\Models\Carrera;
 use App\Models\UsuarioTrayectoria;
+use App\Models\Movimiento;
+use App\Models\ReporteConfigurado;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -160,5 +162,66 @@ class UserController extends Controller
 
         return redirect()->route('users.index')
             ->with('success', "Se ha borrado la huella digital del usuario #{$id} conforme a la Ley 25.326. Sus datos personales han sido anonimizados de forma irreversible.");
+    }
+
+    /**
+     * Informe consolidado de actividad, auditoría y trazabilidad por usuario (Órbita User Admin).
+     * Estructurado en 3 apartados: Tickets, Reportes y Movimientos de inventario.
+     */
+    public function reporte(Usuario $user): View
+    {
+        $user->load(['roles', 'trayectorias']);
+
+        // 1. Trazabilidad en Tickets (Aperturas, Diagnósticos y Resoluciones)
+        $ticketsCreados = Movimiento::tickets()
+            ->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere('solicitante', $user->nombre);
+            })
+            ->with(['elemento.tipo', 'ubicacion'])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $ticketComentarios = \App\Models\TicketComentario::where('user_id', $user->id)
+            ->with(['ticket.elemento.tipo', 'ticket.ubicacion'])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $ticketResoluciones = Movimiento::where('user_id', $user->id)
+            ->whereNotNull('ticket_id')
+            ->with(['elemento.tipo', 'ubicacion'])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        // 2. Actividad en Catálogo y Configuración de Reportes
+        $reportesConfigurados = ReporteConfigurado::where('creado_por', $user->id)
+            ->orderBy('id', 'desc')
+            ->get();
+
+        // 3. Trazabilidad en Movimientos de Inventario
+        $movimientos = Movimiento::where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere('solicitante', $user->nombre);
+            })
+            ->with(['elemento.tipo', 'ubicacion'])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $stats = [
+            'total_tickets' => $ticketsCreados->count() + $ticketComentarios->count() + $ticketResoluciones->count(),
+            'total_reportes' => $reportesConfigurados->count(),
+            'total_movimientos' => $movimientos->count(),
+            'prestamos_activos' => $movimientos->where('tipo_movimiento', 'externo_prestamo')->whereNull('fecha_devolucion')->count(),
+        ];
+
+        return view('users.reporte', compact(
+            'user',
+            'ticketsCreados',
+            'ticketComentarios',
+            'ticketResoluciones',
+            'reportesConfigurados',
+            'movimientos',
+            'stats'
+        ));
     }
 }

@@ -124,6 +124,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/users/{user}/trayectoria', [UserController::class, 'trayectoria'])->name('users.trayectoria');
             Route::post('/users/{user}/trayectoria', [UserController::class, 'storeTrayectoria'])->name('users.trayectoria.store');
             Route::delete('/trayectorias/{trayectoria}', [UserController::class, 'destroyTrayectoria'])->name('trayectorias.destroy');
+            Route::get('/users/{user}/reporte', [UserController::class, 'reporte'])->name('users.reporte');
         });
 
         // Configuración Institucional y Gestión de la App (app_admin, user_admin)

@@ -2329,5 +2329,83 @@ class InventarioDevTest extends TestCase
         $resIndexDespues = $this->actingAs($flavia)->get(route('users.index'));
         $resIndexDespues->assertSee('Huella Anonimizada (Ley 25.326)');
     }
+
+    public function test_modulo_de_reportes_de_auditoria_y_trazabilidad_por_usuario(): void
+    {
+        $this->seed(\Database\Seeders\RoleSeeder::class);
+        $this->seed(\Database\Seeders\UserSeeder::class);
+        $this->seed(\Database\Seeders\TipoSeeder::class);
+        $this->seed(\Database\Seeders\UbicacionSeeder::class);
+
+        $flavia = \App\Models\Usuario::where('email', 'flavia@lia.com')->firstOrFail();
+        $marcelo = \App\Models\Usuario::where('email', 'marcelo@lia.com')->firstOrFail();
+        $martin = \App\Models\Usuario::where('email', 'martin@lia.com')->firstOrFail();
+        $juan = \App\Models\Usuario::where('email', 'juan.perez@lia.com')->firstOrFail();
+
+        $ubicacion = \App\Models\Ubicacion::first();
+        $elemento = \App\Models\Elemento::create([
+            'nro_lia' => 'REP-USER-01',
+            'tipo_id' => 1,
+            'marca' => 'HP',
+            'modelo' => 'EliteDesk 800',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        // Registrar actividad vinculada a Marcelo (un movimiento regular y un ticket)
+        \App\Models\Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $ubicacion->id,
+            'puesto' => 'Puesto 03',
+            'user_id' => $marcelo->id,
+            'fecha' => now(),
+            'comentario' => 'Asignación regular por Marcelo',
+        ]);
+
+        $ticket = \App\Models\Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'ubicacion_id' => $ubicacion->id,
+            'puesto' => 'Puesto 03',
+            'user_id' => $marcelo->id,
+            'fecha' => now(),
+            'solicitante' => $marcelo->nombre,
+            'comentario' => 'Revisión técnica de memoria RAM',
+        ]);
+
+        \App\Models\TicketComentario::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $marcelo->id,
+            'mensaje' => 'Diagnóstico: Módulo DDR4 con pines limpios, prueba MemTest OK.',
+            'tipo' => 'solucion_propuesta',
+        ]);
+
+        // 1. Acceso restringido: Usuario sin rol user_admin recibe 403
+        $resForbidden = $this->actingAs($martin)->get(route('users.reporte', $marcelo->id));
+        $resForbidden->assertStatus(403);
+
+        // 2. Acceso autorizado: User admin (Flavia) visualiza el reporte consolidado
+        $resAdmin = $this->actingAs($flavia)->get(route('users.reporte', $marcelo->id));
+        $resAdmin->assertStatus(200);
+        $resAdmin->assertSee('Informe de Auditoría y Trazabilidad: Marcelo Mondre');
+        $resAdmin->assertSee('Apartado de Tickets y Soporte Técnico');
+        $resAdmin->assertSee('Apartado de Configuración y Emisión de Reportes');
+        $resAdmin->assertSee('Apartado de Movimientos de Inventario y Operatoria Física');
+        $resAdmin->assertSee('Imprimir Informe Oficial');
+
+        // Se comprueba presencia de los registros de Marcelo
+        $resAdmin->assertSee('REP-USER-01');
+        $resAdmin->assertSee('Revisión técnica de memoria RAM');
+        $resAdmin->assertSee('Asignación regular por Marcelo');
+
+        // 3. Usuario sin actividad previa (Juan Pérez) muestra apartados limpios con mensajes de ausencia de datos
+        $resVacio = $this->actingAs($flavia)->get(route('users.reporte', $juan->id));
+        $resVacio->assertStatus(200);
+        $resVacio->assertSee('El usuario no posee participaciones registradas en tickets');
+        $resVacio->assertSee('El usuario no posee registros históricos de movimientos');
+    }
 }
 
