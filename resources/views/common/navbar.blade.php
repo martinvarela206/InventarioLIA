@@ -48,7 +48,7 @@
                         };
                     @endphp
 
-                    <nav class="flex items-center gap-1 xl:gap-1.5 overflow-x-auto no-scrollbar py-1">
+                    <nav class="flex items-center gap-1 xl:gap-1.5 py-1">
                         @auth
                             @if(Auth::user()->hasActivePermissions())
                                 <a href="{{ route('dashboard.index') }}" class="{{ $navItemClass(Request::routeIs('dashboard.*')) }}">
@@ -117,7 +117,7 @@
                                         </button>
 
                                         <div id="admin-dropdown-menu" 
-                                             class="hidden absolute right-0 sm:left-0 sm:right-auto mt-2 w-56 rounded-2xl bg-white shadow-2xl border border-gray-100 ring-1 ring-black/5 divide-y divide-gray-100 focus:outline-none z-50 py-1.5">
+                                             class="hidden absolute left-0 mt-2 w-64 rounded-2xl bg-white shadow-2xl border border-gray-100 ring-1 ring-black/10 divide-y divide-gray-100 focus:outline-none z-50 py-1.5">
                                             @if(Auth::user()->hasRole('item_admin'))
                                                 <div class="py-1">
                                                     <a href="{{ route('tipos.index') }}" 
@@ -160,7 +160,7 @@
                                                         </span>
                                                         <div class="flex flex-col">
                                                             <span>Gestión App</span>
-                                                            <span class="text-[10px] text-gray-400 font-normal">Feed, reportes y carreras</span>
+                                                            <span class="text-[10px] text-gray-400 font-normal">Cargos, carreras y feed</span>
                                                         </div>
                                                     </a>
                                                 </div>
