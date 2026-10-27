@@ -2001,8 +2001,23 @@ class InventarioDevTest extends TestCase
         $resRep->assertSee('Especificaciones / Hardware');
         $resRep->assertSee('i5-10400');
     }
+
+    public function test_middleware_de_cabeceras_de_seguridad_http_en_rutas_web(): void
+    {
+        $response = $this->get('/login');
+        $response->assertStatus(200);
+
+        // Verificar presencia de cabeceras de endurecimiento
+        $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+        $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+        // Verificar Content-Security-Policy
+        $this->assertTrue($response->headers->has('Content-Security-Policy'));
+        $csp = $response->headers->get('Content-Security-Policy');
+        $this->assertStringContainsString("default-src 'self'", $csp);
+
+        // Verificar que no se divulgue X-Powered-By
+        $this->assertFalse($response->headers->has('X-Powered-By'));
+    }
 }
-
-
-
-
