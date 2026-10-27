@@ -1731,6 +1731,20 @@ class InventarioDevTest extends TestCase
         $this->assertStringContainsString('Dell', $csvContent);
         $this->assertStringNotContainsString('LIA-DYN-02', $csvContent);
     }
+
+    public function test_exclusion_de_cabeceras_ods_y_depuracion_de_registros_espurios(): void
+    {
+        // 1. Verificar que no existan activos espurios con nro_lia en palabras clave de encabezados
+        $headerWords = ['Disco', 'RAM', 'CPU', 'Procesador', 'Modelo', 'Nro LIA', 'Nro UNSJ'];
+        $countLiaHeaders = Elemento::whereIn('nro_lia', $headerWords)->count();
+        $this->assertEquals(0, $countLiaHeaders, 'No deben existir activos cuyo Nro LIA sea un nombre de encabezado ODS.');
+
+        // 2. Verificar que no existan activos con especificaciones redundantes de cabecera
+        $countSpecsHeaders = Elemento::whereJsonContains('descripcion->Procesador', 'Procesador')
+            ->whereJsonContains('descripcion->RAM', 'RAM')
+            ->count();
+        $this->assertEquals(0, $countSpecsHeaders, 'No deben existir activos con especificaciones técnicas que dupliquen nombres de columnas.');
+    }
 }
 
 

@@ -127,6 +127,16 @@ class ImportarInventarioOdsCommand extends Command
                 $rawCantidad = $colMap['cantidad'] !== null && isset($rowVals[$colMap['cantidad']]) ? (int)$rowVals[$colMap['cantidad']] : 1;
                 $rawComentarios = $colMap['comentarios'] !== null && isset($rowVals[$colMap['comentarios']]) ? trim($rowVals[$colMap['comentarios']]) : null;
 
+                // Filtro estricto anti-cabeceras intermedias: descartar filas que repiten nombres de columnas ODS
+                $headerKeywords = ['disco', 'ram', 'cpu', 'procesador', 'modelo', 'nro lia', 'nro_lia', 'nro unsj', 'nro_unsj', 'marca', 'año', 'anio', 'cantidad', 'ubicacion'];
+                if (
+                    ($rawLia !== null && in_array(mb_strtolower($rawLia), $headerKeywords)) ||
+                    ($rawMarca !== null && in_array(mb_strtolower($rawMarca), ['marca', 'fabricante'])) ||
+                    ($rawModelo !== null && in_array(mb_strtolower($rawModelo), ['modelo', 'descripcion', 'disco', 'procesador']))
+                ) {
+                    continue;
+                }
+
                 // Subcaracterísticas estructuradas
                 $specs = [];
                 if ($colMap['procesador'] !== null && isset($rowVals[$colMap['procesador']]) && $rowVals[$colMap['procesador']] !== '') {
