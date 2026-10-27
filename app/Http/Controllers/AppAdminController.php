@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Carrera;
 use App\Models\Cargo;
+use App\Models\Usuario;
 use App\Models\EspacioLia;
 use App\Models\PersonalLia;
 use App\Models\ActividadLia;
@@ -111,7 +112,12 @@ class AppAdminController extends Controller
 
     public function carreraDestroy(Carrera $carrera): RedirectResponse
     {
-        Usuario::where('carrera_id', $carrera->id)->update(['carrera_id' => null]);
+        if (Usuario::where('carrera_id', $carrera->id)->exists()) {
+            $carrera->update(['activa' => false]);
+            return redirect()->route('app_admin.carreras')
+                ->with('warning', 'La carrera posee usuarios vinculados y fue desactivada para proteger el historial académico.');
+        }
+
         $carrera->delete();
 
         return redirect()->route('app_admin.carreras')

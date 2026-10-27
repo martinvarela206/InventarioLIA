@@ -3620,6 +3620,12 @@ class InventarioDevTest extends TestCase
             'activo' => true,
         ]);
 
+        // 1.b. Acceso a vista de gestión de personal en App Admin (garantiza no error 500 y presencia de usuarios en el select)
+        $resPersonalView = $this->actingAs($appAdmin)->get(route('app_admin.personal'));
+        $resPersonalView->assertStatus(200);
+        $resPersonalView->assertSee('Dra. Romina Valenzuela');
+        $resPersonalView->assertSee('Vincular Usuario Registrado');
+
         // 2. App Admin da de alta en PersonalLia asociando el user_id sin reescribir nombre ni cargo
         $resStore = $this->actingAs($appAdmin)->post(route('app_admin.personal.store'), [
             'user_id' => $investigador->id,
