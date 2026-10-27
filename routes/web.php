@@ -83,16 +83,24 @@ Route::middleware('auth')->group(function () {
         Route::get('/tickets/create', [TicketController::class, 'create'])->name('tickets.create');
         Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
 
-        // Gestión Operativa de Movimientos, Préstamos y Tickets (exclusivo tec)
+        // Hilo y Seguimiento de Tickets (apertura, consulta y comentarios: rev, subtec, tec)
+        Route::middleware('role:rev,subtec,tec,item_admin,user_admin,app_admin')->group(function () {
+            Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+            Route::post('/tickets/{ticket}/comentar', [TicketController::class, 'comentar'])->name('tickets.comentar');
+        });
+
+        // Bandeja y Solución Técnica de Tickets (subtec, tec)
+        Route::middleware('role:subtec,tec,item_admin,user_admin,app_admin')->group(function () {
+            Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
+            Route::post('/tickets/{ticket}/solucionar', [TicketController::class, 'solucionar'])->name('tickets.solucionar');
+        });
+
+        // Gestión Operativa de Movimientos, Préstamos y Cierre de Tickets (exclusivo tec)
         Route::middleware('role:tec')->group(function () {
             Route::get('/movimientos/rapido', [MovimientoController::class, 'rapido'])->name('movimientos.rapido');
             Route::post('/movimientos', [MovimientoController::class, 'store'])->name('movimientos.store');
             Route::post('/movimientos/{movimiento}/devolucion', [MovimientoController::class, 'devolucion'])->name('movimientos.devolucion');
             Route::post('/movimientos/{movimiento}/correccion', [MovimientoController::class, 'storeCorreccion'])->name('movimientos.correccion');
-
-            // Bandeja y Resolución de Tickets para Técnicos
-            Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
-            Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
             Route::post('/tickets/{ticket}/resolver', [TicketController::class, 'resolver'])->name('tickets.resolver');
         });
 

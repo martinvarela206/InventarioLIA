@@ -39,9 +39,9 @@ class InventarioDevTest extends TestCase
         $this->assertNotNull(Tipo::where('nombre', 'punto de acceso')->first());
     }
 
-    public function test_catalogo_roles_contiene_los_6_roles_oficiales(): void
+    public function test_catalogo_roles_contiene_los_roles_oficiales(): void
     {
-        $rolesEsperados = ['user_admin', 'app_admin', 'item_admin', 'tec', 'rev', 'registered'];
+        $rolesEsperados = ['user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev', 'registered'];
         foreach ($rolesEsperados as $r) {
             $this->assertDatabaseHas('roles', ['rol' => $r]);
         }
@@ -2130,6 +2130,146 @@ class InventarioDevTest extends TestCase
             $this->actingAs($admin)->delete(route('app_admin.reportes.destroy', $reporteInicial->id), ['force' => 1]);
             $this->assertDatabaseMissing('reportes_configurados', ['id' => $reporteInicial->id]);
         }
+    }
+
+    public function test_matriz_escalonada_de_permisos_tickets_rev_vs_subtec_vs_tec(): void
+    {
+        $this->seed(\Database\Seeders\RoleSeeder::class);
+        $this->seed(\Database\Seeders\TipoSeeder::class);
+        $this->seed(\Database\Seeders\UbicacionSeeder::class);
+
+        $rolRev = \App\Models\Rol::where('rol', 'rev')->firstOrFail();
+        $rolSubTec = \App\Models\Rol::where('rol', 'subtec')->firstOrFail();
+        $rolTec = \App\Models\Rol::where('rol', 'tec')->firstOrFail();
+        $rolReg = \App\Models\Rol::where('rol', 'registered')->firstOrFail();
+
+        $userRev = \App\Models\Usuario::create([
+            'email' => 'revisor_test@lia.com',
+            'nombre' => 'Revisor Ticket Test',
+            'password' => bcrypt('secret123'),
+            'activo' => true,
+        ]);
+        $userRev->roles()->sync([$rolReg->id, $rolRev->id]);
+
+        $userSubTec = \App\Models\Usuario::create([
+            'email' => 'subtec_test@lia.com',
+            'nombre' => 'SubTec Ticket Test',
+            'password' => bcrypt('secret123'),
+            'activo' => true,
+        ]);
+        $userSubTec->roles()->sync([$rolReg->id, $rolSubTec->id]);
+
+        $userTec = \App\Models\Usuario::create([
+            'email' => 'tec_test@lia.com',
+            'nombre' => 'Tec Ticket Test',
+            'password' => bcrypt('secret123'),
+            'activo' => true,
+        ]);
+        $userTec->roles()->sync([$rolReg->id, $rolTec->id]);
+
+        $ubicacion = \App\Models\Ubicacion::first();
+        $elemento = \App\Models\Elemento::create([
+            'nro_lia' => 'TICK-SUBTEC-01',
+            'tipo_id' => 1,
+            'marca' => 'Dell',
+            'modelo' => 'OptiPlex 7050',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        \App\Models\Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $ubicacion->id,
+            'puesto' => 'Puesto 05',
+            'user_id' => $userTec->id,
+            'fecha' => now(),
+            'comentario' => 'Ingreso regular a sala',
+        ]);
+
+        // 1. REVISOR puede iniciar ticket
+        $resStore = $this->actingAs($userRev)->post(route('tickets.store'), [
+            'elemento_id' => $elemento->id,
+            'comentario' => 'Falla en cooler frontal y ruido en fuente de poder.',
+            'tipo_traslado' => 'insitu',
+        ]);
+        $resStore->assertRedirect(route('dashboard.index'));
+
+        $ticket = \App\Models\Movimiento::where('elemento_id', $elemento->id)
+            ->where('tipo_movimiento', 'reparacion')
+            ->firstOrFail();
+        $this->assertEquals('abierto', $ticket->estado_ticket);
+
+        // 2. REVISOR puede comentar en el hilo del ticket
+        $resComentarioRev = $this->actingAs($userRev)->post(route('tickets.comentar', $ticket->id), [
+            'mensaje' => 'Se verificó que el cooler deja de girar luego de 5 minutos.',
+        ]);
+        $resComentarioRev->assertRedirect(route('tickets.show', $ticket->id));
+        $this->assertDatabaseHas('ticket_comentarios', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $userRev->id,
+            'tipo' => 'comentario',
+        ]);
+
+        // 3. REVISOR NUNCA puede solucionar el ticket (debe recibir 403)
+        $resRevSolucionar = $this->actingAs($userRev)->post(route('tickets.solucionar', $ticket->id), [
+            'solucion' => 'Intento de solución por un Revisor no autorizado.',
+        ]);
+        $resRevSolucionar->assertStatus(403);
+
+        // 4. REVISOR NUNCA puede cerrar el ticket (debe recibir 403)
+        $resRevCerrar = $this->actingAs($userRev)->post(route('tickets.resolver', $ticket->id), [
+            'accion' => 'resolver',
+            'solucion' => 'Intento de cierre formal por Revisor.',
+        ]);
+        $resRevCerrar->assertStatus(403);
+
+        // 5. SUBTEC puede solucionar el ticket
+        $conteoMovimientosAntes = \App\Models\Movimiento::count();
+        $resSubTecSolucionar = $this->actingAs($userSubTec)->post(route('tickets.solucionar', $ticket->id), [
+            'solucion' => 'Se desarmó cooler frontal, limpieza con alcohol isopropílico y lubricación con aceite sintético. Pruebas térmicas OK.',
+        ]);
+        $resSubTecSolucionar->assertRedirect(route('tickets.show', $ticket->id));
+        
+        $ticket->refresh();
+        $this->assertEquals('solucionado', $ticket->estado_ticket);
+        $this->assertDatabaseHas('ticket_comentarios', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $userSubTec->id,
+            'tipo' => 'solucion_propuesta',
+        ]);
+
+        // REGLA ESTRICTA: El SubTec NUNCA registra movimientos asociados al ticket
+        $conteoMovimientosDespues = \App\Models\Movimiento::count();
+        $this->assertEquals($conteoMovimientosAntes, $conteoMovimientosDespues, 'El SubTec no debe generar ningún registro en la tabla movimientos.');
+
+        // 6. SUBTEC NUNCA puede cerrar formalmente el ticket (debe recibir 403)
+        $resSubTecCerrar = $this->actingAs($userSubTec)->post(route('tickets.resolver', $ticket->id), [
+            'accion' => 'resolver',
+            'solucion' => 'Intento de cierre formal por SubTec.',
+        ]);
+        $resSubTecCerrar->assertStatus(403);
+
+        // 7. TECNICO puede cerrar formalmente el ticket y asociar movimiento de inventario
+        $resTecCerrar = $this->actingAs($userTec)->post(route('tickets.resolver', $ticket->id), [
+            'accion' => 'resolver',
+            'solucion' => 'Verificación técnica aprobada. Equipo retornado a servicio activo.',
+            'ubicacion_id' => $ubicacion->id,
+            'puesto' => 'Puesto 05',
+        ]);
+        $resTecCerrar->assertRedirect(route('tickets.index'));
+
+        $ticket->refresh();
+        $this->assertEquals('resuelto', $ticket->estado_ticket);
+
+        // Se verifica que el TEC sí generó el movimiento formal con ticket_id asociado
+        $this->assertDatabaseHas('movimientos', [
+            'elemento_id' => $elemento->id,
+            'ticket_id' => $ticket->id,
+            'tipo_movimiento' => 'interno',
+            'estado_ticket' => 'resuelto',
+        ]);
     }
 }
 

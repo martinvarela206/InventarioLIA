@@ -149,6 +149,11 @@ class Movimiento extends Model
         return $this->hasMany(Movimiento::class, 'ticket_id');
     }
 
+    public function comentarios(): HasMany
+    {
+        return $this->hasMany(TicketComentario::class, 'ticket_id')->orderBy('id', 'asc');
+    }
+
     public function esReparacion(): bool
     {
         return $this->tipo_movimiento === 'reparacion';
@@ -161,7 +166,7 @@ class Movimiento extends Model
 
     public function esTicketAbierto(): bool
     {
-        return $this->tipo_movimiento === 'reparacion' && ($this->estado_ticket === 'abierto' || empty($this->estado_ticket));
+        return $this->tipo_movimiento === 'reparacion' && in_array($this->estado_ticket, ['abierto', 'solucionado', null, '']);
     }
 
     public function scopeTicketsAbiertos(Builder $query): Builder
@@ -169,7 +174,7 @@ class Movimiento extends Model
         return $query->where('tipo_movimiento', 'reparacion')
             ->where(function ($q) {
                 $q->whereNull('estado_ticket')
-                  ->orWhere('estado_ticket', 'abierto');
+                  ->orWhereIn('estado_ticket', ['abierto', 'solucionado']);
             });
     }
 

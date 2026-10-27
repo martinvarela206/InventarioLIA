@@ -172,6 +172,7 @@ class TicketController extends Controller
             'adjuntos',
             'resoluciones.usuario',
             'resoluciones.ubicacion',
+            'comentarios.usuario',
         ])->findOrFail($id);
 
         // Movimiento previo al ingreso del ticket para heredar ubicación original
@@ -193,11 +194,78 @@ class TicketController extends Controller
     }
 
     /**
+     * Añade un mensaje o respuesta al hilo de discusión y seguimiento del ticket.
+     * Accesible para Revisor (rev), SubTécnico (subtec) y Técnico (tec).
+     */
+    public function comentar(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'mensaje' => 'required|string|min:3',
+        ]);
+
+        $ticket = Movimiento::findOrFail($id);
+        $user = Auth::user();
+
+        \App\Models\TicketComentario::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $user->id,
+            'mensaje' => $validated['mensaje'],
+            'tipo' => 'comentario',
+        ]);
+
+        return redirect()->route('tickets.show', $ticket->id)
+            ->with('success', 'Mensaje registrado en la bitácora del ticket.');
+    }
+
+    /**
+     * Registra la propuesta o diagnóstico de solución técnica al ticket.
+     * Accesible para SubTécnico (subtec) y Técnico (tec). El Revisor (rev) NO puede solucionar.
+     * REGLA ESTRICTA: El SubTec nunca registra movimientos ni cierra el ticket.
+     */
+    public function solucionar(Request $request, int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (!$user->canSolveTickets()) {
+            abort(403, 'El rol Revisor no posee privilegios para solucionar técnicamente un ticket.');
+        }
+
+        $validated = $request->validate([
+            'solucion' => 'required|string|min:5',
+        ]);
+
+        $ticket = Movimiento::findOrFail($id);
+
+        if ($ticket->estado_ticket === 'resuelto' || $ticket->estado_ticket === 'baja') {
+            return redirect()->route('tickets.show', $ticket->id)
+                ->with('error', 'El ticket ya ha sido finalizado previamente.');
+        }
+
+        $ticket->estado_ticket = 'solucionado';
+        $ticket->save();
+
+        \App\Models\TicketComentario::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $user->id,
+            'mensaje' => 'SOLUCIÓN TÉCNICA PROPUESTA / EJECUTADA: ' . $validated['solucion'],
+            'tipo' => 'solucion_propuesta',
+        ]);
+
+        return redirect()->route('tickets.show', $ticket->id)
+            ->with('success', 'Solución técnica registrada. Pendiente de cierre formal y reasignación física por un Técnico.');
+    }
+
+    /**
      * Resuelve un ticket técnico mediante un nuevo movimiento (Append-Only)
      * o lo declara irreparable pasándolo a baja (Basura Tecnológica).
+     * Exclusivo para Técnico (tec) e item_admin. Rev y SubTec están bloqueados.
      */
     public function resolver(Request $request, int $id): RedirectResponse
     {
+        $user = Auth::user();
+        if (!$user->canCloseTickets()) {
+            abort(403, 'Únicamente el personal Técnico o Administrador de Ítems puede cerrar formalmente un ticket y asociar movimientos de inventario.');
+        }
+
         $validated = $request->validate([
             'accion' => 'required|in:resolver,baja',
             'solucion' => 'required|string|min:5',
@@ -206,7 +274,6 @@ class TicketController extends Controller
         ]);
 
         $ticket = Movimiento::with('elemento')->findOrFail($id);
-        $user = Auth::user();
 
         DB::transaction(function () use ($ticket, $validated, $user) {
             $esBaja = ($validated['accion'] === 'baja');
