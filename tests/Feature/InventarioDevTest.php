@@ -565,12 +565,23 @@ class InventarioDevTest extends TestCase
         $responseLanding->assertSee('Registrarse');
         $responseLanding->assertSee('Iniciar Sesión');
 
-        // 2. Acceder al formulario de registro
+        // 2. Acceder al formulario de registro y verificar cláusula legal Ley 25.326
         $responseForm = $this->get(route('register'));
         $responseForm->assertStatus(200);
         $responseForm->assertSee('Registro de Usuario');
+        $responseForm->assertSee('Ley 25.326');
+        $responseForm->assertSee('6 años');
 
-        // 3. Completar el registro
+        // 3. Intento sin consentimiento legal debe ser rechazado
+        $responseRechazo = $this->post(route('register'), [
+            'nombre' => 'Estudiante Sin Consentimiento',
+            'email' => 'sin_consentimiento@exactas.unsj.edu.ar',
+            'password' => 'secret123',
+            'password_confirmation' => 'secret123',
+        ]);
+        $responseRechazo->assertSessionHasErrors('terminos_consentimiento');
+
+        // 4. Completar el registro con consentimiento explícito
         $responsePost = $this->post(route('register'), [
             'nombre' => 'Nuevo Estudiante Test',
             'email' => 'nuevo_estudiante@exactas.unsj.edu.ar',
@@ -578,6 +589,7 @@ class InventarioDevTest extends TestCase
             'carrera' => 'Licenciatura en Ciencias de la Computación',
             'password' => 'secret123',
             'password_confirmation' => 'secret123',
+            'terminos_consentimiento' => '1',
         ]);
 
         $this->assertDatabaseHas('usuarios', [

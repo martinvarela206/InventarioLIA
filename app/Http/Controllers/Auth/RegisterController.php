@@ -27,6 +27,9 @@ class RegisterController extends Controller
             'carrera_id' => ['nullable', 'exists:carreras,id'],
             'carrera' => ['nullable', 'string', 'max:100'],
             'password' => ['required', 'string', 'min:4', 'confirmed'],
+            'terminos_consentimiento' => ['accepted'],
+        ], [
+            'terminos_consentimiento.accepted' => 'Debe aceptar los términos de uso y tratamiento de datos personales conforme a la Ley 25.326.',
         ]);
 
         $carreraId = $request->input('carrera_id');
