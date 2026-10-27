@@ -27,9 +27,40 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('profile.update') }}" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8 space-y-6">
+    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8 space-y-6">
         @csrf
         @method('PUT')
+
+        <!-- Fotografía de Perfil Institucional -->
+        <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200/60 flex flex-col sm:flex-row items-center gap-5">
+            <div class="relative group shrink-0">
+                <img id="avatar-preview" src="{{ $user->foto_url }}" alt="{{ $user->nombre }}" class="w-20 h-20 rounded-full object-cover border-2 border-[#dba800] shadow-md bg-white">
+            </div>
+            <div class="flex-1 text-center sm:text-left space-y-1.5">
+                <label class="block text-xs font-bold text-gray-700 uppercase">
+                    Fotografía de Perfil Institucional
+                </label>
+                <p class="text-[11px] text-gray-500">
+                    Tu fotografía se utilizará en la barra superior y en la portada del LIA. Formatos admitidos: JPG, PNG, WEBP (hasta 2 MB).
+                </p>
+                <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                    <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 shadow-sm transition-all">
+                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span>Subir o Cambiar Foto</span>
+                        <input type="file" name="foto" id="foto" accept="image/*" class="hidden" onchange="previewAvatar(event)">
+                    </label>
+                    @if($user->foto_path)
+                        <label class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg text-xs font-bold text-rose-700 cursor-pointer transition-all">
+                            <input type="checkbox" name="eliminar_foto" value="1" class="rounded border-rose-300 text-rose-600 focus:ring-rose-500 w-3.5 h-3.5">
+                            <span>Quitar foto</span>
+                        </label>
+                    @endif
+                </div>
+                @error('foto')
+                    <p class="text-red-500 text-xs mt-1 font-semibold">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
 
         <!-- Identidad y Credenciales de Acceso -->
         <div class="bg-gray-50/70 p-4 rounded-xl border border-gray-200/80 space-y-4">
@@ -173,4 +204,20 @@
         </div>
     </form>
 </div>
+
+<script>
+    function previewAvatar(event) {
+        const input = event.target;
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('avatar-preview');
+                if (preview) {
+                    preview.src = e.target.result;
+                }
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
 @endsection

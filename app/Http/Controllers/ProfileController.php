@@ -52,6 +52,8 @@ class ProfileController extends Controller
             'carrera' => ['nullable', 'string', 'max:100'],
             'cargo_id' => ['nullable', 'exists:cargos,id'],
             'cargo_actual' => ['nullable', 'string', 'max:100'],
+            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'eliminar_foto' => ['nullable'],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'direccion' => ['nullable', 'string', 'max:255'],
             'password' => ['nullable', 'string', 'confirmed', Password::defaults()],
@@ -68,6 +70,19 @@ class ProfileController extends Controller
         $user->dni = $validated['dni'] ?? null;
         $user->whatsapp = $validated['whatsapp'] ?? null;
         $user->direccion = $validated['direccion'] ?? null;
+
+        // Gestión de Foto de Perfil
+        if ($request->boolean('eliminar_foto')) {
+            if ($user->foto_path && !str_starts_with($user->foto_path, '/assets/')) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->foto_path);
+            }
+            $user->foto_path = null;
+        } elseif ($request->hasFile('foto')) {
+            if ($user->foto_path && !str_starts_with($user->foto_path, '/assets/')) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->foto_path);
+            }
+            $user->foto_path = $request->file('foto')->store('avatares', 'public');
+        }
 
         if ($request->filled('carrera_id')) {
             $user->carrera_id = $request->carrera_id;
