@@ -26,9 +26,20 @@ class UserController extends Controller
         'Pasante',
     ];
 
-    public function index(): View
+    public function index(Request $request): View
     {
-        $users = Usuario::with(['roles', 'trayectorias'])->paginate(15);
+        $query = Usuario::with(['roles', 'trayectorias'])->orderBy('id', 'desc');
+
+        if ($request->filled('buscar')) {
+            $buscar = $request->buscar;
+            $query->where(function ($q) use ($buscar) {
+                $q->where('nombre', 'like', "%{$buscar}%")
+                  ->orWhere('email', 'like', "%{$buscar}%")
+                  ->orWhere('dni', 'like', "%{$buscar}%");
+            });
+        }
+
+        $users = $query->paginate(20)->withQueryString();
         $roles = Rol::all();
         return view('users.index', compact('users', 'roles'));
     }
@@ -145,20 +156,7 @@ class UserController extends Controller
         }
 
         $id = $user->id;
-        $user->update([
-            'nombre' => "Usuario Anonimizado #{$id}",
-            'email' => "anonimo_{$id}@anonimizado.lia.local",
-            'dni' => null,
-            'whatsapp' => null,
-            'direccion' => null,
-            'fecha_nacimiento' => null,
-            'cargo_actual' => 'Ex-personal (Huella Anonimizada)',
-            'carrera' => null,
-            'activo' => false,
-            'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(32)),
-        ]);
-
-        $user->roles()->detach();
+        $user->anonimizarHuellaDigital();
 
         return redirect()->route('users.index')
             ->with('success', "Se ha borrado la huella digital del usuario #{$id} conforme a la Ley 25.326. Sus datos personales han sido anonimizados de forma irreversible.");

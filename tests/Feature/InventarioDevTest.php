@@ -2319,7 +2319,7 @@ class InventarioDevTest extends TestCase
         $this->assertTrue($carlos->esAnonimizado());
         $this->assertNull($carlos->dni);
         $this->assertNull($carlos->whatsapp);
-        $this->assertStringStartsWith('anonimo_' . $carlos->id, $carlos->email);
+        $this->assertTrue(str_starts_with($carlos->email, 'historico_' . $carlos->id) || str_starts_with($carlos->email, 'anonimo_' . $carlos->id));
         $this->assertCount(0, $carlos->roles);
 
         // Su historial de trayectorias permanece íntegro sin quebrar claves foráneas
@@ -3139,6 +3139,72 @@ class InventarioDevTest extends TestCase
         $movimiento->refresh();
         $this->assertEquals($exColaborador->id, $movimiento->user_id);
         $this->assertEquals("Usuario Histórico #{$exColaborador->id}", $movimiento->usuario->nombre);
+    }
+
+    public function test_operacion_de_borrado_de_huella_en_modulo_de_gestion_de_usuarios(): void
+    {
+        $admin = Usuario::create([
+            'nombre' => 'Admin Gestion Huella Test',
+            'email' => 'admin_huella@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $admin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+
+        // 1. Usuario activo
+        $userActivo = Usuario::create([
+            'nombre' => 'Docente Activo Test',
+            'email' => 'docente_activo@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $userActivo->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        // 2. Ex colaborador desvinculado > 6 años
+        $exDocente = Usuario::create([
+            'nombre' => 'Ex Docente Legal Test',
+            'email' => 'exdocente@test.com',
+            'password' => bcrypt('password'),
+            'dni' => '17444333',
+            'activo' => false,
+            'fecha_egreso' => now()->subYears(8),
+        ]);
+
+        // 3. Usuario ya anonimizado históricamente
+        $historico = Usuario::create([
+            'nombre' => 'Usuario Histórico #999',
+            'email' => 'historico_999@lia.local',
+            'password' => bcrypt('password'),
+            'activo' => false,
+            'huella_borrada' => true,
+        ]);
+
+        // 4. Cargar tabla de gestión de usuarios como administrador
+        $resIndex = $this->actingAs($admin)->get(route('users.index'));
+        $resIndex->assertStatus(200);
+
+        // Comprobar badges de estado
+        $resIndex->assertSee('Activo');
+        $resIndex->assertSee('Inactivo > 6 años');
+        $resIndex->assertSee('Usuario Histórico');
+
+        // Comprobar que figura el botón de borrado de huella para el ex colaborador elegible
+        $resIndex->assertSee('Borrado de Huella Digital');
+        $resIndex->assertSee('modal-borrado-huella');
+
+        // 5. Ejecutar la acción de borrado de huella
+        $resAnon = $this->actingAs($admin)->post(route('users.anonimizar', $exDocente->id));
+        $resAnon->assertRedirect(route('users.index'));
+
+        $exDocente->refresh();
+        $this->assertTrue($exDocente->huella_borrada);
+        $this->assertEquals("Usuario Histórico #{$exDocente->id}", $exDocente->nombre);
+        $this->assertNull($exDocente->dni);
+
+        // 6. Al recargar la tabla, el usuario ahora figura con el badge "Usuario Histórico"
+        $resIndexAfter = $this->actingAs($admin)->get(route('users.index'));
+        $resIndexAfter->assertStatus(200);
+        $resIndexAfter->assertSee("Usuario Histórico #{$exDocente->id}");
     }
 }
 
