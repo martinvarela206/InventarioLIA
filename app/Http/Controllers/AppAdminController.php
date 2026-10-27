@@ -268,7 +268,9 @@ class AppAdminController extends Controller
     public function personalIndex(): View
     {
         $personal = PersonalLia::with('user.cargo')->orderBy('orden')->orderBy('id')->get();
+        $asignadosIds = $personal->pluck('user_id')->filter()->values();
         $usuarios = Usuario::where('activo', true)
+            ->whereNotIn('id', $asignadosIds)
             ->with('cargo')
             ->orderBy('nombre')
             ->get();
@@ -278,7 +280,7 @@ class AppAdminController extends Controller
     public function personalStore(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'user_id' => 'nullable|exists:usuarios,id',
+            'user_id' => 'nullable|exists:usuarios,id|unique:personal_lia,user_id',
             'nombre' => 'nullable|string|max:150|required_without:user_id',
             'cargo' => 'nullable|string|max:150|required_without:user_id',
             'comentario' => 'nullable|string|max:1000',
@@ -286,6 +288,8 @@ class AppAdminController extends Controller
             'foto' => 'nullable|image|max:4096',
             'foto_url' => 'nullable|string|max:255',
             'orden' => 'nullable|integer',
+        ], [
+            'user_id.unique' => 'Este usuario ya se encuentra registrado y destacado en el personal del LIA.',
         ]);
 
         $fotoPath = $validated['foto_url'] ?? null;
@@ -312,7 +316,7 @@ class AppAdminController extends Controller
     public function personalUpdate(Request $request, PersonalLia $personal): RedirectResponse
     {
         $validated = $request->validate([
-            'user_id' => 'nullable|exists:usuarios,id',
+            'user_id' => 'nullable|exists:usuarios,id|unique:personal_lia,user_id,' . $personal->id,
             'nombre' => 'nullable|string|max:150|required_without:user_id',
             'cargo' => 'nullable|string|max:150|required_without:user_id',
             'comentario' => 'nullable|string|max:1000',
@@ -321,6 +325,8 @@ class AppAdminController extends Controller
             'foto_url' => 'nullable|string|max:255',
             'orden' => 'nullable|integer',
             'activo' => 'nullable|boolean',
+        ], [
+            'user_id.unique' => 'Este usuario ya se encuentra registrado y destacado en el personal del LIA.',
         ]);
 
         $data = [
