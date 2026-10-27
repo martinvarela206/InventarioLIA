@@ -74,8 +74,18 @@
                                 </option>
                             @endforeach
                         </select>
-                        <p class="text-[11px] text-amber-900 mt-1 leading-snug">
-                            Si seleccionas un usuario, su nombre, foto de perfil oficial y cargo institucional se sincronizarán dinámicamente en la portada.
+
+                        <!-- Preview visual del usuario seleccionado -->
+                        <div id="selected_user_preview" class="hidden mt-2.5 p-2 bg-white rounded-lg border border-amber-300 flex items-center gap-2.5 shadow-xs">
+                            <img id="selected_user_preview_img" src="/assets/placeholder-user.png" alt="Avatar" class="w-8 h-8 rounded-full object-cover border border-amber-400">
+                            <div class="min-w-0 flex-1">
+                                <p id="selected_user_preview_text" class="text-xs font-bold text-gray-900 truncate"></p>
+                                <span class="text-[10px] text-emerald-700 font-bold block">✓ Se sincronizará foto, cargo y nombre oficial</span>
+                            </div>
+                        </div>
+
+                        <p class="text-[11px] text-amber-900 mt-1.5 leading-snug">
+                            Los usuarios ya destacados no figuran en la lista para prevenir duplicados.
                         </p>
                     </div>
 
@@ -202,28 +212,41 @@ document.addEventListener('DOMContentLoaded', function () {
 
     userSelect.addEventListener('change', function () {
         const selectedOpt = userSelect.options[userSelect.selectedIndex];
+        const previewContainer = document.getElementById('selected_user_preview');
+        const previewImg = document.getElementById('selected_user_preview_img');
+        const previewText = document.getElementById('selected_user_preview_text');
+
         if (userSelect.value) {
-            // Usuario del sistema seleccionado
+            // Usuario del sistema seleccionado: campos opcionales para override
             inputNombre.required = false;
             inputCargo.required = false;
             nombreReqLabel.style.display = 'none';
             cargoReqLabel.style.display = 'none';
 
-            if (selectedOpt.dataset.nombre && !inputNombre.value) {
-                inputNombre.value = selectedOpt.dataset.nombre;
-            }
-            if (selectedOpt.dataset.cargo && !inputCargo.value) {
-                inputCargo.value = selectedOpt.dataset.cargo;
-            }
-            if (selectedOpt.dataset.email && !inputEmail.value) {
-                inputEmail.value = selectedOpt.dataset.email;
+            // Actualización reactiva instantánea: SIEMPRE actualiza los datos al alternar entre usuarios
+            inputNombre.value = selectedOpt.dataset.nombre || '';
+            inputCargo.value = selectedOpt.dataset.cargo || '';
+            inputEmail.value = selectedOpt.dataset.email || '';
+
+            if (previewContainer && previewImg && previewText) {
+                previewImg.src = selectedOpt.dataset.foto || '/assets/placeholder-user.png';
+                previewText.textContent = `${selectedOpt.dataset.nombre} (${selectedOpt.dataset.cargo || 'Sin cargo'})`;
+                previewContainer.classList.remove('hidden');
             }
         } else {
-            // Manual
+            // Manual / Desvinculado
             inputNombre.required = true;
             inputCargo.required = true;
             nombreReqLabel.style.display = 'inline';
             cargoReqLabel.style.display = 'inline';
+
+            inputNombre.value = '';
+            inputCargo.value = '';
+            inputEmail.value = '';
+
+            if (previewContainer) {
+                previewContainer.classList.add('hidden');
+            }
         }
     });
 });
