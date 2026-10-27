@@ -29,11 +29,14 @@ class RegisterController extends Controller
             'dni' => ['nullable', 'string', 'max:15', 'unique:usuarios'],
             'carrera_id' => ['nullable', 'exists:carreras,id'],
             'cargo_id' => ['nullable', 'exists:cargos,id'],
+            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
             'terminos_consentimiento' => ['accepted'],
         ], [
             'terminos_consentimiento.accepted' => 'Debe aceptar los términos de uso y tratamiento de datos personales conforme a la Ley 25.326.',
         ]);
+
+        $fotoPath = $request->hasFile('foto') ? $request->file('foto')->store('avatares', 'public') : null;
 
         $user = Usuario::create([
             'nombre' => $request->nombre,
@@ -41,6 +44,7 @@ class RegisterController extends Controller
             'dni' => $request->dni,
             'carrera_id' => $request->carrera_id,
             'cargo_id' => $request->cargo_id,
+            'foto_path' => $fotoPath,
             'password' => Hash::make($request->password),
             'activo' => false, // Requiere aprobación de user_admin
         ]);
