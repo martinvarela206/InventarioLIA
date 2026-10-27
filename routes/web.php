@@ -113,6 +113,14 @@ Route::middleware('auth')->group(function () {
             Route::get('/reportes/{tipo}/export-csv', [ReporteController::class, 'exportCsv'])->name('reportes.exportCsv');
         });
 
+        // Módulo de Auditorías Físicas de Ubicación y Archivo Histórico
+        Route::middleware('role:rev,subtec,tec,item_admin,user_admin,app_admin')->group(function () {
+            Route::get('/auditorias', [\App\Http\Controllers\AuditoriaController::class, 'index'])->name('auditorias.index');
+            Route::post('/auditorias', [\App\Http\Controllers\AuditoriaController::class, 'store'])->name('auditorias.store');
+            Route::post('/auditorias/{auditoria}/detalle', [\App\Http\Controllers\AuditoriaController::class, 'guardarDetalle'])->name('auditorias.guardarDetalle');
+            Route::post('/auditorias/{auditoria}/finalizar', [\App\Http\Controllers\AuditoriaController::class, 'finalizar'])->name('auditorias.finalizar');
+        });
+
         // API de Atributos por Tipo
         Route::get('/api/tipos/{tipo}/atributos', [\App\Http\Controllers\TipoController::class, 'apiAtributosPorTipo'])->name('api.tipos.atributos');
 

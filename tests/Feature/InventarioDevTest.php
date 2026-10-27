@@ -2657,7 +2657,102 @@ class InventarioDevTest extends TestCase
         $resShow->assertSee('Banco 03');
         $resShow->assertSee('Movimiento #' . $movimientoGenerado->id);
     }
+
+    public function test_arquitectura_datos_y_persistencia_incremental_de_auditorias(): void
+    {
+        $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+        $rolReg = Rol::firstOrCreate(['rol' => 'registered']);
+
+        $auditor = Usuario::create([
+            'email' => 'auditor_test@lia.com',
+            'nombre' => 'Auditor Salas',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $auditor->roles()->sync([$rolReg->id, $rolRev->id]);
+
+        $tipo = \App\Models\Tipo::first();
+        $sala = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Sistemas']);
+
+        $elemento1 = \App\Models\Elemento::create([
+            'nro_lia' => 'LIA-AUD-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'OptiPlex',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        $elemento2 = \App\Models\Elemento::create([
+            'nro_lia' => 'LIA-AUD-02',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'OptiPlex',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        // 1. Iniciar sesión de auditoría en progreso
+        $resStore = $this->actingAs($auditor)->postJson(route('auditorias.store'), [
+            'ubicacion_id' => $sala->id,
+            'observaciones' => 'Auditoría semestral física de puestos',
+        ]);
+        $resStore->assertStatus(200);
+        $resStore->assertJson(['success' => true]);
+
+        $auditoria = \App\Models\Auditoria::where('ubicacion_id', $sala->id)->where('estado', 'en_progreso')->first();
+        $this->assertNotNull($auditoria);
+        $this->assertEquals('en_progreso', $auditoria->estado);
+
+        // 2. Guardado incremental del primer puesto: OK
+        $resDetalle1 = $this->actingAs($auditor)->postJson(route('auditorias.guardarDetalle', $auditoria->id), [
+            'puesto' => 'Puesto 01',
+            'elemento_id' => $elemento1->id,
+            'estado' => 'ok',
+        ]);
+        $resDetalle1->assertStatus(200);
+        $resDetalle1->assertJson([
+            'success' => true,
+            'totales' => [
+                'total_auditados' => 1,
+                'total_ok' => 1,
+                'total_inconsistencias' => 0,
+            ],
+        ]);
+
+        // 3. Guardado incremental del segundo puesto: Inconsistencia (Rotura)
+        $resDetalle2 = $this->actingAs($auditor)->postJson(route('auditorias.guardarDetalle', $auditoria->id), [
+            'puesto' => 'Puesto 02',
+            'elemento_id' => $elemento2->id,
+            'estado' => 'inconsistencia',
+            'tipo_discrepancia' => 'rotura',
+            'observaciones' => 'Pantalla rota y cable de poder desprendido',
+        ]);
+        $resDetalle2->assertStatus(200);
+        $resDetalle2->assertJson([
+            'success' => true,
+            'totales' => [
+                'total_auditados' => 2,
+                'total_ok' => 1,
+                'total_inconsistencias' => 1,
+            ],
+        ]);
+
+        // 4. Finalizar sesión de auditoría
+        $resFinalizar = $this->actingAs($auditor)->postJson(route('auditorias.finalizar', $auditoria->id));
+        $resFinalizar->assertStatus(200);
+        $resFinalizar->assertJson(['success' => true]);
+
+        $auditoria->refresh();
+        $this->assertEquals('finalizada', $auditoria->estado);
+        $this->assertEquals(2, $auditoria->total_auditados);
+        $this->assertEquals(1, $auditoria->total_ok);
+        $this->assertEquals(1, $auditoria->total_inconsistencias);
+    }
 }
+
 
 
 
