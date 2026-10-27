@@ -53,21 +53,33 @@ class PersonalLia extends Model
 
     public function getNombreAttribute(?string $value): string
     {
+        if ($this->user_id && $this->resolved_user) {
+            return $this->resolved_user->nombre;
+        }
         return $value ?: ($this->resolved_user?->nombre ?? 'Personal del LIA');
     }
 
     public function getCargoAttribute(?string $value): string
     {
+        if ($this->user_id && $this->resolved_user) {
+            return $this->resolved_user->cargo_actual ?: ($this->resolved_user->cargo?->nombre ?? 'Miembro del LIA');
+        }
         return $value ?: ($this->resolved_user?->cargo_actual ?? 'Miembro del LIA');
     }
 
     public function getEmailAttribute(?string $value): ?string
     {
+        if ($this->user_id && $this->resolved_user) {
+            return $this->resolved_user->email;
+        }
         return $value ?: $this->resolved_user?->email;
     }
 
     public function getFotoUrlAttribute(): string
     {
+        if ($this->user_id && $this->resolved_user) {
+            return $this->resolved_user->foto_url;
+        }
         if ($this->foto_path) {
             if (str_starts_with($this->foto_path, 'http://') || str_starts_with($this->foto_path, 'https://') || str_starts_with($this->foto_path, '/assets/')) {
                 return $this->foto_path;
@@ -75,7 +87,7 @@ class PersonalLia extends Model
             return asset($this->foto_path);
         }
         $user = $this->resolved_user;
-        if ($user && $user->foto_path) {
+        if ($user) {
             return $user->foto_url;
         }
         return asset('assets/placeholder-user.png');

@@ -292,6 +292,8 @@ class AppAdminController extends Controller
             'user_id.unique' => 'Este usuario ya se encuentra registrado y destacado en el personal del LIA.',
         ]);
 
+        $esUsuarioVinculado = !empty($validated['user_id']);
+
         $fotoPath = $validated['foto_url'] ?? null;
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('personal', 'public');
@@ -300,11 +302,11 @@ class AppAdminController extends Controller
 
         PersonalLia::create([
             'user_id' => $validated['user_id'] ?? null,
-            'nombre' => $validated['nombre'] ?? null,
-            'cargo' => $validated['cargo'] ?? null,
+            'nombre' => $esUsuarioVinculado ? null : ($validated['nombre'] ?? null),
+            'cargo' => $esUsuarioVinculado ? null : ($validated['cargo'] ?? null),
             'comentario' => $validated['comentario'] ?? null,
-            'email' => $validated['email'] ?? null,
-            'foto_path' => $fotoPath,
+            'email' => $esUsuarioVinculado ? null : ($validated['email'] ?? null),
+            'foto_path' => $esUsuarioVinculado ? null : $fotoPath,
             'orden' => $validated['orden'] ?? (PersonalLia::max('orden') + 1),
             'activo' => true,
         ]);
@@ -329,21 +331,27 @@ class AppAdminController extends Controller
             'user_id.unique' => 'Este usuario ya se encuentra registrado y destacado en el personal del LIA.',
         ]);
 
+        $esUsuarioVinculado = !empty($validated['user_id']);
+
         $data = [
             'user_id' => $validated['user_id'] ?? null,
-            'nombre' => $validated['nombre'] ?? null,
-            'cargo' => $validated['cargo'] ?? null,
+            'nombre' => $esUsuarioVinculado ? null : ($validated['nombre'] ?? null),
+            'cargo' => $esUsuarioVinculado ? null : ($validated['cargo'] ?? null),
             'comentario' => $validated['comentario'] ?? null,
-            'email' => $validated['email'] ?? null,
+            'email' => $esUsuarioVinculado ? null : ($validated['email'] ?? null),
             'orden' => $validated['orden'] ?? $personal->orden,
             'activo' => $request->has('activo'),
         ];
 
-        if ($request->hasFile('foto')) {
-            $path = $request->file('foto')->store('personal', 'public');
-            $data['foto_path'] = '/storage/' . $path;
-        } elseif (!empty($validated['foto_url'])) {
-            $data['foto_path'] = $validated['foto_url'];
+        if ($esUsuarioVinculado) {
+            $data['foto_path'] = null;
+        } else {
+            if ($request->hasFile('foto')) {
+                $path = $request->file('foto')->store('personal', 'public');
+                $data['foto_path'] = '/storage/' . $path;
+            } elseif (!empty($validated['foto_url'])) {
+                $data['foto_path'] = $validated['foto_url'];
+            }
         }
 
         $personal->update($data);
