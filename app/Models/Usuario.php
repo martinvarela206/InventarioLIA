@@ -27,6 +27,9 @@ class Usuario extends Authenticatable
         'whatsapp',
         'direccion',
         'activo',
+        'fecha_egreso',
+        'huella_borrada',
+        'anonimizado_el',
     ];
 
     protected $hidden = [
@@ -37,7 +40,14 @@ class Usuario extends Authenticatable
     protected $casts = [
         'password' => 'hashed',
         'fecha_nacimiento' => 'date',
+        'fecha_egreso' => 'date',
         'activo' => 'boolean',
+        'huella_borrada' => 'boolean',
+        'anonimizado_el' => 'datetime',
+    ];
+
+    protected $attributes = [
+        'huella_borrada' => false,
     ];
 
     public function roles(): BelongsToMany
@@ -60,12 +70,24 @@ class Usuario extends Authenticatable
         return $this->hasMany(UsuarioTrayectoria::class, 'user_id')->orderBy('fecha_inicio', 'desc');
     }
 
+    /**
+     * Verifica si el usuario es ex colaborador con más de 6 años desde su desvinculación laboral.
+     */
     public function isExPersonalMayor6Anios(): bool
     {
         if ($this->activo) {
             return false;
         }
 
+        // 1. Verificación directa por fecha_egreso
+        if ($this->fecha_egreso) {
+            $fechaEgreso = $this->fecha_egreso instanceof \Carbon\Carbon ? $this->fecha_egreso : \Carbon\Carbon::parse($this->fecha_egreso);
+            if ($fechaEgreso->diffInYears(now()) >= 6) {
+                return true;
+            }
+        }
+
+        // 2. Verificación por historial de trayectorias
         if ($this->relationLoaded('trayectorias')) {
             $ultima = $this->trayectorias->whereNotNull('fecha_fin')->sortByDesc('fecha_fin')->first();
         } else {
@@ -80,9 +102,48 @@ class Usuario extends Authenticatable
         return false;
     }
 
+    /**
+     * Realiza el borrado irreversible de la huella digital y datos protegidos (Ley 25.326).
+     * Preserva el ID del usuario para garantizar la trazabilidad forense de movimientos,
+     * tickets y auditorías en el sistema patrimonial.
+     */
+    public function anonimizarHuellaDigital(): bool
+    {
+        $id = $this->id;
+
+        $this->dni = null;
+        $this->whatsapp = null;
+        $this->direccion = null;
+        $this->fecha_nacimiento = null;
+        $this->carrera = null;
+        $this->carrera_id = null;
+        $this->cargo_actual = 'Ex Colaborador Histórico';
+        $this->nombre = "Usuario Histórico #{$id}";
+        $this->email = "historico_{$id}@lia.local";
+        $this->password = bcrypt(\Illuminate\Support\Str::random(40));
+        $this->remember_token = null;
+        $this->activo = false;
+        $this->huella_borrada = true;
+        $this->anonimizado_el = now();
+
+        // Revocar roles de gestión si tuviese asociados
+        $this->roles()->detach();
+
+        return $this->save();
+    }
+
     public function esAnonimizado(): bool
     {
-        return str_starts_with((string)$this->email, 'anonimo_') || str_starts_with((string)$this->nombre, 'Usuario Anonimizado');
+        return (bool)$this->huella_borrada
+            || str_starts_with((string)$this->email, 'historico_')
+            || str_starts_with((string)$this->email, 'anonimo_')
+            || str_starts_with((string)$this->nombre, 'Usuario Histórico')
+            || str_starts_with((string)$this->nombre, 'Usuario Anonimizado');
+    }
+
+    public function esHistorico(): bool
+    {
+        return $this->esAnonimizado();
     }
 
     public function hasRole(string|array $role): bool

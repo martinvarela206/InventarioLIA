@@ -3074,6 +3074,72 @@ class InventarioDevTest extends TestCase
         $resBienvenida->assertSee('Consejo Activo de Prueba Ciberseguridad');
         $resBienvenida->assertDontSee('Aviso Oculto Desactivado Test');
     }
+
+    public function test_soporte_bd_y_modelo_para_borrado_de_huella_digital_y_usuarios_historicos(): void
+    {
+        // 1. Crear usuario desvinculado hace 7 años con datos personales sensibles
+        $exColaborador = Usuario::create([
+            'nombre' => 'Juan Perez Historico',
+            'email' => 'juan.perez@lia.com',
+            'password' => bcrypt('password123'),
+            'dni' => '28999111',
+            'fecha_nacimiento' => '1982-03-15',
+            'carrera' => 'Licenciatura en Computación',
+            'cargo_actual' => 'Ayudante Técnico',
+            'whatsapp' => '+5492641122334',
+            'direccion' => 'Av. Ignacio de la Roza 590',
+            'activo' => false,
+            'fecha_egreso' => now()->subYears(7),
+        ]);
+        $exColaborador->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        // 2. Asociar movimiento de inventario histórico para verificar integridad referencial
+        $tipo = Tipo::firstOrCreate(['nombre' => 'Gabinete Test'], ['categoria' => 'equipo']);
+        $elemento = Elemento::create(['tipo_id' => $tipo->id, 'modelo' => 'Server Torre HP', 'nro_serie' => 'HP-7711']);
+        $lab = Ubicacion::firstOrCreate(['nombre' => 'Sala Servidores Hist'], ['descripcion' => 'Rack']);
+
+        $movimiento = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'alta',
+            'ubicacion_id' => $lab->id,
+            'user_id' => $exColaborador->id,
+            'fecha' => now()->subYears(7),
+            'solicitante' => 'Juan Perez Historico',
+            'comentario' => 'Alta histórica de equipamiento',
+        ]);
+
+        // 3. Verificar detección automática de ex personal > 6 años (Ley 25.326)
+        $this->assertTrue($exColaborador->isExPersonalMayor6Anios());
+        $this->assertFalse($exColaborador->huella_borrada);
+        $this->assertFalse($exColaborador->esAnonimizado());
+
+        // 4. Ejecutar el borrado irreversible de la huella digital
+        $resultado = $exColaborador->anonimizarHuellaDigital();
+        $this->assertTrue($resultado);
+
+        // 5. Verificar blanqueo de campos sensibles y preservación de ID
+        $exColaborador->refresh();
+        $this->assertEquals("Usuario Histórico #{$exColaborador->id}", $exColaborador->nombre);
+        $this->assertEquals("historico_{$exColaborador->id}@lia.local", $exColaborador->email);
+        $this->assertNull($exColaborador->dni);
+        $this->assertNull($exColaborador->whatsapp);
+        $this->assertNull($exColaborador->direccion);
+        $this->assertNull($exColaborador->fecha_nacimiento);
+        $this->assertNull($exColaborador->carrera);
+        $this->assertNull($exColaborador->carrera_id);
+        $this->assertEquals('Ex Colaborador Histórico', $exColaborador->cargo_actual);
+        $this->assertTrue($exColaborador->huella_borrada);
+        $this->assertNotNull($exColaborador->anonimizado_el);
+        $this->assertFalse($exColaborador->activo);
+        $this->assertTrue($exColaborador->esAnonimizado());
+        $this->assertTrue($exColaborador->esHistorico());
+        $this->assertCount(0, $exColaborador->roles);
+
+        // 6. Integridad de trazabilidad en movimientos preservada
+        $movimiento->refresh();
+        $this->assertEquals($exColaborador->id, $movimiento->user_id);
+        $this->assertEquals("Usuario Histórico #{$exColaborador->id}", $movimiento->usuario->nombre);
+    }
 }
 
 
