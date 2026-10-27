@@ -675,7 +675,7 @@ class InventarioDevTest extends TestCase
         $responseWelcome->assertSee('Concurso de Programación Competitiva LIA');
         $responseWelcome->assertSee('Lo que Ofrece el LIA');
         $responseWelcome->assertSee('Gestión de Tickets');
-        $responseWelcome->assertSee('Próximamente');
+        $responseWelcome->assertDontSee('Próximamente');
     }
 
     public function test_usuario_sin_rol_app_admin_es_bloqueado_de_la_configuracion(): void

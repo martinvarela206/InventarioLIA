@@ -5,20 +5,13 @@
             <h3 class="text-white font-bold text-4xl leading-tight mb-3">Gestiona el Inventario y Tickets de Incidencias del LIA de manera segura y ordenada.</h3>
             <h3 class="text-white font-bold text-4xl leading-tight mb-3">¡Todo bajo control!</h3>
             
-            <div class="flex gap-4 sm:gap-6 justify-center my-4 flex-wrap">
-                @auth
+            @auth
+                <div class="flex gap-4 sm:gap-6 justify-start my-4 flex-wrap">
                     <a href="{{ Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida') }}" class="bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-6 py-3 rounded-xl shadow-lg transition-all text-sm">
                         Ir al Panel
                     </a>
-                @else
-                    <a href="{{ route('login') }}" class="bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-6 py-3 rounded-xl shadow-lg transition-all text-sm">
-                        Iniciar Sesión
-                    </a>
-                    <a href="{{ route('register') }}" class="bg-[#111] hover:bg-black/85 text-[#fbc101] font-extrabold px-6 py-3 rounded-xl shadow-lg transition-all text-sm border border-black/20">
-                        Registrarse
-                    </a>
-                @endauth
-            </div>
+                </div>
+            @endauth
         </div>
     </div>
 </section>
