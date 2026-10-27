@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PersonalLia extends Model
 {
@@ -13,11 +14,7 @@ class PersonalLia extends Model
 
     protected $fillable = [
         'user_id',
-        'nombre',
-        'cargo',
         'comentario',
-        'email',
-        'foto_path',
         'orden',
         'activo',
     ];
@@ -25,76 +22,51 @@ class PersonalLia extends Model
     protected $casts = [
         'activo' => 'boolean',
         'orden' => 'integer',
+        'user_id' => 'integer',
     ];
 
-    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(Usuario::class, 'user_id');
     }
 
-    public function usuario(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function usuario(): BelongsTo
     {
         return $this->user();
     }
 
-    public function getResolvedUserAttribute(): ?Usuario
+    public function getNombreAttribute(): string
     {
-        if ($this->relationLoaded('user') && $this->user) {
-            return $this->user;
-        }
-        if ($this->user_id) {
-            return $this->user;
-        }
-        if ($this->email) {
-            return Usuario::where('email', $this->email)->first();
-        }
-        return null;
+        return $this->user?->nombre ?? 'Personal del LIA';
     }
 
-    public function getNombreAttribute(?string $value): string
+    public function getCargoAttribute(): string
     {
-        if ($this->user_id && $this->resolved_user) {
-            return $this->resolved_user->nombre;
-        }
-        return $value ?: ($this->resolved_user?->nombre ?? 'Personal del LIA');
+        return $this->user?->cargo_actual ?: ($this->user?->cargo?->nombre ?? 'Miembro del LIA');
     }
 
-    public function getCargoAttribute(?string $value): string
+    public function getEmailAttribute(): ?string
     {
-        if ($this->user_id && $this->resolved_user) {
-            return $this->resolved_user->cargo_actual ?: ($this->resolved_user->cargo?->nombre ?? 'Miembro del LIA');
-        }
-        return $value ?: ($this->resolved_user?->cargo_actual ?? 'Miembro del LIA');
-    }
-
-    public function getEmailAttribute(?string $value): ?string
-    {
-        if ($this->user_id && $this->resolved_user) {
-            return $this->resolved_user->email;
-        }
-        return $value ?: $this->resolved_user?->email;
+        return $this->user?->email;
     }
 
     public function getFotoUrlAttribute(): string
     {
-        if ($this->user_id && $this->resolved_user) {
-            return $this->resolved_user->foto_url;
-        }
-        if ($this->foto_path) {
-            if (str_starts_with($this->foto_path, 'http://') || str_starts_with($this->foto_path, 'https://') || str_starts_with($this->foto_path, '/assets/')) {
-                return $this->foto_path;
-            }
-            return asset($this->foto_path);
-        }
-        $user = $this->resolved_user;
-        if ($user) {
-            return $user->foto_url;
-        }
-        return asset('assets/placeholder-user.png');
+        return $this->user?->foto_url ?? asset('assets/placeholder-user.png');
     }
 
+    /**
+     * Scope para figuras activas en portada:
+     * Requiere que el registro en personal_lia esté activo, y que el usuario esté activo y NO tenga huella borrada.
+     */
     public function scopeActivos($query)
     {
-        return $query->where('activo', true)->orderBy('orden')->orderBy('id');
+        return $query->where('personal_lia.activo', true)
+            ->whereHas('user', function ($q) {
+                $q->where('activo', true)
+                  ->where('huella_borrada', false);
+            })
+            ->orderBy('orden')
+            ->orderBy('id');
     }
 }
