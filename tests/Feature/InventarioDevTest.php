@@ -3522,6 +3522,74 @@ class InventarioDevTest extends TestCase
         $this->assertEquals($carrera->nombre, $postulante->carrera);
         $this->assertEquals('Investigador Principal Senior LIA', $postulante->cargo_actual);
     }
+
+    public function test_gestion_de_foto_de_perfil_en_usuario_registro_y_landing_page(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        // 1. Fallback por defecto a placeholder
+        $usuario = Usuario::create([
+            'nombre' => 'Colaborador Fotogénico',
+            'email' => 'fotogenico@lia.com',
+            'password' => bcrypt('password123'),
+            'activo' => true,
+        ]);
+        $usuario->roles()->attach(Rol::where('rol', 'registered')->first());
+        $this->assertStringContainsString('placeholder-user.png', $usuario->foto_url);
+
+        // 2. Subida de foto en profile.update
+        $file = \Illuminate\Http\UploadedFile::fake()->create('mi_foto.jpg', 150, 'image/jpeg');
+
+        $resUpdate = $this->actingAs($usuario)->put(route('profile.update'), [
+            'nombre' => 'Colaborador Fotogénico',
+            'foto' => $file,
+        ]);
+        $resUpdate->assertRedirect(route('profile.edit'));
+
+        $usuario->refresh();
+        $this->assertNotNull($usuario->foto_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($usuario->foto_path);
+        $this->assertStringContainsString('storage/' . $usuario->foto_path, $usuario->foto_url);
+
+        // 3. Navbar muestra el avatar fotográfico
+        $resNavbar = $this->actingAs($usuario)->get(route('profile.edit'));
+        $resNavbar->assertStatus(200);
+        $resNavbar->assertSee($usuario->foto_url, false);
+
+        // 4. PersonalLia resuelve la foto del usuario por correo
+        $personal = \App\Models\PersonalLia::create([
+            'nombre' => 'Colaborador Fotogénico',
+            'cargo' => 'Docente Investigador',
+            'email' => 'fotogenico@lia.com',
+            'foto_path' => null,
+            'orden' => 10,
+            'activo' => true,
+        ]);
+        $this->assertEquals($usuario->foto_url, $personal->foto_url);
+
+        // 5. Eliminar foto voluntariamente en perfil
+        $fotoGuardada = $usuario->foto_path;
+        $resDeletePhoto = $this->actingAs($usuario)->put(route('profile.update'), [
+            'nombre' => 'Colaborador Fotogénico',
+            'eliminar_foto' => '1',
+        ]);
+        $resDeletePhoto->assertRedirect(route('profile.edit'));
+
+        $usuario->refresh();
+        $this->assertNull($usuario->foto_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing($fotoGuardada);
+        $this->assertStringContainsString('placeholder-user.png', $usuario->foto_url);
+
+        // 6. Anonimización por Ley 25.326 purga la foto física si existiese
+        $file2 = \Illuminate\Http\UploadedFile::fake()->create('foto_legajo.png', 120, 'image/png');
+        $usuario->update([
+            'foto_path' => $file2->store('avatares', 'public')
+        ]);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($usuario->foto_path);
+
+        $usuario->anonimizarHuellaDigital();
+        $this->assertNull($usuario->foto_path);
+    }
 }
 
 
