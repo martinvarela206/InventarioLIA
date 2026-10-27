@@ -3642,6 +3642,17 @@ class InventarioDevTest extends TestCase
         $this->assertEquals('rvalenzuela@lia.unsj.edu.ar', $personal->email);
         $this->assertEquals('/assets/flavia.png', $personal->foto_url);
 
+        // 2.b. Prevención de duplicados: El usuario ya asignado no debe figurar en el dropdown de nuevo personal
+        $resPersonalViewAfter = $this->actingAs($appAdmin)->get(route('app_admin.personal'));
+        $resPersonalViewAfter->assertDontSee('<option value="' . $investigador->id . '"', false);
+
+        // 2.c. Intento de re-asignar el mismo usuario es rechazado por regla unique
+        $resStoreDuplicate = $this->actingAs($appAdmin)->post(route('app_admin.personal.store'), [
+            'user_id' => $investigador->id,
+        ]);
+        $resStoreDuplicate->assertSessionHasErrors(['user_id']);
+        $this->assertEquals(1, \App\Models\PersonalLia::where('user_id', $investigador->id)->count());
+
         // 3. Landing page renderiza los datos en vivo derivados del usuario
         $resLanding = $this->get('/');
         $resLanding->assertStatus(200);
