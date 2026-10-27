@@ -175,6 +175,13 @@ Route::middleware('auth')->group(function () {
             Route::put('/app-admin/reportes/{reporte}', [AppAdminController::class, 'reporteUpdate'])->name('app_admin.reportes.update');
             Route::match(['post', 'patch'], '/app-admin/reportes/{reporte}/toggle', [AppAdminController::class, 'reporteToggle'])->name('app_admin.reportes.toggle');
             Route::delete('/app-admin/reportes/{reporte}', [AppAdminController::class, 'reporteDestroy'])->name('app_admin.reportes.destroy');
+
+            // Avisos de Seguridad y Buenas Prácticas Informáticas (app_admin)
+            Route::get('/app-admin/avisos', [AppAdminController::class, 'avisosIndex'])->name('app_admin.avisos');
+            Route::post('/app-admin/avisos', [AppAdminController::class, 'avisoStore'])->name('app_admin.avisos.store');
+            Route::put('/app-admin/avisos/{aviso}', [AppAdminController::class, 'avisoUpdate'])->name('app_admin.avisos.update');
+            Route::post('/app-admin/avisos/{aviso}/toggle', [AppAdminController::class, 'avisoToggle'])->name('app_admin.avisos.toggle');
+            Route::delete('/app-admin/avisos/{aviso}', [AppAdminController::class, 'avisoDestroy'])->name('app_admin.avisos.destroy');
         });
     });
 });

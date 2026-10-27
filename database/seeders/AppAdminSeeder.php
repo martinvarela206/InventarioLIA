@@ -125,5 +125,45 @@ class AppAdminSeeder extends Seeder
         foreach ($actividades as $act) {
             ActividadLia::firstOrCreate(['titulo' => $act['titulo']], $act);
         }
+
+        // 5. Avisos de Seguridad y Buenas Prácticas Informáticas
+        $avisos = [
+            [
+                'titulo' => 'Protección de Credenciales Institucionales',
+                'descripcion' => 'Nunca compartas tu usuario ni contraseña de Nexo LIA. Utilizá contraseñas robustas y cerrá tu sesión al retirarte de un puesto común del laboratorio.',
+                'severidad' => 'warning',
+                'icono' => 'key',
+                'orden' => 1,
+                'activo' => true,
+            ],
+            [
+                'titulo' => 'Bloqueo de Puesto al Ausentarse',
+                'descripcion' => 'Presioná Win + L o bloqueá la pantalla cada vez que te alejes de tu puesto de trabajo en las salas para evitar accesos no autorizados a tu sesión.',
+                'severidad' => 'tip',
+                'icono' => 'lock',
+                'orden' => 2,
+                'activo' => true,
+            ],
+            [
+                'titulo' => 'Cuidado con Dispositivos USB Externos',
+                'descripcion' => 'Evitá conectar memorias USB de procedencia desconocida en terminales de red del LIA. Escaneá siempre con el antivirus antes de transferir archivos.',
+                'severidad' => 'danger',
+                'icono' => 'usb',
+                'orden' => 3,
+                'activo' => true,
+            ],
+            [
+                'titulo' => 'Reporte Temprano de Incidentes y Anomalías',
+                'descripcion' => 'Si detectás fallas físicas, cables en mal estado, anomalías de software o sospecha de intrusión, abrí un ticket de incidencia de inmediato para el equipo técnico.',
+                'severidad' => 'info',
+                'icono' => 'shield',
+                'orden' => 4,
+                'activo' => true,
+            ],
+        ];
+
+        foreach ($avisos as $av) {
+            \App\Models\AvisoSeguridad::firstOrCreate(['titulo' => $av['titulo']], $av);
+        }
     }
 }

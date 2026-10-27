@@ -2950,6 +2950,79 @@ class InventarioDevTest extends TestCase
         $resShow->assertSee('Auditor Relevador LIA');
         $resShow->assertSee('Imprimir / Exportar a PDF');
     }
+
+    public function test_soporte_bd_y_gestion_crud_de_avisos_de_seguridad_app_admin(): void
+    {
+        $appAdmin = Usuario::create([
+            'nombre' => 'App Admin Avisos Test',
+            'email' => 'admin_avisos@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $appAdmin->roles()->attach(Rol::where('rol', 'app_admin')->first());
+
+        $revisor = Usuario::create([
+            'nombre' => 'Revisor Avisos Test',
+            'email' => 'revisor_avisos@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $revisor->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        // 1. Usuario sin rol app_admin no puede acceder a la gestión de avisos (403)
+        $resForbid = $this->actingAs($revisor)->get(route('app_admin.avisos'));
+        $resForbid->assertStatus(403);
+
+        // 2. Administrador accede correctamente al panel de avisos
+        $resIndex = $this->actingAs($appAdmin)->get(route('app_admin.avisos'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Concientización y Buenas Prácticas Informáticas');
+
+        // 3. Crear un nuevo aviso de seguridad
+        $resStore = $this->actingAs($appAdmin)->post(route('app_admin.avisos.store'), [
+            'titulo' => 'Cierre de Sesión Obligatorio',
+            'descripcion' => 'Nunca dejes tu cuenta de Nexo LIA abierta en computadoras de acceso público.',
+            'severidad' => 'warning',
+            'icono' => 'lock',
+            'orden' => 10,
+            'activo' => 1,
+        ]);
+        $resStore->assertRedirect(route('app_admin.avisos'));
+
+        $this->assertDatabaseHas('avisos_seguridad', [
+            'titulo' => 'Cierre de Sesión Obligatorio',
+            'severidad' => 'warning',
+            'activo' => true,
+        ]);
+
+        $aviso = \App\Models\AvisoSeguridad::where('titulo', 'Cierre de Sesión Obligatorio')->first();
+        $this->assertNotNull($aviso);
+
+        // 4. Actualizar el aviso
+        $resUpdate = $this->actingAs($appAdmin)->put(route('app_admin.avisos.update', $aviso->id), [
+            'titulo' => 'Cierre de Sesión Estricto y Bloqueo',
+            'descripcion' => 'Bloquea la terminal o presiona Win + L inmediatamente al retirarte.',
+            'severidad' => 'danger',
+            'icono' => 'shield',
+            'orden' => 2,
+        ]);
+        $resUpdate->assertRedirect(route('app_admin.avisos'));
+
+        $aviso->refresh();
+        $this->assertEquals('Cierre de Sesión Estricto y Bloqueo', $aviso->titulo);
+        $this->assertEquals('danger', $aviso->severidad);
+        $this->assertEquals(2, $aviso->orden);
+
+        // 5. Toggle de activación / desactivación
+        $resToggle = $this->actingAs($appAdmin)->post(route('app_admin.avisos.toggle', $aviso->id));
+        $aviso->refresh();
+        $this->assertFalse($aviso->activo);
+
+        // 6. Eliminar el aviso
+        $resDestroy = $this->actingAs($appAdmin)->delete(route('app_admin.avisos.destroy', $aviso->id));
+        $resDestroy->assertRedirect(route('app_admin.avisos'));
+        $this->assertDatabaseMissing('avisos_seguridad', ['id' => $aviso->id]);
+    }
 }
 
 
