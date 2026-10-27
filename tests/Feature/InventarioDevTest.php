@@ -3273,6 +3273,57 @@ class InventarioDevTest extends TestCase
         $resUsersAfter->assertStatus(200);
         $resUsersAfter->assertDontSee('Ex Personal Widget Alerta');
     }
+
+    public function test_comando_artisan_de_backup_de_base_de_datos_y_rotacion_de_dumps(): void
+    {
+        $backupDir = storage_path('app/backups_test');
+        \Illuminate\Support\Facades\File::deleteDirectory($backupDir);
+        \Illuminate\Support\Facades\File::makeDirectory($backupDir, 0755, true);
+
+        // 1. Ejecutar el comando de respaldo
+        $exitCode = \Illuminate\Support\Facades\Artisan::call('app:backup-database', [
+            '--keep' => 3,
+            '--path' => $backupDir,
+        ]);
+        $this->assertEquals(0, $exitCode);
+
+        // 2. Verificar que se haya creado el archivo SQL
+        $files = \Illuminate\Support\Facades\File::files($backupDir);
+        $this->assertCount(1, $files);
+
+        $dumpFile = $files[0];
+        $this->assertStringStartsWith('backup_', $dumpFile->getFilename());
+        $this->assertEquals('sql', $dumpFile->getExtension());
+
+        $content = \Illuminate\Support\Facades\File::get($dumpFile->getPathname());
+        $this->assertStringContainsString('Respaldo Automatizado Sistema LIA', $content);
+        $this->assertGreaterThan(50, strlen($content));
+
+        // 3. Probar la rotación automática con límite de 3 archivos
+        // Simular 3 archivos adicionales con marcas de tiempo anteriores
+        for ($i = 1; $i <= 4; $i++) {
+            $dummyPath = $backupDir . DIRECTORY_SEPARATOR . "backup_inventario_lia_2026-01-0{$i}_000000.sql";
+            \Illuminate\Support\Facades\File::put($dummyPath, "-- Dummy dump {$i}");
+            touch($dummyPath, time() - (86400 * (10 - $i)));
+        }
+
+        // Ahora hay 5 archivos en el directorio
+        $this->assertCount(5, \Illuminate\Support\Facades\File::files($backupDir));
+
+        // 4. Volver a ejecutar el comando con rotación --keep=3
+        $exitCodeRotate = \Illuminate\Support\Facades\Artisan::call('app:backup-database', [
+            '--keep' => 3,
+            '--path' => $backupDir,
+        ]);
+        $this->assertEquals(0, $exitCodeRotate);
+
+        // 5. Verificar que se podaron los excedentes y quedaron exactamente 3 archivos
+        $remainingFiles = \Illuminate\Support\Facades\File::files($backupDir);
+        $this->assertCount(3, $remainingFiles);
+
+        // Limpieza del directorio de prueba
+        \Illuminate\Support\Facades\File::deleteDirectory($backupDir);
+    }
 }
 
 
