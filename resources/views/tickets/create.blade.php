@@ -131,48 +131,107 @@
             </div>
         </div>
 
-        <!-- SECCIÓN 3: INFORMANTE Y UBICACIÓN -->
+        <!-- SECCIÓN 3: INFORMANTE Y LOGÍSTICA DE UBICACIÓN -->
         <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
             <div class="border-b border-gray-100 pb-3 flex items-center justify-between">
                 <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
                     <span class="w-6 h-6 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center text-xs font-black">3</span>
-                    Informante y Asignación
+                    Informante y Logística de Ubicación
                 </h2>
-                <span class="text-xs text-gray-400">Trazabilidad de la persona que reporta</span>
+                <span class="text-xs text-gray-400">Trazabilidad de origen y destino del activo</span>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Informante / Solicitante -->
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                        Informante / Solicitante <span class="text-rose-500 font-bold">*</span>
-                    </label>
-                    @if($isTec)
-                        <input type="text" name="solicitante" value="{{ old('solicitante', $informante) }}" required
-                               class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
-                        <span class="text-[11px] text-gray-400 mt-1 block">Como técnico, puede editar o especificar un informante externo.</span>
-                    @else
-                        <input type="text" value="{{ $informante }}" readonly disabled
-                               class="w-full bg-gray-100 border border-gray-200 text-gray-500 rounded-xl px-3.5 py-2.5 text-sm font-semibold cursor-not-allowed">
-                        <input type="hidden" name="solicitante" value="{{ $informante }}">
-                        <span class="text-[11px] text-gray-400 mt-1 block">Autocompletado con su identidad institucional registrada (bloqueado para rol Revisor).</span>
-                    @endif
+            <!-- Informante / Solicitante -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Informante / Solicitante <span class="text-rose-500 font-bold">*</span>
+                </label>
+                @if($isTec)
+                    <input type="text" name="solicitante" value="{{ old('solicitante', $informante) }}" required
+                           class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                    <span class="text-[11px] text-gray-400 mt-1 block">Como técnico, puede editar o especificar un informante externo.</span>
+                @else
+                    <input type="text" value="{{ $informante }}" readonly disabled
+                           class="w-full bg-gray-100 border border-gray-200 text-gray-500 rounded-xl px-3.5 py-2.5 text-sm font-semibold cursor-not-allowed">
+                    <input type="hidden" name="solicitante" value="{{ $informante }}">
+                    <span class="text-[11px] text-gray-400 mt-1 block">Autocompletado con su identidad institucional registrada (bloqueado para rol Revisor).</span>
+                @endif
+            </div>
+
+            <!-- Separación clara: Origen vs Decisión de Traslado -->
+            <div class="pt-2 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Origen (Solo Lectura Informativa) -->
+                <div class="bg-gray-50/80 border border-gray-200 rounded-xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>Ubicación Actual Detectada (Origen)</span>
+                        </div>
+                        <div class="text-sm font-black text-gray-900" id="ubicacion_actual_texto">
+                            @if($elemento)
+                                {{ $elemento->ultimoMovimiento?->ubicacion?->nombre ?? 'Sin ubicación registrada' }}
+                                <span class="text-xs font-normal text-gray-600 block mt-0.5">
+                                    Puesto: <strong class="text-gray-800">{{ $elemento->ultimoMovimiento?->puesto ?: ($elemento->puesto ?: 'Sin puesto asignado') }}</strong>
+                                </span>
+                            @else
+                                <span class="italic text-gray-400 font-normal text-xs">Se detectará automáticamente al seleccionar el equipo arriba.</span>
+                            @endif
+                        </div>
+                    </div>
+                    <span class="text-[11px] text-gray-400 mt-3 pt-2 border-t border-gray-200/60 block">
+                        Ubicación física actual registrada en inventario para este equipo.
+                    </span>
                 </div>
 
-                <!-- Ubicación Física / Taller -->
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                        Ubicación Física Actual / Taller
+                <!-- Decisión de Traslado / Destino Físico -->
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Decisión de Traslado Físico durante la Reparación
                     </label>
-                    <select name="ubicacion_id" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
-                        <option value="">Heredar ubicación actual del activo</option>
-                        @foreach($ubicaciones as $ub)
-                            <option value="{{ $ub->id }}" {{ old('ubicacion_id', $elemento?->ultimoMovimiento?->ubicacion_id) == $ub->id ? 'selected' : '' }}>
-                                {{ $ub->nombre }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <span class="text-[11px] text-gray-400 mt-1 block">Por defecto permanece en su sala o se traslada a Taller de Hardware.</span>
+
+                    <div class="space-y-2">
+                        <!-- Opción 1: In Situ -->
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50/20 cursor-pointer transition-all has-checked:border-amber-500 has-checked:bg-amber-50/40">
+                            <input type="radio" name="tipo_traslado" value="insitu" id="traslado_insitu" 
+                                   {{ old('tipo_traslado', 'insitu') === 'insitu' && !old('ubicacion_id') ? 'checked' : '' }}
+                                   onchange="toggleTrasladoFisico(false)"
+                                   class="mt-1 text-amber-500 focus:ring-amber-400">
+                            <div>
+                                <span class="text-sm font-bold text-gray-900 block">Permanece en su sala para inspección in situ</span>
+                                <span class="text-xs text-gray-500 leading-snug block mt-0.5">El equipo no se traslada; el equipo técnico asistirá a su sala de origen a revisarlo.</span>
+                            </div>
+                        </label>
+
+                        <!-- Opción 2: Traslado a Taller / Depósito -->
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50/20 cursor-pointer transition-all has-checked:border-amber-500 has-checked:bg-amber-50/40">
+                            <input type="radio" name="tipo_traslado" value="taller" id="traslado_taller"
+                                   {{ old('tipo_traslado') === 'taller' || old('ubicacion_id') ? 'checked' : '' }}
+                                   onchange="toggleTrasladoFisico(true)"
+                                   class="mt-1 text-amber-500 focus:ring-amber-400">
+                            <div class="flex-1">
+                                <span class="text-sm font-bold text-gray-900 block">Trasladar físicamente a Taller de Hardware / Depósito</span>
+                                <span class="text-xs text-gray-500 leading-snug block mt-0.5">El activo se retira de la sala y se mueve a un espacio técnico para reparación de banco.</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Selector condicional de Destino Físico si se traslada -->
+                    <div id="selector_destino_container" class="{{ old('tipo_traslado') === 'taller' || old('ubicacion_id') ? '' : 'hidden' }} pt-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                            Seleccionar Sala de Destino Técnico <span class="text-rose-500">*</span>
+                        </label>
+                        <select name="ubicacion_id" id="ubicacion_destino_select" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                            <option value="">Seleccione sala o taller...</option>
+                            @foreach($ubicaciones as $ub)
+                                <option value="{{ $ub->id }}" {{ old('ubicacion_id') == $ub->id || (!old('ubicacion_id') && str_contains(strtolower($ub->nombre), 'hardware')) ? 'selected' : '' }}>
+                                    {{ $ub->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -280,6 +339,28 @@
         });
     }
 
+    function toggleTrasladoFisico(trasladar) {
+        const container = document.getElementById('selector_destino_container');
+        const select = document.getElementById('ubicacion_destino_select');
+        if (!container || !select) return;
+
+        if (trasladar) {
+            container.classList.remove('hidden');
+            if (!select.value) {
+                // Seleccionar Oficina de Hardware por defecto si está disponible
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].text.toLowerCase().includes('hardware')) {
+                        select.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        } else {
+            container.classList.add('hidden');
+            select.value = '';
+        }
+    }
+
     function seleccionarActivo(id, lia, unsj, tipo, marca, modelo, ubicacion) {
         idInput.value = id;
         sugerenciasBox.classList.add('hidden');
@@ -317,6 +398,14 @@
 
         container.parentNode.insertBefore(newCard, container);
         container.classList.add('hidden');
+
+        const ubicacionTexto = document.getElementById('ubicacion_actual_texto');
+        if (ubicacionTexto) {
+            ubicacionTexto.innerHTML = `
+                ${ubicacion || 'Sin ubicación registrada'}
+                <span class="text-xs font-normal text-gray-600 block mt-0.5">Ubicación física detectada del activo</span>
+            `;
+        }
     }
 
     function cambiarElemento() {
@@ -328,6 +417,11 @@
             container.classList.remove('hidden');
             inputActivo.value = '';
             inputActivo.focus();
+        }
+
+        const ubicacionTexto = document.getElementById('ubicacion_actual_texto');
+        if (ubicacionTexto) {
+            ubicacionTexto.innerHTML = '<span class="italic text-gray-400 font-normal text-xs">Se detectará automáticamente al seleccionar el equipo arriba.</span>';
         }
     }
 

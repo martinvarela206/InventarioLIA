@@ -45,6 +45,7 @@ class TicketController extends Controller
             'elemento_id' => 'required|exists:elementos,id',
             'comentario' => 'required|string|min:5',
             'solicitante' => 'nullable|string|max:150',
+            'tipo_traslado' => 'nullable|in:insitu,taller',
             'ubicacion_id' => 'nullable|exists:ubicaciones,id',
             'puesto' => 'nullable|string|max:50',
             'fotos' => 'nullable|array',
@@ -61,9 +62,14 @@ class TicketController extends Controller
 
         $elemento = Elemento::with('ultimoMovimiento')->findOrFail($validated['elemento_id']);
 
-        // Ubicación: si no se especifica, se hereda la ubicación previa del elemento
-        $ubicacionId = $validated['ubicacion_id'] ?? $elemento->ultimoMovimiento?->ubicacion_id;
-        $puesto = $validated['puesto'] ?? $elemento->ultimoMovimiento?->puesto;
+        // Ubicación: si permanece in situ o no se selecciona destino, hereda ubicación y puesto original
+        $esInsitu = ($validated['tipo_traslado'] ?? 'insitu') === 'insitu';
+        $ubicacionId = $esInsitu
+            ? $elemento->ultimoMovimiento?->ubicacion_id
+            : ($validated['ubicacion_id'] ?? $elemento->ultimoMovimiento?->ubicacion_id);
+        $puesto = $esInsitu
+            ? $elemento->ultimoMovimiento?->puesto
+            : ($validated['puesto'] ?? ($validated['ubicacion_id'] ? null : $elemento->ultimoMovimiento?->puesto));
 
         $ticket = DB::transaction(function () use ($validated, $elemento, $user, $solicitante, $ubicacionId, $puesto, $request) {
             $movimiento = Movimiento::create([

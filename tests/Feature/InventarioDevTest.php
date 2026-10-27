@@ -1177,6 +1177,9 @@ class InventarioDevTest extends TestCase
         $resFormRev->assertSee('Apertura de Ticket de Reparación Técnica');
         $resFormRev->assertSee('LIA-TICKET-01');
         $resFormRev->assertSee('Revisor Auditor');
+        $resFormRev->assertSee('Ubicación Actual Detectada (Origen)');
+        $resFormRev->assertSee('Permanece en su sala para inspección in situ');
+        $resFormRev->assertSee('Trasladar físicamente a Taller de Hardware / Depósito');
 
         // Registro de Ticket con imagen adjunta
         $fotoFake = UploadedFile::fake()->image('falla_fuente.jpg', 600, 400);
