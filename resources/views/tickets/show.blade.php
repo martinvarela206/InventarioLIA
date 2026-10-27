@@ -283,6 +283,17 @@
                                     <!-- Mensaje -->
                                     <p class="text-xs text-gray-800 leading-relaxed font-medium whitespace-pre-line">{{ $cmt->mensaje }}</p>
 
+                                    <!-- Movimiento de Inventario Asociado a este Mensaje -->
+                                    @if($cmt->movimiento)
+                                        <div class="mt-2 p-3 rounded-xl bg-amber-50/90 border border-amber-300 text-xs text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
+                                            <div class="flex items-center gap-2">
+                                                <span class="px-2 py-0.5 bg-amber-200 text-amber-950 rounded-md font-black text-[10px] tracking-wider uppercase">📦 Traslado Físico Vinculado</span>
+                                                <span class="font-bold">Destino: <strong class="text-gray-900">{{ $cmt->movimiento->ubicacion?->nombre ?? 'N/A' }}</strong> (Puesto: {{ $cmt->movimiento->puesto ?: 'S/P' }})</span>
+                                            </div>
+                                            <span class="text-[11px] text-amber-800 font-mono font-bold">Movimiento #{{ $cmt->movimiento_id }}</span>
+                                        </div>
+                                    @endif
+
                                     <!-- Evidencia Fotográfica en el Mensaje -->
                                     @if($cmt->adjuntos && $cmt->adjuntos->isNotEmpty())
                                         <div class="pt-2">
@@ -306,7 +317,7 @@
                 @endif
 
                 <!-- Formulario de Respuesta / Mensaje Colaborativo en el Foro -->
-                <form action="{{ route('tickets.comentar', $ticket->id) }}" method="POST" enctype="multipart/form-data" class="pt-4 border-t border-gray-100 space-y-3">
+                <form action="{{ route('tickets.comentar', $ticket->id) }}" method="POST" enctype="multipart/form-data" class="pt-4 border-t border-gray-100 space-y-4">
                     @csrf
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
@@ -315,6 +326,35 @@
                         <textarea name="mensaje" rows="2" required placeholder="Escriba un comentario, aclaración de falla o respuesta técnica en el hilo..."
                                   class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"></textarea>
                     </div>
+
+                    <!-- Opción de Traslado Físico de Inventario Vinculado (exclusivo personal técnico) -->
+                    @if(Auth::user()->hasRole('tec'))
+                        <div class="p-3.5 bg-amber-50/60 border border-amber-200/80 rounded-xl space-y-2.5">
+                            <label class="flex items-center gap-2 cursor-pointer text-xs font-black text-amber-950">
+                                <input type="checkbox" name="generar_movimiento" value="1" id="toggle_movimiento_check"
+                                       onchange="document.getElementById('contenedor_movimiento_ticket').classList.toggle('hidden', !this.checked)"
+                                       class="rounded text-amber-600 focus:ring-amber-500">
+                                <span>Registrar traslado o cambio de ubicación física con esta respuesta</span>
+                            </label>
+
+                            <div id="contenedor_movimiento_ticket" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Nueva Sala de Ubicación:</label>
+                                    <select name="ubicacion_id" class="w-full bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs text-gray-800">
+                                        <option value="">Seleccione sala de destino...</option>
+                                        @foreach($ubicaciones as $ub)
+                                            <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Puesto (opcional):</label>
+                                    <input type="text" name="puesto" placeholder="Ej: Puesto 04, Rack 2"
+                                           class="w-full bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs text-gray-800">
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
                         <!-- Adjuntos fotográficos opcionales -->
@@ -326,7 +366,7 @@
                                    class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-amber-100 hover:file:text-amber-900 cursor-pointer">
                         </div>
 
-                        <!-- Selector de Área adicional opcional -->
+                        <!-- Selector de Área adicional opcional y Botón Publicar -->
                         <div class="flex items-center gap-2 justify-end">
                             <span class="text-[11px] font-bold text-gray-500 whitespace-nowrap">+ Área:</span>
                             <select name="nueva_area_id" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 font-medium">

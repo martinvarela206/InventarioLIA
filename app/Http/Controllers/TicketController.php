@@ -223,6 +223,9 @@ class TicketController extends Controller
         $validated = $request->validate([
             'mensaje' => 'required|string|min:3',
             'nueva_area_id' => 'nullable|exists:areas,id',
+            'generar_movimiento' => 'nullable|boolean',
+            'ubicacion_id' => 'nullable|exists:ubicaciones,id',
+            'puesto' => 'nullable|string|max:50',
             'fotos' => 'nullable|array',
             'fotos.*' => 'nullable|image|max:10240',
         ]);
@@ -230,9 +233,24 @@ class TicketController extends Controller
         $ticket = Movimiento::findOrFail($id);
         $user = Auth::user();
 
+        $movimientoGenerado = null;
+        if ($user->hasRole('tec') && $request->boolean('generar_movimiento') && !empty($validated['ubicacion_id'])) {
+            $movimientoGenerado = Movimiento::create([
+                'elemento_id' => $ticket->elemento_id,
+                'tipo_movimiento' => 'interno',
+                'ubicacion_id' => $validated['ubicacion_id'],
+                'puesto' => $validated['puesto'] ?? null,
+                'user_id' => $user->id,
+                'fecha' => now(),
+                'ticket_id' => $ticket->id,
+                'comentario' => "Traslado operativo vinculado a Ticket #{$ticket->id}: {$validated['mensaje']}",
+            ]);
+        }
+
         $comentario = \App\Models\TicketComentario::create([
             'ticket_id' => $ticket->id,
             'user_id' => $user->id,
+            'movimiento_id' => $movimientoGenerado?->id,
             'mensaje' => $validated['mensaje'],
             'tipo' => 'comentario',
         ]);
@@ -260,8 +278,11 @@ class TicketController extends Controller
             ]);
         }
 
-        return redirect()->route('tickets.show', $ticket->id)
-            ->with('success', 'Mensaje registrado en la bitácora del ticket.');
+        $msg = $movimientoGenerado
+            ? "Mensaje publicado y movimiento de inventario registrado con éxito."
+            : "Mensaje registrado en la bitácora del ticket.";
+
+        return redirect()->route('tickets.show', $ticket->id)->with('success', $msg);
     }
 
     /**

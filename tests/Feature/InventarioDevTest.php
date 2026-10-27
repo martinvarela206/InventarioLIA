@@ -2582,7 +2582,83 @@ class InventarioDevTest extends TestCase
         $resShow->assertSee('Recibido en banco de pruebas');
         $resShow->assertSee('Fotos adjuntas');
     }
+
+    public function test_vinculacion_transaccional_entre_respuestas_de_tickets_y_movimientos_de_inventario(): void
+    {
+        $rolTec = Rol::firstOrCreate(['rol' => 'tec']);
+        $rolReg = Rol::firstOrCreate(['rol' => 'registered']);
+
+        $tec = Usuario::create([
+            'email' => 'tec_mov_test@lia.com',
+            'nombre' => 'Tecnico Movimientos',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $tec->roles()->sync([$rolReg->id, $rolTec->id]);
+
+        $tipo = \App\Models\Tipo::first();
+        $salaOrigen = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Laboratorio 1']);
+        $salaTaller = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Taller de Hardware']);
+
+        $elemento = \App\Models\Elemento::create([
+            'nro_lia' => 'LIA-MOV-LINK-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'HP',
+            'modelo' => 'ProDesk 600',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        $ticket = \App\Models\Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'ubicacion_id' => $salaOrigen->id,
+            'puesto' => 'P-01',
+            'user_id' => $tec->id,
+            'fecha' => now(),
+            'solicitante' => 'Docente Pruebas',
+            'comentario' => 'Placa madre no entrega señal de video por HDMI',
+        ]);
+
+        // 1. Técnico comenta y activa generación de movimiento hacia Taller de Hardware
+        $resPost = $this->actingAs($tec)->post(route('tickets.comentar', $ticket->id), [
+            'mensaje' => 'Se retira el equipo de Lab 1 y se ingresa a banco de prueba en Taller.',
+            'generar_movimiento' => '1',
+            'ubicacion_id' => $salaTaller->id,
+            'puesto' => 'Banco 03',
+        ]);
+        $resPost->assertRedirect(route('tickets.show', $ticket->id));
+
+        // 2. Verificar existencia del movimiento enlazado al ticket
+        $movimientoGenerado = \App\Models\Movimiento::where('elemento_id', $elemento->id)
+            ->where('tipo_movimiento', 'interno')
+            ->where('ubicacion_id', $salaTaller->id)
+            ->where('ticket_id', $ticket->id)
+            ->first();
+        $this->assertNotNull($movimientoGenerado);
+        $this->assertEquals('Banco 03', $movimientoGenerado->puesto);
+        $this->assertEquals($ticket->id, $movimientoGenerado->ticket_id);
+
+        // 3. Verificar que el comentario en el hilo apunta al movimiento_id
+        $comentario = \App\Models\TicketComentario::where('ticket_id', $ticket->id)
+            ->where('user_id', $tec->id)
+            ->first();
+        $this->assertNotNull($comentario);
+        $this->assertEquals($movimientoGenerado->id, $comentario->movimiento_id);
+        $this->assertEquals($comentario->movimiento->id, $movimientoGenerado->id);
+
+        // 4. Verificar renderizado en la vista tickets.show
+        $resShow = $this->actingAs($tec)->get(route('tickets.show', $ticket->id));
+        $resShow->assertStatus(200);
+        $resShow->assertSee('📦 Traslado Físico Vinculado');
+        $resShow->assertSee('Taller de Hardware');
+        $resShow->assertSee('Banco 03');
+        $resShow->assertSee('Movimiento #' . $movimientoGenerado->id);
+    }
 }
+
 
 
 
