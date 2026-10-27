@@ -23,6 +23,7 @@ class Usuario extends Authenticatable
         'fecha_nacimiento',
         'carrera_id',
         'cargo_id',
+        'foto_path',
         'whatsapp',
         'direccion',
         'activo',
@@ -80,6 +81,17 @@ class Usuario extends Authenticatable
     public function getCarreraNombreAttribute(): string
     {
         return $this->carreraRelacion?->nombre ?? 'Sin carrera';
+    }
+
+    public function getFotoUrlAttribute(): string
+    {
+        if ($this->foto_path) {
+            if (str_starts_with($this->foto_path, 'http://') || str_starts_with($this->foto_path, 'https://') || str_starts_with($this->foto_path, '/assets/')) {
+                return $this->foto_path;
+            }
+            return asset('storage/' . $this->foto_path);
+        }
+        return asset('assets/placeholder-user.png');
     }
 
     public function trayectorias(): HasMany
@@ -159,6 +171,17 @@ class Usuario extends Authenticatable
         $this->fecha_nacimiento = null;
         $this->carrera_id = null;
         $this->cargo_id = null;
+
+        // Borrar foto de perfil física si existe en storage
+        if ($this->foto_path && !str_starts_with($this->foto_path, '/assets/')) {
+            try {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($this->foto_path);
+            } catch (\Throwable $e) {
+                // Log and continue
+            }
+        }
+        $this->foto_path = null;
+
         $this->nombre = "Usuario Histórico #{$id}";
         $this->email = "historico_{$id}@lia.local";
         $this->password = bcrypt(\Illuminate\Support\Str::random(40));
