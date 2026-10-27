@@ -3206,6 +3206,73 @@ class InventarioDevTest extends TestCase
         $resIndexAfter->assertStatus(200);
         $resIndexAfter->assertSee("Usuario Histórico #{$exDocente->id}");
     }
+
+    public function test_widget_informativo_y_accion_en_dashboard_de_user_admin(): void
+    {
+        // 1. Roles y usuarios: un user_admin y un revisor
+        $admin = Usuario::create([
+            'nombre' => 'User Admin Widget Test',
+            'email' => 'admin_widget@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $admin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+
+        $revisor = Usuario::create([
+            'nombre' => 'Revisor Sin Permiso Admin',
+            'email' => 'revisor_widget@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $revisor->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        // 2. Colaborador egresado hace más de 6 años (elegible)
+        $exDocente = Usuario::create([
+            'nombre' => 'Ex Personal Widget Alerta',
+            'email' => 'expersonal_widget@test.com',
+            'password' => bcrypt('password'),
+            'dni' => '19555666',
+            'activo' => false,
+            'fecha_egreso' => now()->subYears(7),
+        ]);
+
+        // 3. User Admin accede a la gestión de usuarios: visualiza el widget informativo y modal legal
+        $resUsers = $this->actingAs($admin)->get(route('users.index'));
+        $resUsers->assertStatus(200);
+        $resUsers->assertSee('widget-alerta-huella');
+        $resUsers->assertSee('Alerta de Privacidad y Prescripción Legal (Ley 25.326)');
+        $resUsers->assertSee('Ex Personal Widget Alerta');
+        $resUsers->assertSee('Borrado de Huella Digital');
+        $resUsers->assertSee('modal-fundamentacion-legal');
+        $resUsers->assertSee('Prescripción Penal y Laboral a los 6 Años');
+        $resUsers->assertSee('Garantía de Trazabilidad del Inventario');
+
+        // 4. User Admin accede al Dashboard general: también visualiza la alerta
+        $resDashAdmin = $this->actingAs($admin)->get(route('dashboard.index'));
+        $resDashAdmin->assertStatus(200);
+        $resDashAdmin->assertSee('widget-alerta-huella');
+        $resDashAdmin->assertSee('Alerta de Privacidad y Prescripción Legal (Ley 25.326)');
+        $resDashAdmin->assertSee('modal-fundamentacion-legal');
+
+        // 5. Usuario sin rol user_admin (ej. rev) accede al Dashboard: no debe ver el widget confidencial
+        $resDashRev = $this->actingAs($revisor)->get(route('dashboard.index'));
+        $resDashRev->assertStatus(200);
+        $resDashRev->assertDontSee('widget-alerta-huella');
+        $resDashRev->assertDontSee('modal-fundamentacion-legal');
+
+        // 6. Ejecución del borrado de huella
+        $resAnon = $this->actingAs($admin)->post(route('users.anonimizar', $exDocente->id));
+        $resAnon->assertRedirect(route('users.index'));
+
+        $exDocente->refresh();
+        $this->assertTrue($exDocente->huella_borrada);
+        $this->assertTrue($exDocente->esHistorico());
+
+        // 7. Al recargar la vista, el colaborador ya no figura pendiente en el widget
+        $resUsersAfter = $this->actingAs($admin)->get(route('users.index'));
+        $resUsersAfter->assertStatus(200);
+        $resUsersAfter->assertDontSee('Ex Personal Widget Alerta');
+    }
 }
 
 

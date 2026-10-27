@@ -30,6 +30,10 @@
         </div>
     </div>
 
+    @if(Auth::user()->hasRole('user_admin'))
+        @include('users.widget-huella-alerta')
+    @endif
+
     <!-- 1. 5 KPI CARDS -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <!-- Total Activos -->

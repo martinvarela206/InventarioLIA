@@ -103,6 +103,31 @@ class Usuario extends Authenticatable
     }
 
     /**
+     * Retorna la colección de ex-colaboradores con más de 6 años de cese laboral
+     * pendientes de borrado de huella digital (Ley 25.326).
+     */
+    public static function elegiblesBorradoHuella()
+    {
+        $seisAniosAtras = now()->subYears(6);
+        return static::where('activo', false)
+            ->where(function ($q) {
+                $q->where('huella_borrada', false)->orWhereNull('huella_borrada');
+            })
+            ->where(function ($q) use ($seisAniosAtras) {
+                $q->where('fecha_egreso', '<=', $seisAniosAtras)
+                  ->orWhereHas('trayectorias', function ($t) use ($seisAniosAtras) {
+                      $t->whereNotNull('fecha_fin')->where('fecha_fin', '<=', $seisAniosAtras);
+                  });
+            })
+            ->with('trayectorias')
+            ->get()
+            ->filter(function ($u) {
+                return $u->isExPersonalMayor6Anios() && !$u->esHistorico();
+            })
+            ->values();
+    }
+
+    /**
      * Realiza el borrado irreversible de la huella digital y datos protegidos (Ley 25.326).
      * Preserva el ID del usuario para garantizar la trazabilidad forense de movimientos,
      * tickets y auditorías en el sistema patrimonial.

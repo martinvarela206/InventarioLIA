@@ -41,7 +41,8 @@ class UserController extends Controller
 
         $users = $query->paginate(20)->withQueryString();
         $roles = Rol::all();
-        return view('users.index', compact('users', 'roles'));
+        $exColaboradoresElegibles = Usuario::elegiblesBorradoHuella();
+        return view('users.index', compact('users', 'roles', 'exColaboradoresElegibles'));
     }
 
     public function edit(Usuario $user): View

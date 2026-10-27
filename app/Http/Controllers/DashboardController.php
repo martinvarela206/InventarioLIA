@@ -65,6 +65,10 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
+        $exColaboradoresElegibles = (auth()->check() && auth()->user()->hasRole('user_admin'))
+            ? \App\Models\Usuario::elegiblesBorradoHuella()
+            : collect();
+
         return view('dashboard.index', compact(
             'totalElementos',
             'totalOperativos',
@@ -73,7 +77,8 @@ class DashboardController extends Controller
             'totalEnReparacion',
             'prestamosActivos',
             'distribucionSalas',
-            'alertasGarantiaVencida'
+            'alertasGarantiaVencida',
+            'exColaboradoresElegibles'
         ));
     }
 }
