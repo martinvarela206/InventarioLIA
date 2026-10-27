@@ -46,11 +46,16 @@ class ReporteController extends Controller
      */
     public function index(): View
     {
+        if (ReporteConfigurado::count() === 0) {
+            (new \Database\Seeders\ReporteConfiguradoSeeder())->run();
+        }
+
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $tipos = Tipo::orderBy('nombre')->get();
-        $reportesPersonalizados = ReporteConfigurado::activos()->where('es_sistema', false)->ordenados()->get();
+        $reportes = ReporteConfigurado::activos()->ordenados()->get();
+        $reportesPersonalizados = $reportes->where('es_sistema', false);
 
-        return view('reportes.index', compact('ubicaciones', 'tipos', 'reportesPersonalizados'));
+        return view('reportes.index', compact('ubicaciones', 'tipos', 'reportes', 'reportesPersonalizados'));
     }
 
     /**
@@ -127,7 +132,7 @@ class ReporteController extends Controller
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Encabezados
-            $columnas = $data['columnas'] ?? ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Ubicación', 'Puesto', 'Situación', 'Solicitante / Obs'];
+            $columnas = $data['columnas'] ?? ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Especificaciones / Hardware', 'Ubicación', 'Puesto', 'Situación', 'Solicitante / Obs'];
             fputcsv($handle, $columnas, ';');
 
             foreach ($filas as $fila) {
@@ -147,6 +152,14 @@ class ReporteController extends Controller
 
         if ($request->filled('tipo_id')) {
             $query->where('tipo_id', $request->tipo_id);
+        }
+
+        if ($request->filled('puesto')) {
+            $puesto = trim($request->input('puesto'));
+            $query->where(function ($q) use ($puesto) {
+                $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
+                  ->orWhere('puesto', $puesto);
+            });
         }
 
         $elementos = $query->orderBy('puesto', 'asc')->orderBy('id', 'asc')->get();
@@ -195,6 +208,7 @@ class ReporteController extends Controller
             $el->nro_unsj ?? '-',
             $el->marca ?? '-',
             $el->modelo ?? '-',
+            $el->especificacionesSintetizadas(false),
             $ubicacionNombre,
             $puesto,
             $situacion,
@@ -217,7 +231,7 @@ class ReporteController extends Controller
     {
         $atributos = self::obtenerAtributosDinamicos();
         $columnasStandard = array_merge(
-            ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Ubicación', 'Puesto', 'Situación'],
+            ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Especificaciones / Hardware', 'Ubicación', 'Puesto', 'Situación'],
             $atributos,
             ['Solicitante', 'Garantía / Obs']
         );
@@ -227,6 +241,14 @@ class ReporteController extends Controller
             case 'inventario-completo':
                 $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
+                if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+                if ($request->filled('puesto')) {
+                    $puesto = trim($request->input('puesto'));
+                    $query->where(function ($q) use ($puesto) {
+                        $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
+                          ->orWhere('puesto', $puesto);
+                    });
+                }
 
                 $items = $query->orderBy('id', 'asc')->get();
                 $filas = $items->map(function ($el) use ($atributos) {
@@ -246,6 +268,13 @@ class ReporteController extends Controller
                 $query = Elemento::disponibles()->with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
                 if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+                if ($request->filled('puesto')) {
+                    $puesto = trim($request->input('puesto'));
+                    $query->where(function ($q) use ($puesto) {
+                        $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
+                          ->orWhere('puesto', $puesto);
+                    });
+                }
 
                 $items = $query->orderBy('id', 'asc')->get();
                 $filas = $items->map(function ($el) use ($atributos) {
@@ -778,6 +807,13 @@ class ReporteController extends Controller
                 $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
                 if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+                if ($request->filled('puesto')) {
+                    $puesto = trim($request->input('puesto'));
+                    $query->where(function ($q) use ($puesto) {
+                        $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
+                          ->orWhere('puesto', $puesto);
+                    });
+                }
                 if ($request->filled('anio')) $query->where('anio_compra', $request->anio);
 
                 $items = $query->orderBy('id', 'asc')->get();
@@ -808,14 +844,43 @@ class ReporteController extends Controller
     ): array {
         $filtros = $reporte->filtros_fijos ?? [];
 
-        $tipoId = $request->input('tipo_id', $filtros['tipo_id'] ?? null);
-        $ubicacionId = $request->input('ubicacion_id', $filtros['ubicacion_id'] ?? null);
+        // 1. Resolución robusta de Tipo: soporta tipo_id, tipo (nombre o slug) o filtro search coincidente
+        $tipoId = $request->input('tipo_id', $filtros['tipo_id'] ?? ($filtros['tipo'] ?? null));
+        if (!empty($tipoId) && !is_numeric($tipoId)) {
+            $tipoModel = Tipo::where('nombre', $tipoId)->orWhere('slug', $tipoId)->first();
+            $tipoId = $tipoModel?->id;
+        }
+
+        // 2. Resolución de Ubicación: sólo filtra si se especifica expresamente (no fuerza ubicacion_id = 1)
+        $ubicacionId = $request->input('ubicacion_id', $filtros['ubicacion_id'] ?? ($filtros['ubicacion'] ?? null));
+        if (!empty($ubicacionId) && !is_numeric($ubicacionId)) {
+            $ubModel = Ubicacion::where('nombre', $ubicacionId)->orWhere('slug', $ubicacionId)->first();
+            $ubicacionId = $ubModel?->id;
+        }
+
+        $puesto = $request->input('puesto', $filtros['puesto'] ?? null);
         $situacion = $request->input('situacion', $filtros['situacion'] ?? null);
         $anio = $request->input('anio', $filtros['anio'] ?? null);
         $search = $request->input('search', $filtros['search'] ?? null);
         $nroLia = $request->input('nro_lia', $filtros['nro_lia'] ?? null);
         $fechaDesde = $request->input('fecha_desde', $filtros['fecha_desde'] ?? null);
         $fechaHasta = $request->input('fecha_hasta', $filtros['fecha_hasta'] ?? null);
+
+        // Si search o filtro fijo coincide con un tipo de activo y no hay tipoId explícito,
+        // resolver como filtro específico por tipo_id para encontrar todos los activos del tipo
+        if (!empty($search) && empty($tipoId)) {
+            $terminoNormalizado = strtolower(trim($search));
+            $tipoCoincidente = Tipo::where('nombre', $terminoNormalizado)
+                ->orWhere('nombre', rtrim($terminoNormalizado, 's'))
+                ->first();
+            if ($tipoCoincidente) {
+                $tipoId = $tipoCoincidente->id;
+                // Si el filtro search configurado coincidía con el nombre de tipo, limpiar search
+                if (isset($filtros['search']) && strtolower(trim($filtros['search'])) === $terminoNormalizado) {
+                    $search = null;
+                }
+            }
+        }
 
         $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
 
@@ -825,6 +890,14 @@ class ReporteController extends Controller
 
         if (!empty($ubicacionId)) {
             $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $ubicacionId));
+        }
+
+        if (!empty($puesto)) {
+            $puesto = trim($puesto);
+            $query->where(function ($q) use ($puesto) {
+                $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
+                  ->orWhere('puesto', $puesto);
+            });
         }
 
         if (!empty($situacion)) {
@@ -849,7 +922,10 @@ class ReporteController extends Controller
                   ->orWhere('nro_unsj', 'like', "%{$search}%")
                   ->orWhere('marca', 'like', "%{$search}%")
                   ->orWhere('modelo', 'like', "%{$search}%")
-                  ->orWhere('observaciones', 'like', "%{$search}%");
+                  ->orWhere('observaciones', 'like', "%{$search}%")
+                  ->orWhereHas('tipo', function ($qt) use ($search) {
+                      $qt->where('nombre', 'like', "%{$search}%");
+                  });
             });
         }
 

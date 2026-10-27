@@ -31,6 +31,76 @@
                 </div>
             </div>
 
+            <!-- Panel Carrusel de Concientización y Buenas Prácticas Informáticas -->
+            @if(isset($avisos) && $avisos->isNotEmpty())
+                <div class="bg-gray-950 text-white rounded-2xl p-6 shadow-md border border-gray-800 space-y-3">
+                    <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+                        <div class="flex items-center gap-2">
+                            <span class="p-1 bg-amber-400 text-black rounded-lg text-xs font-black">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            </span>
+                            <span class="text-xs font-black uppercase text-[#fbc101] tracking-wider">Cultura de Ciberseguridad LIA</span>
+                        </div>
+                        <span class="text-[11px] text-gray-400 font-mono">Buenas Prácticas para Usuarios</span>
+                    </div>
+
+                    <div id="carrusel-bienvenida" class="space-y-2">
+                        @foreach($avisos as $i => $av)
+                            <div class="aviso-bienvenida-item {{ $i === 0 ? 'block' : 'hidden' }}" data-idx="{{ $i }}">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase {{ $av->severidad === 'warning' ? 'bg-amber-500/20 text-amber-300' : ($av->severidad === 'danger' ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300') }}">
+                                        {{ $av->severidad === 'tip' ? 'Consejo' : ($av->severidad === 'warning' ? 'Advertencia' : ($av->severidad === 'danger' ? 'Crítico' : 'Información')) }}
+                                    </span>
+                                    <h4 class="text-sm font-bold text-white">{{ $av->titulo }}</h4>
+                                </div>
+                                <p class="text-xs text-gray-300 leading-relaxed">{{ $av->descripcion }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    @if($avisos->count() > 1)
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-800 text-[11px] text-gray-400">
+                            <div class="flex items-center gap-1">
+                                @foreach($avisos as $i => $av)
+                                    <span class="dot-bienvenida h-1 rounded-full transition-all {{ $i === 0 ? 'bg-[#fbc101] w-4' : 'bg-gray-700 w-1.5' }}" data-idx="{{ $i }}"></span>
+                                @endforeach
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="slideBienvenida(-1)" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 rounded text-white font-bold transition-colors">&larr;</button>
+                                <button type="button" onclick="slideBienvenida(1)" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 rounded text-white font-bold transition-colors">&rarr;</button>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const items = document.querySelectorAll('.aviso-bienvenida-item');
+                    const dots = document.querySelectorAll('.dot-bienvenida');
+                    if (items.length <= 1) return;
+                    let current = 0;
+
+                    window.slideBienvenida = function(dir) {
+                        items[current].classList.remove('block');
+                        items[current].classList.add('hidden');
+                        if (dots[current]) {
+                            dots[current].className = 'dot-bienvenida h-1 rounded-full transition-all bg-gray-700 w-1.5';
+                        }
+
+                        current = (current + dir + items.length) % items.length;
+
+                        items[current].classList.remove('hidden');
+                        items[current].classList.add('block');
+                        if (dots[current]) {
+                            dots[current].className = 'dot-bienvenida h-1 rounded-full transition-all bg-[#fbc101] w-4';
+                        }
+                    };
+
+                    setInterval(() => window.slideBienvenida(1), 7000);
+                });
+                </script>
+            @endif
+
             <!-- Resumen de datos del usuario -->
             <div class="bg-gray-50 rounded-2xl p-6 border border-gray-100">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Información de tu Usuario</h3>

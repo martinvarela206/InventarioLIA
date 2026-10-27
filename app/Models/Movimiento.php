@@ -9,6 +9,7 @@ use App\Presenters\MovimientoPresenter;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Builder;
 
 class Movimiento extends Model
@@ -149,6 +150,17 @@ class Movimiento extends Model
         return $this->hasMany(Movimiento::class, 'ticket_id');
     }
 
+    public function comentarios(): HasMany
+    {
+        return $this->hasMany(TicketComentario::class, 'ticket_id')->orderBy('id', 'asc');
+    }
+
+    public function areas(): BelongsToMany
+    {
+        return $this->belongsToMany(Area::class, 'ticket_areas', 'ticket_id', 'area_id')
+            ->withPivot('user_id', 'created_at');
+    }
+
     public function esReparacion(): bool
     {
         return $this->tipo_movimiento === 'reparacion';
@@ -161,7 +173,7 @@ class Movimiento extends Model
 
     public function esTicketAbierto(): bool
     {
-        return $this->tipo_movimiento === 'reparacion' && ($this->estado_ticket === 'abierto' || empty($this->estado_ticket));
+        return $this->tipo_movimiento === 'reparacion' && in_array($this->estado_ticket, ['abierto', 'solucionado', null, '']);
     }
 
     public function scopeTicketsAbiertos(Builder $query): Builder
@@ -169,7 +181,7 @@ class Movimiento extends Model
         return $query->where('tipo_movimiento', 'reparacion')
             ->where(function ($q) {
                 $q->whereNull('estado_ticket')
-                  ->orWhere('estado_ticket', 'abierto');
+                  ->orWhereIn('estado_ticket', ['abierto', 'solucionado']);
             });
     }
 

@@ -84,4 +84,20 @@ class ElementoPresenter
 
         return $sala;
     }
+
+    /**
+     * Renderizado visual en HTML con badges compactos de especificaciones técnicas.
+     */
+    public function especificacionesHtml(): string
+    {
+        return $this->elemento->especificacionesSintetizadas(true);
+    }
+
+    /**
+     * Renderizado en texto plano delimitado por pipes para reportes y exportación.
+     */
+    public function especificacionesTexto(): string
+    {
+        return $this->elemento->especificacionesSintetizadas(false);
+    }
 }

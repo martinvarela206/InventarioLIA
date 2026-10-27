@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class LoginController extends Controller
 {
@@ -24,6 +26,15 @@ class LoginController extends Controller
             ])->withInput();
         }
 
+        $throttleKey = Str::transliterate(Str::lower($input).'|'.$request->ip());
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            return back()->withErrors([
+                'login' => "Demasiados intentos de acceso. Por favor, vuelva a intentarlo en {$seconds} segundos.",
+            ])->withInput();
+        }
+
         $field = filter_var($input, FILTER_VALIDATE_EMAIL) ? 'email' : 'nombre';
         $credentials = [
             $field => $input,
@@ -31,6 +42,7 @@ class LoginController extends Controller
         ];
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
             $target = Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida');
             $intended = session()->get('url.intended');
@@ -43,6 +55,7 @@ class LoginController extends Controller
         // Si intentó con nombre pero falló, intentar con email por si acaso
         if ($field === 'nombre') {
             if (Auth::attempt(['email' => $input, 'password' => $password], $request->boolean('remember'))) {
+                RateLimiter::clear($throttleKey);
                 $request->session()->regenerate();
                 $target = Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida');
                 $intended = session()->get('url.intended');
@@ -52,6 +65,8 @@ class LoginController extends Controller
                 return redirect()->intended($target);
             }
         }
+
+        RateLimiter::hit($throttleKey, 60);
 
         return back()->withErrors([
             'login' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',

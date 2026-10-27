@@ -7,6 +7,7 @@ use App\Models\Carrera;
 use App\Models\EspacioLia;
 use App\Models\PersonalLia;
 use App\Models\ActividadLia;
+use App\Models\AvisoSeguridad;
 use App\Models\ReporteConfigurado;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
@@ -28,10 +29,13 @@ class AppAdminController extends Controller
         $totalActividades = ActividadLia::count();
         $totalReportes = ReporteConfigurado::count();
         $reportesActivos = ReporteConfigurado::activos()->count();
+        $totalAvisos = AvisoSeguridad::count();
+        $avisosActivos = AvisoSeguridad::activos()->count();
 
         $ultimasActividades = ActividadLia::with('autor')->latest()->take(3)->get();
         $ultimosEspacios = EspacioLia::orderBy('orden')->take(4)->get();
         $personalDestacado = PersonalLia::orderBy('orden')->take(4)->get();
+        $ultimosAvisos = AvisoSeguridad::orderBy('orden')->take(4)->get();
 
         return view('admin.app.index', compact(
             'totalCarreras',
@@ -41,9 +45,12 @@ class AppAdminController extends Controller
             'totalActividades',
             'totalReportes',
             'reportesActivos',
+            'totalAvisos',
+            'avisosActivos',
             'ultimasActividades',
             'ultimosEspacios',
-            'personalDestacado'
+            'personalDestacado',
+            'ultimosAvisos'
         ));
     }
 
@@ -481,9 +488,9 @@ class AppAdminController extends Controller
         return redirect()->back()->with('success', "El reporte \"{$reporte->titulo}\" ha sido {$estado}.");
     }
 
-    public function reporteDestroy(ReporteConfigurado $reporte): RedirectResponse
+    public function reporteDestroy(ReporteConfigurado $reporte, Request $request): RedirectResponse
     {
-        if ($reporte->es_sistema) {
+        if ($reporte->es_sistema && !$request->boolean('force')) {
             $reporte->activo = false;
             $reporte->save();
             return redirect()->route('app_admin.reportes')->with('success', "El reporte del sistema \"{$reporte->titulo}\" ha sido desactivado.");
@@ -493,5 +500,76 @@ class AppAdminController extends Controller
         $reporte->delete();
 
         return redirect()->route('app_admin.reportes')->with('success', "Reporte \"{$nombre}\" eliminado exitosamente.");
+    }
+
+    // ==========================================
+    // 6. AVISOS DE SEGURIDAD Y CONCIENTIZACIÓN (CARRUSEL)
+    // ==========================================
+    public function avisosIndex(): View
+    {
+        $avisos = AvisoSeguridad::orderBy('orden', 'asc')->orderBy('id', 'desc')->get();
+        return view('admin.app.avisos', compact('avisos'));
+    }
+
+    public function avisoStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'titulo' => 'required|string|max:150',
+            'descripcion' => 'required|string',
+            'severidad' => 'required|in:info,tip,warning,danger',
+            'icono' => 'nullable|string|max:50',
+            'orden' => 'nullable|integer',
+            'activo' => 'nullable|boolean',
+        ]);
+
+        AvisoSeguridad::create([
+            'titulo' => $validated['titulo'],
+            'descripcion' => $validated['descripcion'],
+            'severidad' => $validated['severidad'],
+            'icono' => $validated['icono'] ?: 'shield',
+            'orden' => (int)($validated['orden'] ?? 0),
+            'activo' => $request->has('activo') || $request->boolean('activo'),
+        ]);
+
+        return redirect()->route('app_admin.avisos')->with('success', 'Aviso de seguridad creado exitosamente.');
+    }
+
+    public function avisoUpdate(Request $request, AvisoSeguridad $aviso): RedirectResponse
+    {
+        $validated = $request->validate([
+            'titulo' => 'required|string|max:150',
+            'descripcion' => 'required|string',
+            'severidad' => 'required|in:info,tip,warning,danger',
+            'icono' => 'nullable|string|max:50',
+            'orden' => 'nullable|integer',
+        ]);
+
+        $aviso->update([
+            'titulo' => $validated['titulo'],
+            'descripcion' => $validated['descripcion'],
+            'severidad' => $validated['severidad'],
+            'icono' => $validated['icono'] ?: 'shield',
+            'orden' => (int)($validated['orden'] ?? $aviso->orden),
+            'activo' => $request->has('activo') ? $request->boolean('activo') : $aviso->activo,
+        ]);
+
+        return redirect()->route('app_admin.avisos')->with('success', "Aviso \"{$aviso->titulo}\" actualizado correctamente.");
+    }
+
+    public function avisoToggle(AvisoSeguridad $aviso): RedirectResponse
+    {
+        $aviso->activo = !$aviso->activo;
+        $aviso->save();
+
+        $estado = $aviso->activo ? 'activado' : 'desactivado';
+        return redirect()->back()->with('success', "El aviso \"{$aviso->titulo}\" ha sido {$estado}.");
+    }
+
+    public function avisoDestroy(AvisoSeguridad $aviso): RedirectResponse
+    {
+        $titulo = $aviso->titulo;
+        $aviso->delete();
+
+        return redirect()->route('app_admin.avisos')->with('success', "Aviso \"{$titulo}\" eliminado correctamente.");
     }
 }

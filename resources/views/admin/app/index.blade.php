@@ -114,6 +114,23 @@
                 <span>→</span>
             </div>
         </a>
+
+        <!-- Avisos de Seguridad -->
+        <a href="{{ route('app_admin.avisos') }}" class="bg-white rounded-2xl p-5 border border-gray-200 hover:border-amber-400 hover:shadow-md transition-all group block">
+            <div class="flex justify-between items-start mb-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-900 rounded-xl font-bold text-xs">
+                    <svg class="w-4 h-4 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    Seguridad
+                </span>
+                <span class="text-2xl font-black text-gray-900">{{ $avisosActivos }} <span class="text-xs text-gray-400 font-normal">/ {{ $totalAvisos }}</span></span>
+            </div>
+            <h3 class="font-bold text-gray-900 text-sm group-hover:text-amber-800 transition-colors">Avisos y Ciberseguridad</h3>
+            <p class="text-xs text-gray-500 mt-1">Slides dinámicos y buenas prácticas para el carrusel de la landing.</p>
+            <div class="mt-4 pt-2 border-t border-gray-100 text-xs text-amber-700 font-bold flex items-center justify-between">
+                <span>Gestionar avisos</span>
+                <span>→</span>
+            </div>
+        </a>
     </div>
 
     <!-- Secciones de Vista Previa -->

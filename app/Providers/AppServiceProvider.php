@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Política de complejidad de contraseñas: estricta en producción, permisiva en local/testing
+        Password::defaults(function () {
+            return app()->isProduction()
+                ? Password::min(8)->letters()->mixedCase()->numbers()
+                : Password::min(4);
+        });
         \Illuminate\Support\Facades\Gate::define('write-data', function ($user) {
             return $user->hasRole('user_admin') || $user->hasRole('coordinador') || $user->hasRole('tecnico');
         });

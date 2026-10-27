@@ -37,19 +37,14 @@
                 </p>
             </div>
 
-            <!-- Paso 4: Tickets (Unificado con opacidad reducida y mensaje Proximamente) -->
-            <div class="flex flex-col items-center gap-3 transition-all duration-300 opacity-60 hover:opacity-90 bg-black/30 p-4 rounded-2xl border border-dashed border-amber-400/30 relative">
-                <div class="absolute -top-3 bg-amber-400 text-black text-[11px] font-black uppercase px-3 py-0.5 rounded-full shadow-sm tracking-wider">
-                    Próximamente
-                </div>
-                <div class="bg-amber-400/80 w-36 h-36 rounded-full flex justify-center items-center shadow-md grayscale-[30%]">
+            <!-- Paso 4: Tickets (Módulo activo implementado) -->
+            <div class="flex flex-col items-center gap-3 transition-transform duration-300 hover:scale-105 bg-black/20 p-4 rounded-2xl border border-white/5">
+                <div class="bg-[#dba800] w-36 h-36 rounded-full flex justify-center items-center shadow-md">
                     <img src="/assets/keyboard.svg" alt="Gestión de Tickets" class="w-16 h-16" />
                 </div>
-                <h4 class="text-white text-center text-lg font-bold flex items-center gap-1.5">
-                    <span>Gestión de Tickets</span>
-                </h4>
-                <p class="text-center px-2 text-white/70 font-light text-sm leading-relaxed">
-                    Revisión de solicitudes técnicas y respuesta coordinada a incidencias de hardware en salas. En desarrollo activo para la siguiente fase.
+                <h4 class="text-white text-center text-lg font-bold">Gestión de Tickets</h4>
+                <p class="text-center px-2 text-white/80 font-light text-sm leading-relaxed">
+                    Revisión de solicitudes técnicas, trazabilidad de reparaciones y respuesta coordinada a incidencias de hardware en salas.
                 </p>
             </div>
         </div>

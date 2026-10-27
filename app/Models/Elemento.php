@@ -141,6 +141,89 @@ class Elemento extends Model
         return new ElementoPresenter($this);
     }
 
+    /**
+     * Columna compuesta que sintetiza de forma compacta y visual las especificaciones
+     * técnicas de hardware (ej: "i5-10400 | 16 GB | 480 GB SSD").
+     */
+    public function especificacionesSintetizadas(bool $conHtml = false): string
+    {
+        $partes = [];
+        $ordenClaves = ['procesador', 'cpu', 'ram', 'memoria', 'disco', 'capacidad', 'almacenamiento', 'potencia', 'pulgadas', 'resolucion', 'resolución', 'velocidad', 'puertos'];
+
+        $datos = [];
+        if ($this->relationLoaded('valoresAtributos') || $this->valoresAtributos()->exists()) {
+            foreach ($this->valoresAtributos as $va) {
+                $nom = $va->atributo?->nombre;
+                if ($nom && trim((string)$va->valor) !== '') {
+                    $unidad = $va->atributo?->unidad_medida ? ' ' . trim($va->atributo->unidad_medida) : '';
+                    $datos[mb_strtolower(trim($nom))] = [
+                        'label' => trim($nom),
+                        'valor' => trim((string)$va->valor) . $unidad,
+                    ];
+                }
+            }
+        }
+
+        if (is_array($this->descripcion)) {
+            foreach ($this->descripcion as $key => $val) {
+                $valStr = trim((string)$val);
+                if ($valStr !== '' && $valStr !== '-') {
+                    $keyLower = mb_strtolower(trim((string)$key));
+                    if (!isset($datos[$keyLower])) {
+                        $datos[$keyLower] = [
+                            'label' => is_string($key) ? trim((string)$key) : '',
+                            'valor' => $valStr,
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Ordenar según ordenClaves prioritario y luego las restantes
+        $clavesOrdenadas = [];
+        foreach ($ordenClaves as $k) {
+            if (isset($datos[$k])) {
+                $clavesOrdenadas[$k] = $datos[$k];
+                unset($datos[$k]);
+            }
+        }
+        foreach ($datos as $k => $d) {
+            $clavesOrdenadas[$k] = $d;
+        }
+
+        foreach ($clavesOrdenadas as $k => $item) {
+            $val = $item['valor'];
+            $label = $item['label'];
+
+            if (in_array($k, ['procesador', 'cpu'])) {
+                $partes[] = $val;
+            } elseif (in_array($k, ['ram', 'memoria'])) {
+                $partes[] = (stripos($val, 'gb') !== false || stripos($val, 'mb') !== false) ? $val : "{$val} RAM";
+            } elseif (in_array($k, ['disco', 'capacidad', 'almacenamiento'])) {
+                $partes[] = (stripos($val, 'ssd') !== false || stripos($val, 'hdd') !== false || stripos($val, 'disco') !== false || stripos($val, 'gb') !== false || stripos($val, 'tb') !== false)
+                    ? $val
+                    : "{$val} Disco";
+            } else {
+                $partes[] = (!empty($label) && !is_numeric($label)) ? "{$label}: {$val}" : $val;
+            }
+        }
+
+        if (empty($partes)) {
+            if (!empty($this->observaciones) && $this->observaciones !== '-') {
+                return $this->observaciones;
+            }
+            return '-';
+        }
+
+        if ($conHtml) {
+            return collect($partes)->map(function ($p) {
+                return '<span class="inline-block bg-gray-100 text-gray-800 text-[11px] font-mono font-medium px-1.5 py-0.5 rounded border border-gray-200">' . e($p) . '</span>';
+            })->implode(' ');
+        }
+
+        return implode(' | ', $partes);
+    }
+
     public function getDescripcionTextoAttribute(): string
     {
         if ($this->valoresAtributos->isNotEmpty()) {

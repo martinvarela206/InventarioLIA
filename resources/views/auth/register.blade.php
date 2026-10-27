@@ -69,6 +69,18 @@
                         Confirmar Contraseña *
                     </label>
                     <input class="w-full border rounded-xl px-3.5 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="password_confirmation" type="password" name="password_confirmation" required placeholder="Repita la contraseña">
+                <div class="mb-5">
+                    <div class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/90 text-left">
+                        <label class="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 select-none" for="terminos_consentimiento">
+                            <input type="checkbox" id="terminos_consentimiento" name="terminos_consentimiento" value="1" required {{ old('terminos_consentimiento') ? 'checked' : '' }} class="mt-0.5 rounded text-amber-500 focus:ring-amber-400 border-gray-300">
+                            <span class="leading-relaxed">
+                                Acepto el <strong class="text-gray-900 font-semibold">Contrato de Uso y Tratamiento de Datos (Ley 25.326)</strong>. Comprendo y consiento que mis datos identificatorios y registros de auditoría operativa se conservarán por un período legal mínimo de <strong class="text-amber-800 font-bold">6 años</strong> para garantizar la trazabilidad institucional patrimonial.
+                            </span>
+                        </label>
+                        @error('terminos_consentimiento')
+                            <p class="text-red-500 text-xs mt-1.5 font-semibold">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
 
                 <div class="mb-4">

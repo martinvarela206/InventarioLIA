@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
         $middleware->alias([
             'user_admin' => \App\Http\Middleware\CheckUserAdmin::class,
             'app_admin' => \App\Http\Middleware\CheckAppAdmin::class,

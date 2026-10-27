@@ -5,12 +5,25 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
+use App\Models\Carrera;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
 class ProfileController extends Controller
 {
+    public const CARGOS_ESTANDAR = [
+        'Director',
+        'Secretaria',
+        'Coordinador de Área',
+        'JTP',
+        'Ayudante 1ra',
+        'Ayudante 2da',
+        'Becario',
+        'Pasante',
+    ];
+
     /**
      * Show the form for editing the specified resource.
      */
@@ -20,8 +33,13 @@ class ProfileController extends Controller
             abort(403, 'Requiere el rol registered para gestionar su perfil personal.');
         }
 
+        $carreras = Carrera::activas()->orderBy('nombre')->get();
+        $cargos = self::CARGOS_ESTANDAR;
+
         return view('profile.edit', [
-            'user' => auth()->user()
+            'user' => auth()->user(),
+            'carreras' => $carreras,
+            'cargos' => $cargos,
         ]);
     }
 
@@ -44,7 +62,7 @@ class ProfileController extends Controller
             'cargo_actual' => ['nullable', 'string', 'max:50'],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'direccion' => ['nullable', 'string', 'max:255'],
-            'password' => ['nullable', 'string', 'min:4', 'confirmed'],
+            'password' => ['nullable', 'string', 'confirmed', Password::defaults()],
         ];
 
         // Solo el rol user_admin tiene permiso de modificar el correo de ingreso

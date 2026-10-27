@@ -9,6 +9,7 @@ use App\Models\Carrera;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller
 {
@@ -26,7 +27,10 @@ class RegisterController extends Controller
             'dni' => ['nullable', 'string', 'max:15', 'unique:usuarios'],
             'carrera_id' => ['nullable', 'exists:carreras,id'],
             'carrera' => ['nullable', 'string', 'max:100'],
-            'password' => ['required', 'string', 'min:4', 'confirmed'],
+            'password' => ['required', 'string', 'confirmed', Password::defaults()],
+            'terminos_consentimiento' => ['accepted'],
+        ], [
+            'terminos_consentimiento.accepted' => 'Debe aceptar los términos de uso y tratamiento de datos personales conforme a la Ley 25.326.',
         ]);
 
         $carreraId = $request->input('carrera_id');

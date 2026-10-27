@@ -26,7 +26,12 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Cargo / Función Desempeñada *</label>
-                    <input type="text" name="cargo" placeholder="Ej. Becario de Investigación, JTP Redes" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium" required>
+                    <input type="text" name="cargo" list="lista-cargos-trayectoria" placeholder="Seleccione o escriba el cargo..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium" required>
+                    <datalist id="lista-cargos-trayectoria">
+                        @foreach($cargos as $cargo)
+                            <option value="{{ $cargo }}"></option>
+                        @endforeach
+                    </datalist>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fecha de Inicio *</label>

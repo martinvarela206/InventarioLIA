@@ -17,6 +17,7 @@ class RoleSeeder extends Seeder
             'app_admin',
             'item_admin',
             'tec',
+            'subtec',
             'rev',
             'registered',
         ];

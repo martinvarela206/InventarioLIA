@@ -53,6 +53,14 @@ class ElementoController extends Controller
             }
         }
 
+        if ($request->filled('puesto')) {
+            $puesto = trim($request->input('puesto'));
+            $query->where(function ($q) use ($puesto) {
+                $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
+                  ->orWhere('puesto', $puesto);
+            });
+        }
+
         if ($request->filled('situacion')) {
             if ($request->situacion === 'operativo') {
                 $query->disponibles();
@@ -104,8 +112,9 @@ class ElementoController extends Controller
         $tipos = Tipo::orderBy('nombre')->get();
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $anios = Elemento::whereNotNull('anio_compra')->distinct()->orderBy('anio_compra', 'desc')->pluck('anio_compra');
+        $puestos = Elemento::whereNotNull('puesto')->where('puesto', '!=', '')->distinct()->orderBy('puesto')->pluck('puesto');
 
-        return view('elementos.index', compact('elementos', 'tipos', 'ubicaciones', 'anios'));
+        return view('elementos.index', compact('elementos', 'tipos', 'ubicaciones', 'anios', 'puestos'));
     }
 
     /**
@@ -116,7 +125,7 @@ class ElementoController extends Controller
         $query = $this->construirConsultaInventario($request);
         $items = $query->orderBy('id', 'asc')->get();
 
-        $columnas = ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Nro Serie', 'Ubicación', 'Puesto', 'Situación', 'Solicitante / Préstamo', 'Garantía', 'Año Compra', 'Observaciones'];
+        $columnas = ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Especificaciones / Hardware', 'Nro Serie', 'Ubicación', 'Puesto', 'Situación', 'Solicitante / Préstamo', 'Garantía', 'Año Compra', 'Observaciones'];
 
         $filas = $items->map(function ($el) {
             $u = $el->ultimoMovimiento;
@@ -141,6 +150,7 @@ class ElementoController extends Controller
                 $el->nro_unsj ?? '-',
                 $el->marca ?? '-',
                 $el->modelo ?? '-',
+                $el->especificacionesSintetizadas(false),
                 $el->nro_serie ?? '-',
                 $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo Externo' : 'Sin asignar'),
                 $u?->puesto ?: ($el->puesto ?? '-'),
@@ -181,7 +191,7 @@ class ElementoController extends Controller
 
         $atributos = ReporteController::obtenerAtributosDinamicos();
         $columnas = array_merge(
-            ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Ubicación', 'Puesto', 'Situación'],
+            ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Especificaciones / Hardware', 'Ubicación', 'Puesto', 'Situación'],
             $atributos,
             ['Solicitante / Préstamo', 'Garantía / Obs']
         );
@@ -204,6 +214,7 @@ class ElementoController extends Controller
                 $el->nro_unsj ?? '-',
                 $el->marca ?? '-',
                 $el->modelo ?? '-',
+                $el->especificacionesSintetizadas(false),
                 $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo Externo' : 'Sin asignar'),
                 $u?->puesto ?: ($el->puesto ?? '-'),
                 $situacion,

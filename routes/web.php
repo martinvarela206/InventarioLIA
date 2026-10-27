@@ -15,10 +15,11 @@ use App\Http\Controllers\TicketController;
 use App\Models\EspacioLia;
 use App\Models\PersonalLia;
 use App\Models\ActividadLia;
+use App\Models\AvisoSeguridad;
 
 // Autenticación
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login']);
+Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
@@ -29,7 +30,8 @@ Route::get('/', function () {
     $espacios = EspacioLia::activos()->get();
     $personal = PersonalLia::activos()->get();
     $actividades = ActividadLia::activos()->with('autor')->take(6)->get();
-    return view('welcome', compact('espacios', 'personal', 'actividades'));
+    $avisos = AvisoSeguridad::activos()->get();
+    return view('welcome', compact('espacios', 'personal', 'actividades', 'avisos'));
 });
 
 // Rutas de revisión técnica / registro
@@ -42,7 +44,8 @@ Route::middleware('auth')->group(function () {
         if (Auth::user()->hasActivePermissions()) {
             return redirect()->route('dashboard.index');
         }
-        return view('auth.bienvenida');
+        $avisos = AvisoSeguridad::activos()->get();
+        return view('auth.bienvenida', compact('avisos'));
     })->name('bienvenida');
 
     // Perfil de Usuario (requiere rol registered para gestionar sus datos personales)
@@ -83,16 +86,25 @@ Route::middleware('auth')->group(function () {
         Route::get('/tickets/create', [TicketController::class, 'create'])->name('tickets.create');
         Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
 
-        // Gestión Operativa de Movimientos, Préstamos y Tickets (exclusivo tec)
+        // Hilo y Seguimiento de Tickets (apertura, consulta y comentarios: rev, subtec, tec)
+        Route::middleware('role:rev,subtec,tec,item_admin,user_admin,app_admin')->group(function () {
+            Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+            Route::post('/tickets/{ticket}/comentar', [TicketController::class, 'comentar'])->name('tickets.comentar');
+            Route::post('/tickets/{ticket}/area', [TicketController::class, 'agregarArea'])->name('tickets.agregarArea');
+        });
+
+        // Bandeja y Solución Técnica de Tickets (subtec, tec)
+        Route::middleware('role:subtec,tec,item_admin,user_admin,app_admin')->group(function () {
+            Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
+            Route::post('/tickets/{ticket}/solucionar', [TicketController::class, 'solucionar'])->name('tickets.solucionar');
+        });
+
+        // Gestión Operativa de Movimientos, Préstamos y Cierre de Tickets (exclusivo tec)
         Route::middleware('role:tec')->group(function () {
             Route::get('/movimientos/rapido', [MovimientoController::class, 'rapido'])->name('movimientos.rapido');
             Route::post('/movimientos', [MovimientoController::class, 'store'])->name('movimientos.store');
             Route::post('/movimientos/{movimiento}/devolucion', [MovimientoController::class, 'devolucion'])->name('movimientos.devolucion');
             Route::post('/movimientos/{movimiento}/correccion', [MovimientoController::class, 'storeCorreccion'])->name('movimientos.correccion');
-
-            // Bandeja y Resolución de Tickets para Técnicos
-            Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
-            Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
             Route::post('/tickets/{ticket}/resolver', [TicketController::class, 'resolver'])->name('tickets.resolver');
         });
 
@@ -104,6 +116,17 @@ Route::middleware('auth')->group(function () {
             Route::get('/reportes/{tipo}/export-csv', [ReporteController::class, 'exportCsv'])->name('reportes.exportCsv');
         });
 
+        // Módulo de Auditorías Físicas de Ubicación y Archivo Histórico
+        Route::middleware('role:rev,subtec,tec,item_admin,user_admin,app_admin')->group(function () {
+            Route::get('/auditorias', [\App\Http\Controllers\AuditoriaController::class, 'index'])->name('auditorias.index');
+            Route::get('/auditorias/crear', [\App\Http\Controllers\AuditoriaController::class, 'create'])->name('auditorias.create');
+            Route::get('/auditorias/{auditoria}', [\App\Http\Controllers\AuditoriaController::class, 'show'])->name('auditorias.show');
+            Route::post('/auditorias', [\App\Http\Controllers\AuditoriaController::class, 'store'])->name('auditorias.store');
+            Route::post('/auditorias/{auditoria}/detalle', [\App\Http\Controllers\AuditoriaController::class, 'guardarDetalle'])->name('auditorias.guardarDetalle');
+            Route::post('/auditorias/{auditoria}/ticket', [\App\Http\Controllers\AuditoriaController::class, 'crearTicketInconsistencia'])->name('auditorias.crearTicketInconsistencia');
+            Route::post('/auditorias/{auditoria}/finalizar', [\App\Http\Controllers\AuditoriaController::class, 'finalizar'])->name('auditorias.finalizar');
+        });
+
         // API de Atributos por Tipo
         Route::get('/api/tipos/{tipo}/atributos', [\App\Http\Controllers\TipoController::class, 'apiAtributosPorTipo'])->name('api.tipos.atributos');
 
@@ -112,9 +135,11 @@ Route::middleware('auth')->group(function () {
             Route::resource('users', UserController::class)->only(['index', 'edit', 'update']);
             Route::post('/users/{user}/role', [UserController::class, 'toggleRole'])->name('users.toggleRole');
             Route::post('/users/{user}/toggle-activo', [UserController::class, 'toggleActivo'])->name('users.toggleActivo');
+            Route::post('/users/{user}/anonimizar', [UserController::class, 'anonimizar'])->name('users.anonimizar');
             Route::get('/users/{user}/trayectoria', [UserController::class, 'trayectoria'])->name('users.trayectoria');
             Route::post('/users/{user}/trayectoria', [UserController::class, 'storeTrayectoria'])->name('users.trayectoria.store');
             Route::delete('/trayectorias/{trayectoria}', [UserController::class, 'destroyTrayectoria'])->name('trayectorias.destroy');
+            Route::get('/users/{user}/reporte', [UserController::class, 'reporte'])->name('users.reporte');
         });
 
         // Configuración Institucional y Gestión de la App (app_admin, user_admin)
@@ -153,6 +178,13 @@ Route::middleware('auth')->group(function () {
             Route::put('/app-admin/reportes/{reporte}', [AppAdminController::class, 'reporteUpdate'])->name('app_admin.reportes.update');
             Route::match(['post', 'patch'], '/app-admin/reportes/{reporte}/toggle', [AppAdminController::class, 'reporteToggle'])->name('app_admin.reportes.toggle');
             Route::delete('/app-admin/reportes/{reporte}', [AppAdminController::class, 'reporteDestroy'])->name('app_admin.reportes.destroy');
+
+            // Avisos de Seguridad y Buenas Prácticas Informáticas (app_admin)
+            Route::get('/app-admin/avisos', [AppAdminController::class, 'avisosIndex'])->name('app_admin.avisos');
+            Route::post('/app-admin/avisos', [AppAdminController::class, 'avisoStore'])->name('app_admin.avisos.store');
+            Route::put('/app-admin/avisos/{aviso}', [AppAdminController::class, 'avisoUpdate'])->name('app_admin.avisos.update');
+            Route::post('/app-admin/avisos/{aviso}/toggle', [AppAdminController::class, 'avisoToggle'])->name('app_admin.avisos.toggle');
+            Route::delete('/app-admin/avisos/{aviso}', [AppAdminController::class, 'avisoDestroy'])->name('app_admin.avisos.destroy');
         });
     });
 });

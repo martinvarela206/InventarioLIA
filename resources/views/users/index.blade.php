@@ -13,6 +13,9 @@
         </div>
     </div>
 
+    <!-- WIDGET INFORMATIVO Y ALERTA DE HUELLA DIGITAL (LEY 25.326) -->
+    @include('users.widget-huella-alerta')
+
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm border-collapse">
@@ -40,18 +43,47 @@
                                 <div class="text-xs text-gray-500">{{ $user->carrera ?: 'Sin carrera' }}</div>
                             </td>
                             <td class="py-3.5 px-4 whitespace-nowrap">
-                                <form action="{{ route('users.toggleActivo', $user->id) }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all {{ $user->activo ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-rose-100 text-rose-800 hover:bg-rose-200' }}">
-                                        <span class="w-2 h-2 rounded-full {{ $user->activo ? 'bg-emerald-600' : 'bg-rose-600' }}"></span>
-                                        {{ $user->activo ? 'Cuenta Activa' : 'Inactiva (Bloqueado)' }}
-                                    </button>
-                                </form>
+                                @if($user->esHistorico())
+                                    <div class="space-y-1">
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-900 border border-purple-200">
+                                            <svg class="w-3.5 h-3.5 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                            Usuario Histórico
+                                        </span>
+                                        <div class="text-[10px] text-purple-700 font-medium">Huella Anonimizada (Ley 25.326)</div>
+                                    </div>
+                                @elseif($user->activo)
+                                    <form action="{{ route('users.toggleActivo', $user->id) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300" title="Clic para desactivar cuenta">
+                                            <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                                            Activo
+                                        </button>
+                                    </form>
+                                @elseif($user->isExPersonalMayor6Anios())
+                                    <div class="space-y-1">
+                                        <form action="{{ route('users.toggleActivo', $user->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-rose-100 text-rose-800 hover:bg-rose-200 border border-rose-300" title="Clic para activar cuenta">
+                                                <span class="w-2 h-2 rounded-full bg-rose-600"></span>
+                                                Inactivo &gt; 6 años
+                                            </button>
+                                        </form>
+                                        <div class="text-[10px] text-rose-700 font-bold">Plazo Legal Cumplido (&gt; 6 años) - Elegible Ley 25.326</div>
+                                    </div>
+                                @else
+                                    <form action="{{ route('users.toggleActivo', $user->id) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300" title="Clic para activar cuenta">
+                                            <span class="w-2 h-2 rounded-full bg-gray-500"></span>
+                                            Inactivo
+                                        </button>
+                                    </form>
+                                @endif
                             </td>
                             <td class="py-3.5 px-4">
                                 <div class="flex flex-wrap gap-1.5">
                                     @php
-                                        $rolesOficiales = ['user_admin', 'app_admin', 'item_admin', 'tec', 'rev', 'registered'];
+                                        $rolesOficiales = ['user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev', 'registered'];
                                     @endphp
                                     @foreach($rolesOficiales as $rName)
                                         @php
@@ -77,6 +109,19 @@
                             </td>
                             <td class="py-3.5 px-4 text-right whitespace-nowrap">
                                 <div class="flex items-center justify-end gap-2">
+                                    @if($user->isExPersonalMayor6Anios() && !$user->esHistorico())
+                                        <button type="button" 
+                                            onclick="abrirModalHuella({{ $user->id }}, '{{ addslashes($user->nombre) }}', '{{ $user->dni ?: 'Sin DNI' }}', '{{ $user->fecha_egreso ? $user->fecha_egreso->format('d/m/Y') : 'Mayor a 6 años' }}')"
+                                            class="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 font-bold px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition-all" 
+                                            title="Borrado de Huella Digital y disociación según Ley 25.326">
+                                            <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Borrar Huella</span>
+                                        </button>
+                                    @endif
+                                    <a href="{{ route('users.reporte', $user->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs transition-all" title="Ver informe integral de auditoría y trazabilidad (Tickets, Reportes y Movimientos)">
+                                        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Informe</span>
+                                    </a>
                                     <a href="{{ route('users.trayectoria', $user->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs transition-all" title="Ver y gestionar periodos de trayectoria">
                                         <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         <span>Trayectoria ({{ $user->trayectorias->count() }})</span>
@@ -180,5 +225,6 @@
             cerrarModalRol();
         });
     });
+
 </script>
 @endsection

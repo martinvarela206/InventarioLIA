@@ -56,16 +56,32 @@
             </a>
         </div>
 
-        <!-- Buscador de tickets -->
-        <form action="{{ route('tickets.index') }}" method="GET" class="w-full sm:w-72">
+        <!-- Filtros y Buscador de tickets -->
+        <form action="{{ route('tickets.index') }}" method="GET" class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
             <input type="hidden" name="estado" value="{{ $estado }}">
-            <div class="relative">
+            
+            <!-- Selector de Área -->
+            <select name="area_id" onchange="this.form.submit()" class="w-full sm:w-44 bg-white border border-gray-300 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                <option value="">Todas las Áreas</option>
+                @foreach($areas as $ar)
+                    <option value="{{ $ar->id }}" {{ request('area_id') == $ar->id ? 'selected' : '' }}>
+                        {{ $ar->nombre }}
+                    </option>
+                @endforeach
+            </select>
+
+            <div class="relative w-full sm:w-64">
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar LIA, UNSJ, problema..." 
                        class="w-full bg-white border border-gray-300 rounded-xl pl-9 pr-4 py-2 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
             </div>
+            @if(request('area_id') || request('search'))
+                <a href="{{ route('tickets.index', ['estado' => $estado]) }}" class="text-xs font-bold text-gray-500 hover:text-gray-900 px-2 py-1">
+                    Limpiar
+                </a>
+            @endif
         </form>
     </div>
 
@@ -78,11 +94,11 @@
                 </svg>
             </div>
             <h3 class="text-base font-bold text-gray-900">No hay tickets en esta bandeja</h3>
-            <p class="text-xs text-gray-500 mt-1">Actualmente no existen registros bajo el estado "{{ ucfirst($estado) }}".</p>
-            @if($estado !== 'abierto')
+            <p class="text-xs text-gray-500 mt-1">Actualmente no existen registros bajo el estado "{{ ucfirst($estado) }}"{{ request('area_id') ? ' para el área seleccionada' : '' }}.</p>
+            @if($estado !== 'abierto' || request('area_id'))
                 <div class="mt-4">
                     <a href="{{ route('tickets.index', ['estado' => 'abierto']) }}" class="text-xs font-bold text-amber-700 hover:text-amber-900 underline">
-                        Ver tickets abiertos
+                        Ver todos los tickets abiertos
                     </a>
                 </div>
             @endif
@@ -100,8 +116,21 @@
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Resuelto</span>
                             @elseif($t->estado_ticket === 'baja')
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">Baja / Irreparable</span>
+                            @elseif($t->estado_ticket === 'solucionado')
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">Solución Propuesta</span>
                             @else
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">Abierto / En Taller</span>
+                            @endif
+
+                            @if($t->areas && $t->areas->isNotEmpty())
+                                <div class="flex flex-wrap items-center gap-1">
+                                    @foreach($t->areas as $ar)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black border"
+                                              style="background-color: {{ $ar->color ? $ar->color . '20' : '#f3f4f6' }}; color: {{ $ar->color ?: '#374151' }}; border-color: {{ $ar->color ? $ar->color . '60' : '#d1d5db' }};">
+                                            {{ $ar->nombre }}
+                                        </span>
+                                    @endforeach
+                                </div>
                             @endif
 
                             <span class="text-xs text-gray-400 font-medium">

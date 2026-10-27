@@ -39,9 +39,9 @@ class InventarioDevTest extends TestCase
         $this->assertNotNull(Tipo::where('nombre', 'punto de acceso')->first());
     }
 
-    public function test_catalogo_roles_contiene_los_6_roles_oficiales(): void
+    public function test_catalogo_roles_contiene_los_roles_oficiales(): void
     {
-        $rolesEsperados = ['user_admin', 'app_admin', 'item_admin', 'tec', 'rev', 'registered'];
+        $rolesEsperados = ['user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev', 'registered'];
         foreach ($rolesEsperados as $r) {
             $this->assertDatabaseHas('roles', ['rol' => $r]);
         }
@@ -565,12 +565,23 @@ class InventarioDevTest extends TestCase
         $responseLanding->assertSee('Registrarse');
         $responseLanding->assertSee('Iniciar Sesión');
 
-        // 2. Acceder al formulario de registro
+        // 2. Acceder al formulario de registro y verificar cláusula legal Ley 25.326
         $responseForm = $this->get(route('register'));
         $responseForm->assertStatus(200);
         $responseForm->assertSee('Registro de Usuario');
+        $responseForm->assertSee('Ley 25.326');
+        $responseForm->assertSee('6 años');
 
-        // 3. Completar el registro
+        // 3. Intento sin consentimiento legal debe ser rechazado
+        $responseRechazo = $this->post(route('register'), [
+            'nombre' => 'Estudiante Sin Consentimiento',
+            'email' => 'sin_consentimiento@exactas.unsj.edu.ar',
+            'password' => 'secret123',
+            'password_confirmation' => 'secret123',
+        ]);
+        $responseRechazo->assertSessionHasErrors('terminos_consentimiento');
+
+        // 4. Completar el registro con consentimiento explícito
         $responsePost = $this->post(route('register'), [
             'nombre' => 'Nuevo Estudiante Test',
             'email' => 'nuevo_estudiante@exactas.unsj.edu.ar',
@@ -578,6 +589,7 @@ class InventarioDevTest extends TestCase
             'carrera' => 'Licenciatura en Ciencias de la Computación',
             'password' => 'secret123',
             'password_confirmation' => 'secret123',
+            'terminos_consentimiento' => '1',
         ]);
 
         $this->assertDatabaseHas('usuarios', [
@@ -675,7 +687,7 @@ class InventarioDevTest extends TestCase
         $responseWelcome->assertSee('Concurso de Programación Competitiva LIA');
         $responseWelcome->assertSee('Lo que Ofrece el LIA');
         $responseWelcome->assertSee('Gestión de Tickets');
-        $responseWelcome->assertSee('Próximamente');
+        $responseWelcome->assertDontSee('Próximamente');
     }
 
     public function test_usuario_sin_rol_app_admin_es_bloqueado_de_la_configuracion(): void
@@ -1177,6 +1189,9 @@ class InventarioDevTest extends TestCase
         $resFormRev->assertSee('Apertura de Ticket de Reparación Técnica');
         $resFormRev->assertSee('LIA-TICKET-01');
         $resFormRev->assertSee('Revisor Auditor');
+        $resFormRev->assertSee('Ubicación Actual Detectada (Origen)');
+        $resFormRev->assertSee('Permanece en su sala para inspección in situ');
+        $resFormRev->assertSee('Trasladar físicamente a Taller de Hardware / Depósito');
 
         // Registro de Ticket con imagen adjunta
         $fotoFake = UploadedFile::fake()->image('falla_fuente.jpg', 600, 400);
@@ -1728,6 +1743,1694 @@ class InventarioDevTest extends TestCase
         $this->assertStringContainsString('Dell', $csvContent);
         $this->assertStringNotContainsString('LIA-DYN-02', $csvContent);
     }
+
+    public function test_exclusion_de_cabeceras_ods_y_depuracion_de_registros_espurios(): void
+    {
+        // 1. Verificar que no existan activos espurios con nro_lia en palabras clave de encabezados
+        $headerWords = ['Disco', 'RAM', 'CPU', 'Procesador', 'Modelo', 'Nro LIA', 'Nro UNSJ'];
+        $countLiaHeaders = Elemento::whereIn('nro_lia', $headerWords)->count();
+        $this->assertEquals(0, $countLiaHeaders, 'No deben existir activos cuyo Nro LIA sea un nombre de encabezado ODS.');
+
+        // 2. Verificar que no existan activos con especificaciones redundantes de cabecera
+        $countSpecsHeaders = Elemento::whereJsonContains('descripcion->Procesador', 'Procesador')
+            ->whereJsonContains('descripcion->RAM', 'RAM')
+            ->count();
+        $this->assertEquals(0, $countSpecsHeaders, 'No deben existir activos con especificaciones técnicas que dupliquen nombres de columnas.');
+    }
+
+    public function test_reporte_configurado_de_fuentes_y_resolucion_de_filtros_de_tipo_y_ubicacion(): void
+    {
+        $revisor = Usuario::where('email', 'martin@lia.com')->first();
+        if (!$revisor) {
+            $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+            $revisor = Usuario::factory()->create([
+                'nombre' => 'Martin Varela',
+                'email' => 'martin@lia.com',
+                'password' => bcrypt('1234'),
+            ]);
+            $revisor->roles()->syncWithoutDetaching([$rolRev->id]);
+        }
+
+        $tipoFuente = Tipo::firstOrCreate(['nombre' => 'fuente'], ['descripcion' => 'Fuente de alimentación']);
+        $salaA = Ubicacion::firstOrCreate(['nombre' => 'Sala A - Laboratorio']);
+        $taller = Ubicacion::firstOrCreate(['nombre' => 'Taller de Hardware']);
+
+        // Crear dos fuentes: una en Sala A y otra en Taller de Hardware
+        $fuente1 = Elemento::create([
+            'nro_lia' => 'LIA-FNT-01',
+            'tipo_id' => $tipoFuente->id,
+            'marca' => 'EVGA',
+            'modelo' => '600W 80 Plus',
+            'activo' => true,
+        ]);
+        Movimiento::create([
+            'elemento_id' => $fuente1->id,
+            'ubicacion_id' => $salaA->id,
+            'user_id' => $revisor->id,
+            'tipo_movimiento' => 'alta',
+            'fecha' => now(),
+        ]);
+
+        $fuente2 = Elemento::create([
+            'nro_lia' => 'LIA-FNT-02',
+            'tipo_id' => $tipoFuente->id,
+            'marca' => 'Corsair',
+            'modelo' => 'CX750M',
+            'activo' => true,
+        ]);
+        Movimiento::create([
+            'elemento_id' => $fuente2->id,
+            'ubicacion_id' => $taller->id,
+            'user_id' => $revisor->id,
+            'tipo_movimiento' => 'alta',
+            'fecha' => now(),
+        ]);
+
+        // 1. Reporte con filtro search='fuente' que debe resolverse automáticamente a tipo_id
+        $reporteFuentes = ReporteConfigurado::create([
+            'slug' => 'reporte-fuentes-test',
+            'titulo' => 'Reporte Oficial de Fuentes',
+            'filtros_fijos' => ['search' => 'fuente'],
+            'variables_requeridas' => ['ubicacion_id' => true],
+            'es_sistema' => false,
+            'activo' => true,
+            'orden' => 99,
+        ]);
+
+        // Sin especificar ubicacion_id en request: debe devolver ambas fuentes y no restringir a ubicacion_id = 1
+        $resAll = $this->actingAs($revisor)->get(route('reportes.show', 'reporte-fuentes-test'));
+        $resAll->assertStatus(200);
+        $resAll->assertSee('LIA-FNT-01');
+        $resAll->assertSee('LIA-FNT-02');
+        $resAll->assertSee('EVGA');
+        $resAll->assertSee('Corsair');
+
+        // Especificando ubicacion_id = $taller->id: debe filtrar solo la del taller
+        $resTaller = $this->actingAs($revisor)->get(route('reportes.show', [
+            'tipo' => 'reporte-fuentes-test',
+            'ubicacion_id' => $taller->id,
+        ]));
+        $resTaller->assertStatus(200);
+        $resTaller->assertSee('LIA-FNT-02');
+        $resTaller->assertDontSee('LIA-FNT-01');
+
+        // 2. Reporte con filtros_fijos con nombre de tipo textual ('tipo' => 'fuente')
+        $reporteTipoSlug = ReporteConfigurado::create([
+            'slug' => 'fuentes-por-tipo-nombre',
+            'titulo' => 'Fuentes por Nombre de Tipo',
+            'filtros_fijos' => ['tipo' => 'fuente'],
+            'variables_requeridas' => [],
+            'es_sistema' => false,
+            'activo' => true,
+            'orden' => 100,
+        ]);
+
+        $resSlug = $this->actingAs($revisor)->get(route('reportes.show', 'fuentes-por-tipo-nombre'));
+        $resSlug->assertStatus(200);
+        $resSlug->assertSee('LIA-FNT-01');
+        $resSlug->assertSee('LIA-FNT-02');
+    }
+
+    public function test_filtrado_multidimensional_por_puesto_de_trabajo_en_inventario_y_reportes(): void
+    {
+        $admin = Usuario::where('email', 'admin@lia.com')->first();
+        if (!$admin) {
+            $rolAdmin = Rol::firstOrCreate(['rol' => 'app_admin']);
+            $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+            $admin = Usuario::factory()->create([
+                'nombre' => 'App Admin User',
+                'email' => 'admin@lia.com',
+                'password' => bcrypt('1234'),
+            ]);
+            $admin->roles()->syncWithoutDetaching([$rolAdmin->id, $rolRev->id]);
+        }
+
+        $tipoPc = Tipo::firstOrCreate(['nombre' => 'computadora escritorio'], ['descripcion' => 'PC de escritorio']);
+        $sala1 = Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Sala 1']);
+
+        // Crear activos en puestos específicos
+        $pcPuesto3 = Elemento::create([
+            'nro_lia' => 'LIA-PST-03',
+            'tipo_id' => $tipoPc->id,
+            'marca' => 'Lenovo',
+            'modelo' => 'ThinkCentre M720',
+            'puesto' => 'Puesto 03',
+            'activo' => true,
+        ]);
+        Movimiento::create([
+            'elemento_id' => $pcPuesto3->id,
+            'ubicacion_id' => $sala1->id,
+            'puesto' => 'Puesto 03',
+            'user_id' => $admin->id,
+            'tipo_movimiento' => 'alta',
+            'fecha' => now(),
+        ]);
+
+        $pcPuesto7 = Elemento::create([
+            'nro_lia' => 'LIA-PST-07',
+            'tipo_id' => $tipoPc->id,
+            'marca' => 'Dell',
+            'modelo' => 'OptiPlex 7080',
+            'puesto' => 'Puesto 07',
+            'activo' => true,
+        ]);
+        Movimiento::create([
+            'elemento_id' => $pcPuesto7->id,
+            'ubicacion_id' => $sala1->id,
+            'puesto' => 'Puesto 07',
+            'user_id' => $admin->id,
+            'tipo_movimiento' => 'alta',
+            'fecha' => now(),
+        ]);
+
+        // 1. Verificar presencia de selector de puesto y filtrado en elementos.index
+        $resIndex = $this->actingAs($admin)->get(route('elementos.index'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Todos los Puestos');
+        $resIndex->assertSee('Puesto 03');
+        $resIndex->assertSee('Puesto 07');
+
+        // Filtrar específicamente por Puesto 03
+        $resFilterPuesto = $this->actingAs($admin)->get(route('elementos.index', ['puesto' => 'Puesto 03']));
+        $resFilterPuesto->assertStatus(200);
+        $resFilterPuesto->assertSee('LIA-PST-03');
+        $resFilterPuesto->assertSee('Lenovo');
+        $resFilterPuesto->assertDontSee('LIA-PST-07');
+
+        // 2. Filtrado por puesto en auditoriaSala
+        $resAuditoria = $this->actingAs($admin)->get(route('reportes.auditoria', [
+            'ubicacion' => $sala1->id,
+            'puesto' => 'Puesto 07',
+        ]));
+        $resAuditoria->assertStatus(200);
+        $resAuditoria->assertSee('LIA-PST-07');
+        $resAuditoria->assertDontSee('LIA-PST-03');
+
+        // 3. Reporte configurado con filtro fijo de puesto
+        $reportePuestoFijo = ReporteConfigurado::create([
+            'slug' => 'auditoria-puesto-3',
+            'titulo' => 'Auditoría de Puesto 03',
+            'filtros_fijos' => ['puesto' => 'Puesto 03'],
+            'variables_requeridas' => [],
+            'es_sistema' => false,
+            'activo' => true,
+            'orden' => 101,
+        ]);
+
+        $resRepPuesto = $this->actingAs($admin)->get(route('reportes.show', 'auditoria-puesto-3'));
+        $resRepPuesto->assertStatus(200);
+        $resRepPuesto->assertSee('LIA-PST-03');
+        $resRepPuesto->assertDontSee('LIA-PST-07');
+    }
+
+    public function test_columna_compuesta_de_especificaciones_hardware_en_inventario_y_reportes(): void
+    {
+        $admin = Usuario::where('email', 'admin@lia.com')->first();
+        if (!$admin) {
+            $rolAdmin = Rol::firstOrCreate(['rol' => 'app_admin']);
+            $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+            $admin = Usuario::factory()->create([
+                'nombre' => 'App Admin User',
+                'email' => 'admin@lia.com',
+                'password' => bcrypt('1234'),
+            ]);
+            $admin->roles()->syncWithoutDetaching([$rolAdmin->id, $rolRev->id]);
+        }
+
+        $tipoPc = Tipo::firstOrCreate(['nombre' => 'computadora escritorio'], ['descripcion' => 'PC']);
+        $sala1 = Ubicacion::firstOrCreate(['nombre' => 'Sala 1']);
+
+        $attrProc = Atributo::firstOrCreate(['nombre' => 'Procesador']);
+        $attrRam = Atributo::firstOrCreate(['nombre' => 'RAM'], ['unidad_medida' => 'GB']);
+        $attrDisco = Atributo::firstOrCreate(['nombre' => 'Disco'], ['unidad_medida' => 'GB']);
+
+        // Crear elemento con especificaciones
+        $pc = Elemento::create([
+            'nro_lia' => 'LIA-SPEC-01',
+            'tipo_id' => $tipoPc->id,
+            'marca' => 'Dell',
+            'modelo' => 'OptiPlex 3080',
+            'puesto' => 'Puesto 01',
+            'activo' => true,
+        ]);
+        Movimiento::create([
+            'elemento_id' => $pc->id,
+            'ubicacion_id' => $sala1->id,
+            'puesto' => 'Puesto 01',
+            'user_id' => $admin->id,
+            'tipo_movimiento' => 'alta',
+            'fecha' => now(),
+        ]);
+
+        \App\Models\ElementoAtributoValor::create(['elemento_id' => $pc->id, 'atributo_id' => $attrProc->id, 'valor' => 'i5-10400']);
+        \App\Models\ElementoAtributoValor::create(['elemento_id' => $pc->id, 'atributo_id' => $attrRam->id, 'valor' => '16']);
+        \App\Models\ElementoAtributoValor::create(['elemento_id' => $pc->id, 'atributo_id' => $attrDisco->id, 'valor' => '480 SSD']);
+
+        // 1. Probar método sintetizado directo
+        $pc->load('valoresAtributos.atributo');
+        $specs = $pc->especificacionesSintetizadas(false);
+        $this->assertStringContainsString('i5-10400', $specs);
+        $this->assertStringContainsString('16 GB', $specs);
+        $this->assertStringContainsString('480 SSD', $specs);
+
+        // 2. Verificar que index.blade.php renderiza la columna y los badges de hardware
+        $resIndex = $this->actingAs($admin)->get(route('elementos.index'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Especificaciones / Hardware');
+        $resIndex->assertSee('i5-10400');
+        $resIndex->assertSee('16 GB');
+
+        // 3. Verificar exportCsv de elementos
+        $resCsv = $this->actingAs($admin)->get(route('elementos.exportCsv'));
+        $resCsv->assertStatus(200);
+        $csvText = $resCsv->streamedContent();
+        $this->assertStringContainsString('Especificaciones / Hardware', $csvText);
+        $this->assertStringContainsString('i5-10400', $csvText);
+
+        // 4. Verificar reporte inventario-completo
+        $resRep = $this->actingAs($admin)->get(route('reportes.show', 'inventario-completo'));
+        $resRep->assertStatus(200);
+        $resRep->assertSee('Especificaciones / Hardware');
+        $resRep->assertSee('i5-10400');
+    }
+
+    public function test_middleware_de_cabeceras_de_seguridad_http_en_rutas_web(): void
+    {
+        $response = $this->get('/login');
+        $response->assertStatus(200);
+
+        // Verificar presencia de cabeceras de endurecimiento
+        $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+        $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+        // Verificar Content-Security-Policy
+        $this->assertTrue($response->headers->has('Content-Security-Policy'));
+        $csp = $response->headers->get('Content-Security-Policy');
+        $this->assertStringContainsString("default-src 'self'", $csp);
+
+        // Verificar que no se divulgue X-Powered-By
+        $this->assertFalse($response->headers->has('X-Powered-By'));
+    }
+
+    public function test_rate_limiting_contra_fuerza_bruta_en_login(): void
+    {
+        // Enviar 5 intentos fallidos
+        for ($i = 0; $i < 5; $i++) {
+            $response = $this->post('/login', [
+                'login' => 'ataque@lia.com',
+                'password' => 'password_erroneo',
+            ]);
+            // Redirige hacia atrás con error de credenciales
+            $response->assertSessionHasErrors('login');
+        }
+
+        // El 6to intento debe ser bloqueado por RateLimiter (o middleware throttle 429)
+        $bloqueado = $this->post('/login', [
+            'login' => 'ataque@lia.com',
+            'password' => 'password_erroneo',
+        ]);
+
+        if ($bloqueado->status() === 429) {
+            $this->assertEquals(429, $bloqueado->status());
+        } else {
+            $bloqueado->assertSessionHasErrors('login');
+            $mensaje = session('errors')->first('login');
+            $this->assertStringContainsString('Demasiados intentos', $mensaje);
+        }
+    }
+
+    public function test_estandarizacion_de_desplegables_y_autocompletado_consistente_carreras_cargos_y_solicitantes(): void
+    {
+        $userAdmin = Usuario::create([
+            'nombre' => 'Admin Usuarios Datalist',
+            'email' => 'admin_datalist@lia.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $userAdmin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+        $userAdmin->roles()->attach(Rol::where('rol', 'registered')->first());
+        $userAdmin->roles()->attach(Rol::where('rol', 'tec')->first());
+
+        // 1. users.edit debe contener datalists para carreras y cargos oficiales
+        $resUsersEdit = $this->actingAs($userAdmin)->get(route('users.edit', $userAdmin->id));
+        $resUsersEdit->assertStatus(200);
+        $resUsersEdit->assertSee('id="lista-carreras"', false);
+        $resUsersEdit->assertSee('id="lista-cargos"', false);
+        $resUsersEdit->assertSee('Director');
+        $resUsersEdit->assertSee('Coordinador de Área');
+        $resUsersEdit->assertSee('JTP');
+
+        // 2. profile.edit debe contener datalists estandarizados
+        $resProfileEdit = $this->actingAs($userAdmin)->get(route('profile.edit'));
+        $resProfileEdit->assertStatus(200);
+        $resProfileEdit->assertSee('id="lista-carreras-perfil"', false);
+        $resProfileEdit->assertSee('id="lista-cargos-perfil"', false);
+
+        // 3. tickets.create debe tener datalist de solicitantes frecuentes
+        $resTicketCreate = $this->actingAs($userAdmin)->get(route('tickets.create'));
+        $resTicketCreate->assertStatus(200);
+        $resTicketCreate->assertSee('id="lista-solicitantes-ticket"', false);
+
+        // 4. movimientos.rapido debe tener datalist y dropdown estandarizado
+        $resMovRapido = $this->actingAs($userAdmin)->get(route('movimientos.rapido'));
+        $resMovRapido->assertStatus(200);
+        $resMovRapido->assertSee('id="lista-solicitantes-rapido"', false);
+        $resMovRapido->assertSee('id="resultados-dropdown"', false);
+    }
+
+    public function test_unificacion_y_ordenamiento_de_reportes_oficiales_y_personalizados(): void
+    {
+        $admin = Usuario::create([
+            'nombre' => 'Admin Reportes Unificados',
+            'email' => 'admin_unificados@lia.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $admin->roles()->attach(Rol::where('rol', 'app_admin')->first());
+        $admin->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        // 1. Acceder al hub unificado de reportes
+        $res = $this->actingAs($admin)->get(route('reportes.index'));
+        $res->assertStatus(200);
+        $res->assertSee('Catálogo unificado de reportes');
+        $res->assertSee('Listado completo del Inventario');
+        $res->assertSee('Inventario por ubicación');
+        // No debe existir división con encabezado "Reportes Oficiales del Sistema"
+        $res->assertDontSee('Reportes Oficiales del Sistema');
+
+        // 2. Administrador puede desactivar u ordenar cualquier reporte inicial gestionado en reportes_configurados
+        $reporteInicial = \App\Models\ReporteConfigurado::where('slug', 'bajas-basura')->first();
+        if ($reporteInicial) {
+            $resDelete = $this->actingAs($admin)->delete(route('app_admin.reportes.destroy', $reporteInicial->id));
+            $resDelete->assertRedirect(route('app_admin.reportes'));
+            $this->assertDatabaseHas('reportes_configurados', ['id' => $reporteInicial->id, 'activo' => false]);
+
+            // Con parámetro force puede removerse definitivamente
+            $this->actingAs($admin)->delete(route('app_admin.reportes.destroy', $reporteInicial->id), ['force' => 1]);
+            $this->assertDatabaseMissing('reportes_configurados', ['id' => $reporteInicial->id]);
+        }
+    }
+
+    public function test_matriz_escalonada_de_permisos_tickets_rev_vs_subtec_vs_tec(): void
+    {
+        $this->seed(\Database\Seeders\RoleSeeder::class);
+        $this->seed(\Database\Seeders\TipoSeeder::class);
+        $this->seed(\Database\Seeders\UbicacionSeeder::class);
+
+        $rolRev = \App\Models\Rol::where('rol', 'rev')->firstOrFail();
+        $rolSubTec = \App\Models\Rol::where('rol', 'subtec')->firstOrFail();
+        $rolTec = \App\Models\Rol::where('rol', 'tec')->firstOrFail();
+        $rolReg = \App\Models\Rol::where('rol', 'registered')->firstOrFail();
+
+        $userRev = \App\Models\Usuario::create([
+            'email' => 'revisor_test@lia.com',
+            'nombre' => 'Revisor Ticket Test',
+            'password' => bcrypt('secret123'),
+            'activo' => true,
+        ]);
+        $userRev->roles()->sync([$rolReg->id, $rolRev->id]);
+
+        $userSubTec = \App\Models\Usuario::create([
+            'email' => 'subtec_test@lia.com',
+            'nombre' => 'SubTec Ticket Test',
+            'password' => bcrypt('secret123'),
+            'activo' => true,
+        ]);
+        $userSubTec->roles()->sync([$rolReg->id, $rolSubTec->id]);
+
+        $userTec = \App\Models\Usuario::create([
+            'email' => 'tec_test@lia.com',
+            'nombre' => 'Tec Ticket Test',
+            'password' => bcrypt('secret123'),
+            'activo' => true,
+        ]);
+        $userTec->roles()->sync([$rolReg->id, $rolTec->id]);
+
+        $ubicacion = \App\Models\Ubicacion::first();
+        $elemento = \App\Models\Elemento::create([
+            'nro_lia' => 'TICK-SUBTEC-01',
+            'tipo_id' => 1,
+            'marca' => 'Dell',
+            'modelo' => 'OptiPlex 7050',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        \App\Models\Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $ubicacion->id,
+            'puesto' => 'Puesto 05',
+            'user_id' => $userTec->id,
+            'fecha' => now(),
+            'comentario' => 'Ingreso regular a sala',
+        ]);
+
+        // 1. REVISOR puede iniciar ticket
+        $resStore = $this->actingAs($userRev)->post(route('tickets.store'), [
+            'elemento_id' => $elemento->id,
+            'comentario' => 'Falla en cooler frontal y ruido en fuente de poder.',
+            'tipo_traslado' => 'insitu',
+        ]);
+        $resStore->assertRedirect(route('dashboard.index'));
+
+        $ticket = \App\Models\Movimiento::where('elemento_id', $elemento->id)
+            ->where('tipo_movimiento', 'reparacion')
+            ->firstOrFail();
+        $this->assertEquals('abierto', $ticket->estado_ticket);
+
+        // 2. REVISOR puede comentar en el hilo del ticket
+        $resComentarioRev = $this->actingAs($userRev)->post(route('tickets.comentar', $ticket->id), [
+            'mensaje' => 'Se verificó que el cooler deja de girar luego de 5 minutos.',
+        ]);
+        $resComentarioRev->assertRedirect(route('tickets.show', $ticket->id));
+        $this->assertDatabaseHas('ticket_comentarios', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $userRev->id,
+            'tipo' => 'comentario',
+        ]);
+
+        // 3. REVISOR NUNCA puede solucionar el ticket (debe recibir 403)
+        $resRevSolucionar = $this->actingAs($userRev)->post(route('tickets.solucionar', $ticket->id), [
+            'solucion' => 'Intento de solución por un Revisor no autorizado.',
+        ]);
+        $resRevSolucionar->assertStatus(403);
+
+        // 4. REVISOR NUNCA puede cerrar el ticket (debe recibir 403)
+        $resRevCerrar = $this->actingAs($userRev)->post(route('tickets.resolver', $ticket->id), [
+            'accion' => 'resolver',
+            'solucion' => 'Intento de cierre formal por Revisor.',
+        ]);
+        $resRevCerrar->assertStatus(403);
+
+        // 5. SUBTEC puede solucionar el ticket
+        $conteoMovimientosAntes = \App\Models\Movimiento::count();
+        $resSubTecSolucionar = $this->actingAs($userSubTec)->post(route('tickets.solucionar', $ticket->id), [
+            'solucion' => 'Se desarmó cooler frontal, limpieza con alcohol isopropílico y lubricación con aceite sintético. Pruebas térmicas OK.',
+        ]);
+        $resSubTecSolucionar->assertRedirect(route('tickets.show', $ticket->id));
+        
+        $ticket->refresh();
+        $this->assertEquals('solucionado', $ticket->estado_ticket);
+        $this->assertDatabaseHas('ticket_comentarios', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $userSubTec->id,
+            'tipo' => 'solucion_propuesta',
+        ]);
+
+        // REGLA ESTRICTA: El SubTec NUNCA registra movimientos asociados al ticket
+        $conteoMovimientosDespues = \App\Models\Movimiento::count();
+        $this->assertEquals($conteoMovimientosAntes, $conteoMovimientosDespues, 'El SubTec no debe generar ningún registro en la tabla movimientos.');
+
+        // 6. SUBTEC NUNCA puede cerrar formalmente el ticket (debe recibir 403)
+        $resSubTecCerrar = $this->actingAs($userSubTec)->post(route('tickets.resolver', $ticket->id), [
+            'accion' => 'resolver',
+            'solucion' => 'Intento de cierre formal por SubTec.',
+        ]);
+        $resSubTecCerrar->assertStatus(403);
+
+        // 7. TECNICO puede cerrar formalmente el ticket y asociar movimiento de inventario
+        $resTecCerrar = $this->actingAs($userTec)->post(route('tickets.resolver', $ticket->id), [
+            'accion' => 'resolver',
+            'solucion' => 'Verificación técnica aprobada. Equipo retornado a servicio activo.',
+            'ubicacion_id' => $ubicacion->id,
+            'puesto' => 'Puesto 05',
+        ]);
+        $resTecCerrar->assertRedirect(route('tickets.index'));
+
+        $ticket->refresh();
+        $this->assertEquals('resuelto', $ticket->estado_ticket);
+
+        // Se verifica que el TEC sí generó el movimiento formal con ticket_id asociado
+        $this->assertDatabaseHas('movimientos', [
+            'elemento_id' => $elemento->id,
+            'ticket_id' => $ticket->id,
+            'tipo_movimiento' => 'interno',
+            'estado_ticket' => 'resuelto',
+        ]);
+    }
+
+    public function test_seeder_cuentas_reales_roles_y_anonimizacion_ley_25326(): void
+    {
+        $this->seed(\Database\Seeders\RoleSeeder::class);
+        $this->seed(\Database\Seeders\UserSeeder::class);
+
+        // 1. Verificación de cuentas oficiales
+        $flavia = \App\Models\Usuario::where('email', 'flavia@lia.com')->firstOrFail();
+        $this->assertTrue($flavia->hasRole(['user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev', 'registered']));
+
+        $marcelo = \App\Models\Usuario::where('email', 'marcelo@lia.com')->firstOrFail();
+        $this->assertTrue($marcelo->hasRole('subtec'));
+        $this->assertTrue($marcelo->hasRole('tec'));
+        $this->assertTrue($marcelo->hasRole('rev'));
+        $this->assertFalse($marcelo->hasRole('user_admin'));
+
+        $cristina = \App\Models\Usuario::where('email', 'cristina@lia.com')->firstOrFail();
+        $this->assertTrue($cristina->hasRole('user_admin'));
+        $this->assertTrue($cristina->hasRole('app_admin'));
+        $this->assertFalse($cristina->hasRole('tec'));
+
+        $martin = \App\Models\Usuario::where('email', 'martin@lia.com')->firstOrFail();
+        $this->assertTrue($martin->hasRole('rev'));
+        $this->assertFalse($martin->hasRole('tec'));
+
+        // 2. Verificación de casos > 6 años
+        $carlos = \App\Models\Usuario::where('email', 'carlos.gomez@ex-lia.com')->firstOrFail();
+        $this->assertFalse($carlos->activo);
+        $this->assertTrue($carlos->isExPersonalMayor6Anios());
+
+        $laura = \App\Models\Usuario::where('email', 'laura.martinez@ex-lia.com')->firstOrFail();
+        $this->assertFalse($laura->activo);
+        $this->assertTrue($laura->isExPersonalMayor6Anios());
+
+        // 3. Visualización en panel de User Admin
+        $resIndex = $this->actingAs($flavia)->get(route('users.index'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Plazo Legal Cumplido');
+        $resIndex->assertSee('Borrar Huella');
+
+        // 4. Ejecución del borrado de huella digital y anonimización (Ley 25.326)
+        $resAnon = $this->actingAs($flavia)->post(route('users.anonimizar', $carlos->id));
+        $resAnon->assertRedirect(route('users.index'));
+
+        $carlos->refresh();
+        $this->assertTrue($carlos->esAnonimizado());
+        $this->assertNull($carlos->dni);
+        $this->assertNull($carlos->whatsapp);
+        $this->assertTrue(str_starts_with($carlos->email, 'historico_' . $carlos->id) || str_starts_with($carlos->email, 'anonimo_' . $carlos->id));
+        $this->assertCount(0, $carlos->roles);
+
+        // Su historial de trayectorias permanece íntegro sin quebrar claves foráneas
+        $this->assertGreaterThan(0, $carlos->trayectorias()->count());
+
+        // La vista de usuarios ahora refleja el estado anonimizado
+        $resIndexDespues = $this->actingAs($flavia)->get(route('users.index'));
+        $resIndexDespues->assertSee('Huella Anonimizada (Ley 25.326)');
+    }
+
+    public function test_modulo_de_reportes_de_auditoria_y_trazabilidad_por_usuario(): void
+    {
+        $this->seed(\Database\Seeders\RoleSeeder::class);
+        $this->seed(\Database\Seeders\UserSeeder::class);
+        $this->seed(\Database\Seeders\TipoSeeder::class);
+        $this->seed(\Database\Seeders\UbicacionSeeder::class);
+
+        $flavia = \App\Models\Usuario::where('email', 'flavia@lia.com')->firstOrFail();
+        $marcelo = \App\Models\Usuario::where('email', 'marcelo@lia.com')->firstOrFail();
+        $martin = \App\Models\Usuario::where('email', 'martin@lia.com')->firstOrFail();
+        $juan = \App\Models\Usuario::where('email', 'juan.perez@lia.com')->firstOrFail();
+
+        $ubicacion = \App\Models\Ubicacion::first();
+        $elemento = \App\Models\Elemento::create([
+            'nro_lia' => 'REP-USER-01',
+            'tipo_id' => 1,
+            'marca' => 'HP',
+            'modelo' => 'EliteDesk 800',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        // Registrar actividad vinculada a Marcelo (un movimiento regular y un ticket)
+        \App\Models\Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $ubicacion->id,
+            'puesto' => 'Puesto 03',
+            'user_id' => $marcelo->id,
+            'fecha' => now(),
+            'comentario' => 'Asignación regular por Marcelo',
+        ]);
+
+        $ticket = \App\Models\Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'ubicacion_id' => $ubicacion->id,
+            'puesto' => 'Puesto 03',
+            'user_id' => $marcelo->id,
+            'fecha' => now(),
+            'solicitante' => $marcelo->nombre,
+            'comentario' => 'Revisión técnica de memoria RAM',
+        ]);
+
+        \App\Models\TicketComentario::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $marcelo->id,
+            'mensaje' => 'Diagnóstico: Módulo DDR4 con pines limpios, prueba MemTest OK.',
+            'tipo' => 'solucion_propuesta',
+        ]);
+
+        // 1. Acceso restringido: Usuario sin rol user_admin recibe 403
+        $resForbidden = $this->actingAs($martin)->get(route('users.reporte', $marcelo->id));
+        $resForbidden->assertStatus(403);
+
+        // 2. Acceso autorizado: User admin (Flavia) visualiza el reporte consolidado
+        $resAdmin = $this->actingAs($flavia)->get(route('users.reporte', $marcelo->id));
+        $resAdmin->assertStatus(200);
+        $resAdmin->assertSee('Informe de Auditoría y Trazabilidad: Marcelo Mondre');
+        $resAdmin->assertSee('Apartado de Tickets y Soporte Técnico');
+        $resAdmin->assertSee('Apartado de Configuración y Emisión de Reportes');
+        $resAdmin->assertSee('Apartado de Movimientos de Inventario y Operatoria Física');
+        $resAdmin->assertSee('Imprimir Informe Oficial');
+
+        // Se comprueba presencia de los registros de Marcelo
+        $resAdmin->assertSee('REP-USER-01');
+        $resAdmin->assertSee('Revisión técnica de memoria RAM');
+        $resAdmin->assertSee('Asignación regular por Marcelo');
+
+        // 3. Usuario sin actividad previa (Juan Pérez) muestra apartados limpios con mensajes de ausencia de datos
+        $resVacio = $this->actingAs($flavia)->get(route('users.reporte', $juan->id));
+        $resVacio->assertStatus(200);
+        $resVacio->assertSee('El usuario no posee participaciones registradas en tickets');
+        $resVacio->assertSee('El usuario no posee registros históricos de movimientos');
+    }
+
+    public function test_areas_multidisciplinarias_y_acumulativas_en_tickets(): void
+    {
+        $rolTec = Rol::firstOrCreate(['rol' => 'tec']);
+        $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+        $rolReg = Rol::firstOrCreate(['rol' => 'registered']);
+
+        $tec = Usuario::create([
+            'email' => 'tec_area_test@lia.com',
+            'nombre' => 'Tec Area Test',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $tec->roles()->sync([$rolReg->id, $rolTec->id]);
+
+        $rev = Usuario::create([
+            'email' => 'rev_area_test@lia.com',
+            'nombre' => 'Rev Area Test',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $rev->roles()->sync([$rolReg->id, $rolRev->id]);
+
+        $tipo = \App\Models\Tipo::firstOrCreate(['nombre' => 'Laptop']);
+        $ubicacion = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Redes']);
+
+        $areaHw = \App\Models\Area::firstOrCreate(['codigo' => 'HW'], ['nombre' => 'Hardware', 'color' => '#f97316', 'activo' => true]);
+        $areaSw = \App\Models\Area::firstOrCreate(['codigo' => 'SW'], ['nombre' => 'Software', 'color' => '#3b82f6', 'activo' => true]);
+
+        $elemento = \App\Models\Elemento::create([
+            'nro_lia' => 'LIA-AREA-TEST',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'Latitude 5420',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        // 1. Crear ticket con área inicial Hardware
+        $resStore = $this->actingAs($rev)->post(route('tickets.store'), [
+            'elemento_id' => $elemento->id,
+            'area_id' => $areaHw->id,
+            'comentario' => 'Falla de pantalla azul persistente y posible capacitor quemado',
+            'tipo_traslado' => 'insitu',
+        ]);
+        $resStore->assertRedirect(route('dashboard.index'));
+
+        $ticket = \App\Models\Movimiento::where('elemento_id', $elemento->id)
+            ->where('tipo_movimiento', 'reparacion')
+            ->first();
+        $this->assertNotNull($ticket);
+        $this->assertTrue($ticket->areas->contains('id', $areaHw->id));
+        $this->assertCount(1, $ticket->areas);
+
+        // 2. Acumular área Software vía comentario/hilo
+        $resComentario = $this->actingAs($tec)->post(route('tickets.comentar', $ticket->id), [
+            'mensaje' => 'Se detectó además corrupción en el kernel de Windows, requiere intervención de Software',
+            'nueva_area_id' => $areaSw->id,
+        ]);
+        $resComentario->assertRedirect(route('tickets.show', $ticket->id));
+
+        $ticket->refresh();
+        $this->assertCount(2, $ticket->areas);
+        $this->assertTrue($ticket->areas->contains('id', $areaHw->id));
+        $this->assertTrue($ticket->areas->contains('id', $areaSw->id));
+
+        // 3. Filtrar bandeja de tickets por área
+        $resFiltroHw = $this->actingAs($tec)->get(route('tickets.index', ['area_id' => $areaHw->id]));
+        $resFiltroHw->assertStatus(200);
+        $resFiltroHw->assertSee('LIA-AREA-TEST');
+        $resFiltroHw->assertSee('Hardware');
+        $resFiltroHw->assertSee('Software');
+
+        // 4. Verificación en la vista de detalle
+        $resShow = $this->actingAs($tec)->get(route('tickets.show', $ticket->id));
+        $resShow->assertStatus(200);
+        $resShow->assertSee('Áreas Involucradas (Multidisciplinario)');
+        $resShow->assertSee('Hardware');
+        $resShow->assertSee('Software');
+    }
+
+    public function test_modulo_tickets_colaborativo_tipo_foro_y_adjuntos_en_hilo(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $rolTec = Rol::firstOrCreate(['rol' => 'tec']);
+        $rolSubTec = Rol::firstOrCreate(['rol' => 'subtec']);
+        $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+        $rolReg = Rol::firstOrCreate(['rol' => 'registered']);
+
+        $tec = Usuario::create([
+            'email' => 'tec_foro@lia.com',
+            'nombre' => 'Tecnico Foro',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $tec->roles()->sync([$rolReg->id, $rolTec->id]);
+
+        $rev = Usuario::create([
+            'email' => 'rev_foro@lia.com',
+            'nombre' => 'Revisor Foro',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $rev->roles()->sync([$rolReg->id, $rolRev->id]);
+
+        $tipo = \App\Models\Tipo::first();
+        $ubicacion = \App\Models\Ubicacion::first();
+
+        $elemento = \App\Models\Elemento::create([
+            'nro_lia' => 'LIA-FORO-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Lenovo',
+            'modelo' => 'ThinkCentre M720',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        $ticket = \App\Models\Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'ubicacion_id' => $ubicacion->id,
+            'puesto' => 'P-10',
+            'user_id' => $rev->id,
+            'fecha' => now(),
+            'solicitante' => $rev->nombre,
+            'comentario' => 'Equipo no enciende luego de corte de tensión',
+        ]);
+
+        // 1. Revisor publica mensaje con foto adjunta en el hilo
+        $fotoRev = \Illuminate\Http\UploadedFile::fake()->image('fuente_quemada.jpg');
+        $resPostRev = $this->actingAs($rev)->post(route('tickets.comentar', $ticket->id), [
+            'mensaje' => 'Adjunto foto del fusible de la fuente de poder chamuscado.',
+            'fotos' => [$fotoRev],
+        ]);
+        $resPostRev->assertRedirect(route('tickets.show', $ticket->id));
+
+        $this->assertDatabaseHas('ticket_comentarios', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $rev->id,
+            'mensaje' => 'Adjunto foto del fusible de la fuente de poder chamuscado.',
+        ]);
+
+        $comentarioRev = \App\Models\TicketComentario::where('ticket_id', $ticket->id)
+            ->where('user_id', $rev->id)
+            ->first();
+        $this->assertNotNull($comentarioRev);
+        $this->assertCount(1, $comentarioRev->adjuntos);
+        $this->assertEquals('fuente_quemada.jpg', $comentarioRev->adjuntos->first()->nombre_original);
+
+        // 2. Técnico responde en el foro con otra foto
+        $fotoTec = \Illuminate\Http\UploadedFile::fake()->image('reemplazo_fusible.jpg');
+        $resPostTec = $this->actingAs($tec)->post(route('tickets.comentar', $ticket->id), [
+            'mensaje' => 'Recibido en banco de pruebas. Se reemplaza fusible y se testean voltajes de 12V y 5V.',
+            'fotos' => [$fotoTec],
+        ]);
+        $resPostTec->assertRedirect(route('tickets.show', $ticket->id));
+
+        // 3. Verificación de TicketMensaje como modelo
+        $mensajesForo = \App\Models\TicketMensaje::where('ticket_id', $ticket->id)->orderBy('id')->get();
+        $this->assertCount(2, $mensajesForo);
+
+        // 4. Renderizado del foro en la vista tickets.show
+        $resShow = $this->actingAs($tec)->get(route('tickets.show', $ticket->id));
+        $resShow->assertStatus(200);
+        $resShow->assertSee('Hilo de Seguimiento y Discusión Técnica');
+        $resShow->assertSee('Revisor Foro');
+        $resShow->assertSee('Tecnico Foro');
+        $resShow->assertSee('Adjunto foto del fusible');
+        $resShow->assertSee('Recibido en banco de pruebas');
+        $resShow->assertSee('Fotos adjuntas');
+    }
+
+    public function test_vinculacion_transaccional_entre_respuestas_de_tickets_y_movimientos_de_inventario(): void
+    {
+        $rolTec = Rol::firstOrCreate(['rol' => 'tec']);
+        $rolReg = Rol::firstOrCreate(['rol' => 'registered']);
+
+        $tec = Usuario::create([
+            'email' => 'tec_mov_test@lia.com',
+            'nombre' => 'Tecnico Movimientos',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $tec->roles()->sync([$rolReg->id, $rolTec->id]);
+
+        $tipo = \App\Models\Tipo::first();
+        $salaOrigen = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Laboratorio 1']);
+        $salaTaller = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Taller de Hardware']);
+
+        $elemento = \App\Models\Elemento::create([
+            'nro_lia' => 'LIA-MOV-LINK-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'HP',
+            'modelo' => 'ProDesk 600',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        $ticket = \App\Models\Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'ubicacion_id' => $salaOrigen->id,
+            'puesto' => 'P-01',
+            'user_id' => $tec->id,
+            'fecha' => now(),
+            'solicitante' => 'Docente Pruebas',
+            'comentario' => 'Placa madre no entrega señal de video por HDMI',
+        ]);
+
+        // 1. Técnico comenta y activa generación de movimiento hacia Taller de Hardware
+        $resPost = $this->actingAs($tec)->post(route('tickets.comentar', $ticket->id), [
+            'mensaje' => 'Se retira el equipo de Lab 1 y se ingresa a banco de prueba en Taller.',
+            'generar_movimiento' => '1',
+            'ubicacion_id' => $salaTaller->id,
+            'puesto' => 'Banco 03',
+        ]);
+        $resPost->assertRedirect(route('tickets.show', $ticket->id));
+
+        // 2. Verificar existencia del movimiento enlazado al ticket
+        $movimientoGenerado = \App\Models\Movimiento::where('elemento_id', $elemento->id)
+            ->where('tipo_movimiento', 'interno')
+            ->where('ubicacion_id', $salaTaller->id)
+            ->where('ticket_id', $ticket->id)
+            ->first();
+        $this->assertNotNull($movimientoGenerado);
+        $this->assertEquals('Banco 03', $movimientoGenerado->puesto);
+        $this->assertEquals($ticket->id, $movimientoGenerado->ticket_id);
+
+        // 3. Verificar que el comentario en el hilo apunta al movimiento_id
+        $comentario = \App\Models\TicketComentario::where('ticket_id', $ticket->id)
+            ->where('user_id', $tec->id)
+            ->first();
+        $this->assertNotNull($comentario);
+        $this->assertEquals($movimientoGenerado->id, $comentario->movimiento_id);
+        $this->assertEquals($comentario->movimiento->id, $movimientoGenerado->id);
+
+        // 4. Verificar renderizado en la vista tickets.show
+        $resShow = $this->actingAs($tec)->get(route('tickets.show', $ticket->id));
+        $resShow->assertStatus(200);
+        $resShow->assertSee('📦 Traslado Físico Vinculado');
+        $resShow->assertSee('Taller de Hardware');
+        $resShow->assertSee('Banco 03');
+        $resShow->assertSee('Movimiento #' . $movimientoGenerado->id);
+    }
+
+    public function test_arquitectura_datos_y_persistencia_incremental_de_auditorias(): void
+    {
+        $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+        $rolReg = Rol::firstOrCreate(['rol' => 'registered']);
+
+        $auditor = Usuario::create([
+            'email' => 'auditor_test@lia.com',
+            'nombre' => 'Auditor Salas',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $auditor->roles()->sync([$rolReg->id, $rolRev->id]);
+
+        $tipo = \App\Models\Tipo::first();
+        $sala = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Sistemas']);
+
+        $elemento1 = \App\Models\Elemento::create([
+            'nro_lia' => 'LIA-AUD-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'OptiPlex',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        $elemento2 = \App\Models\Elemento::create([
+            'nro_lia' => 'LIA-AUD-02',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'OptiPlex',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        // 1. Iniciar sesión de auditoría en progreso
+        $resStore = $this->actingAs($auditor)->postJson(route('auditorias.store'), [
+            'ubicacion_id' => $sala->id,
+            'observaciones' => 'Auditoría semestral física de puestos',
+        ]);
+        $resStore->assertStatus(200);
+        $resStore->assertJson(['success' => true]);
+
+        $auditoria = \App\Models\Auditoria::where('ubicacion_id', $sala->id)->where('estado', 'en_progreso')->first();
+        $this->assertNotNull($auditoria);
+        $this->assertEquals('en_progreso', $auditoria->estado);
+
+        // 2. Guardado incremental del primer puesto: OK
+        $resDetalle1 = $this->actingAs($auditor)->postJson(route('auditorias.guardarDetalle', $auditoria->id), [
+            'puesto' => 'Puesto 01',
+            'elemento_id' => $elemento1->id,
+            'estado' => 'ok',
+        ]);
+        $resDetalle1->assertStatus(200);
+        $resDetalle1->assertJson([
+            'success' => true,
+            'totales' => [
+                'total_auditados' => 1,
+                'total_ok' => 1,
+                'total_inconsistencias' => 0,
+            ],
+        ]);
+
+        // 3. Guardado incremental del segundo puesto: Inconsistencia (Rotura)
+        $resDetalle2 = $this->actingAs($auditor)->postJson(route('auditorias.guardarDetalle', $auditoria->id), [
+            'puesto' => 'Puesto 02',
+            'elemento_id' => $elemento2->id,
+            'estado' => 'inconsistencia',
+            'tipo_discrepancia' => 'rotura',
+            'observaciones' => 'Pantalla rota y cable de poder desprendido',
+        ]);
+        $resDetalle2->assertStatus(200);
+        $resDetalle2->assertJson([
+            'success' => true,
+            'totales' => [
+                'total_auditados' => 2,
+                'total_ok' => 1,
+                'total_inconsistencias' => 1,
+            ],
+        ]);
+
+        // 4. Finalizar sesión de auditoría
+        $resFinalizar = $this->actingAs($auditor)->postJson(route('auditorias.finalizar', $auditoria->id));
+        $resFinalizar->assertStatus(200);
+        $resFinalizar->assertJson(['success' => true]);
+
+        $auditoria->refresh();
+        $this->assertEquals('finalizada', $auditoria->estado);
+        $this->assertEquals(2, $auditoria->total_auditados);
+        $this->assertEquals(1, $auditoria->total_ok);
+        $this->assertEquals(1, $auditoria->total_inconsistencias);
+    }
+
+    public function test_interfaz_interactiva_de_auditoria_grilla_de_puestos_y_apertura_ticket_in_situ(): void
+    {
+        $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+        $rolReg = Rol::firstOrCreate(['rol' => 'registered']);
+
+        $auditor = Usuario::create([
+            'email' => 'auditor_grilla@lia.com',
+            'nombre' => 'Auditor Grilla',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $auditor->roles()->sync([$rolReg->id, $rolRev->id]);
+
+        $tipo = \App\Models\Tipo::first();
+        $sala = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Redes y Puestos']);
+
+        $elementoPuesto = \App\Models\Elemento::create([
+            'nro_lia' => 'LIA-PUESTO-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'Precision',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        \App\Models\Movimiento::create([
+            'elemento_id' => $elementoPuesto->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $sala->id,
+            'puesto' => 'Puesto 01',
+            'user_id' => $auditor->id,
+            'fecha' => now(),
+            'comentario' => 'Asignado a Puesto 01',
+        ]);
+
+        // 1. Cargar pantalla interactiva de auditoría
+        $resView = $this->actingAs($auditor)->get(route('auditorias.create', ['ubicacion_id' => $sala->id]));
+        $resView->assertStatus(200);
+        $resView->assertSee('Auditoría Física de Ubicación: Laboratorio Redes y Puestos');
+        $resView->assertSee('Grilla de Puestos y Mesones');
+        $resView->assertSee('Puesto 01');
+        $resView->assertSee('LIA-PUESTO-01');
+
+        $auditoria = \App\Models\Auditoria::where('ubicacion_id', $sala->id)->first();
+        $this->assertNotNull($auditoria);
+
+        // 2. Apertura de Ticket In Situ derivado de inconsistencia
+        $resTicket = $this->actingAs($auditor)->postJson(route('auditorias.crearTicketInconsistencia', $auditoria->id), [
+            'puesto' => 'Puesto 01',
+            'elemento_id' => $elementoPuesto->id,
+            'tipo_discrepancia' => 'rotura',
+            'descripcion' => 'Monitor con líneas verticales y parpadeo continuo en panel IPS',
+        ]);
+        $resTicket->assertStatus(200);
+        $resTicket->assertJson([
+            'success' => true,
+            'elemento_id' => $elementoPuesto->id,
+            'puesto' => 'Puesto 01',
+        ]);
+
+        $ticketId = $resTicket->json('ticket_id');
+        $this->assertNotNull($ticketId);
+
+        $ticket = \App\Models\Movimiento::find($ticketId);
+        $this->assertNotNull($ticket);
+        $this->assertEquals('reparacion', $ticket->tipo_movimiento);
+        $this->assertEquals('abierto', $ticket->estado_ticket);
+        $this->assertStringContainsString('ROTURA', $ticket->comentario);
+
+        // 3. Verificar detalle de auditoría actualizado
+        $detalle = \App\Models\AuditoriaDetalle::where('auditoria_id', $auditoria->id)
+            ->where('elemento_id', $elementoPuesto->id)
+            ->first();
+        $this->assertNotNull($detalle);
+        $this->assertEquals('inconsistencia', $detalle->estado);
+        $this->assertEquals('rotura', $detalle->tipo_discrepancia);
+        $this->assertEquals($ticketId, $detalle->ticket_id);
+    }
+
+    public function test_archivo_historico_de_auditorias_y_emision_de_informe_oficial(): void
+    {
+        $auditor = Usuario::create([
+            'nombre' => 'Auditor Oficial Test',
+            'email' => 'auditor_oficial@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $auditor->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        $otroAuditor = Usuario::create([
+            'nombre' => 'Otro Auditor Test',
+            'email' => 'otro_auditor@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $otroAuditor->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        $lab1 = Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Alpha Audit'], ['descripcion' => 'Sala 1']);
+        $lab2 = Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Beta Audit'], ['descripcion' => 'Sala 2']);
+
+        // Crear auditoría 1 (en Lab 1 por auditor con inconsistencia)
+        $auditoria1 = \App\Models\Auditoria::create([
+            'ubicacion_id' => $lab1->id,
+            'user_id' => $auditor->id,
+            'fecha' => now()->subDays(2),
+            'estado' => 'finalizada',
+            'total_auditados' => 2,
+            'total_ok' => 1,
+            'total_inconsistencias' => 1,
+            'observaciones' => 'Auditoría semestral con un monitor averiado en puesto 01.',
+        ]);
+
+        $tipo = Tipo::firstOrCreate(['nombre' => 'Pantalla Test'], ['categoria' => 'periferico']);
+        $elementoOk = Elemento::create(['tipo_id' => $tipo->id, 'modelo' => 'Pantalla Samsung 24', 'nro_serie' => 'SAM-9988']);
+        $elementoRotura = Elemento::create(['tipo_id' => $tipo->id, 'modelo' => 'Pantalla LG 27', 'nro_serie' => 'LG-7766']);
+
+        $ticket = Movimiento::create([
+            'elemento_id' => $elementoRotura->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'ubicacion_id' => $lab1->id,
+            'puesto' => 'Puesto 01',
+            'user_id' => $auditor->id,
+            'fecha' => now()->subDays(2),
+            'solicitante' => $auditor->nombre,
+            'comentario' => '[AUDITORÍA INCONSISTENCIA - ROTURA] Pantalla rota',
+        ]);
+
+        \App\Models\AuditoriaDetalle::create([
+            'auditoria_id' => $auditoria1->id,
+            'elemento_id' => $elementoOk->id,
+            'puesto' => 'Puesto 02',
+            'estado' => 'ok',
+        ]);
+
+        \App\Models\AuditoriaDetalle::create([
+            'auditoria_id' => $auditoria1->id,
+            'elemento_id' => $elementoRotura->id,
+            'puesto' => 'Puesto 01',
+            'estado' => 'inconsistencia',
+            'tipo_discrepancia' => 'rotura',
+            'ticket_id' => $ticket->id,
+            'observaciones' => 'Pantalla con panel roto',
+        ]);
+
+        // Crear auditoría 2 (en Lab 2 por otro auditor sin inconsistencias)
+        $auditoria2 = \App\Models\Auditoria::create([
+            'ubicacion_id' => $lab2->id,
+            'user_id' => $otroAuditor->id,
+            'fecha' => now()->subDay(),
+            'estado' => 'en_progreso',
+            'total_auditados' => 5,
+            'total_ok' => 5,
+            'total_inconsistencias' => 0,
+        ]);
+
+        // 1. Consultar bandeja histórica general
+        $resIndex = $this->actingAs($auditor)->get(route('auditorias.index'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Archivo Histórico de Auditorías Físicas');
+        $resIndex->assertSee('Laboratorio Alpha Audit');
+        $resIndex->assertSee('Laboratorio Beta Audit');
+        $resIndex->assertSee('Auditor Oficial Test');
+        $resIndex->assertSee('Otro Auditor Test');
+
+        // 2. Filtrar por sala (Lab 1)
+        $resFilterLab = $this->actingAs($auditor)->get(route('auditorias.index', ['ubicacion_id' => $lab1->id]));
+        $resFilterLab->assertStatus(200);
+        $resFilterLab->assertSee(route('auditorias.show', $auditoria1->id));
+        $resFilterLab->assertDontSee(route('auditorias.show', $auditoria2->id));
+
+        // 3. Filtrar por auditor actuante
+        $resFilterAuditor = $this->actingAs($auditor)->get(route('auditorias.index', ['user_id' => $otroAuditor->id]));
+        $resFilterAuditor->assertStatus(200);
+        $resFilterAuditor->assertSee(route('auditorias.show', $auditoria2->id));
+        $resFilterAuditor->assertDontSee(route('auditorias.show', $auditoria1->id));
+
+        // 4. Filtrar únicamente auditorías con inconsistencias
+        $resFilterInconsistencias = $this->actingAs($auditor)->get(route('auditorias.index', ['con_inconsistencias' => '1']));
+        $resFilterInconsistencias->assertStatus(200);
+        $resFilterInconsistencias->assertSee(route('auditorias.show', $auditoria1->id));
+        $resFilterInconsistencias->assertDontSee(route('auditorias.show', $auditoria2->id));
+
+        // 5. Visualizar Informe Oficial de Auditoría
+        $resShow = $this->actingAs($auditor)->get(route('auditorias.show', $auditoria1->id));
+        $resShow->assertStatus(200);
+        $resShow->assertSee('Acta e Informe Oficial de Auditoría Física de Ubicación');
+        $resShow->assertSee('Laboratorio Alpha Audit');
+        $resShow->assertSee('Auditor Oficial Test');
+        $resShow->assertSee('SAM-9988');
+        $resShow->assertSee('LG-7766');
+        $resShow->assertSee('ROTURA');
+        $resShow->assertSee("#{$ticket->id}");
+        $resShow->assertSee('Certificación y Conformidad de Relevamiento');
+        $resShow->assertSee('Auditor Relevador LIA');
+        $resShow->assertSee('Imprimir / Exportar a PDF');
+    }
+
+    public function test_soporte_bd_y_gestion_crud_de_avisos_de_seguridad_app_admin(): void
+    {
+        $appAdmin = Usuario::create([
+            'nombre' => 'App Admin Avisos Test',
+            'email' => 'admin_avisos@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $appAdmin->roles()->attach(Rol::where('rol', 'app_admin')->first());
+
+        $revisor = Usuario::create([
+            'nombre' => 'Revisor Avisos Test',
+            'email' => 'revisor_avisos@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $revisor->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        // 1. Usuario sin rol app_admin no puede acceder a la gestión de avisos (403)
+        $resForbid = $this->actingAs($revisor)->get(route('app_admin.avisos'));
+        $resForbid->assertStatus(403);
+
+        // 2. Administrador accede correctamente al panel de avisos
+        $resIndex = $this->actingAs($appAdmin)->get(route('app_admin.avisos'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Concientización y Buenas Prácticas Informáticas');
+
+        // 3. Crear un nuevo aviso de seguridad
+        $resStore = $this->actingAs($appAdmin)->post(route('app_admin.avisos.store'), [
+            'titulo' => 'Cierre de Sesión Obligatorio',
+            'descripcion' => 'Nunca dejes tu cuenta de Nexo LIA abierta en computadoras de acceso público.',
+            'severidad' => 'warning',
+            'icono' => 'lock',
+            'orden' => 10,
+            'activo' => 1,
+        ]);
+        $resStore->assertRedirect(route('app_admin.avisos'));
+
+        $this->assertDatabaseHas('avisos_seguridad', [
+            'titulo' => 'Cierre de Sesión Obligatorio',
+            'severidad' => 'warning',
+            'activo' => true,
+        ]);
+
+        $aviso = \App\Models\AvisoSeguridad::where('titulo', 'Cierre de Sesión Obligatorio')->first();
+        $this->assertNotNull($aviso);
+
+        // 4. Actualizar el aviso
+        $resUpdate = $this->actingAs($appAdmin)->put(route('app_admin.avisos.update', $aviso->id), [
+            'titulo' => 'Cierre de Sesión Estricto y Bloqueo',
+            'descripcion' => 'Bloquea la terminal o presiona Win + L inmediatamente al retirarte.',
+            'severidad' => 'danger',
+            'icono' => 'shield',
+            'orden' => 2,
+        ]);
+        $resUpdate->assertRedirect(route('app_admin.avisos'));
+
+        $aviso->refresh();
+        $this->assertEquals('Cierre de Sesión Estricto y Bloqueo', $aviso->titulo);
+        $this->assertEquals('danger', $aviso->severidad);
+        $this->assertEquals(2, $aviso->orden);
+
+        // 5. Toggle de activación / desactivación
+        $resToggle = $this->actingAs($appAdmin)->post(route('app_admin.avisos.toggle', $aviso->id));
+        $aviso->refresh();
+        $this->assertFalse($aviso->activo);
+
+        // 6. Eliminar el aviso
+        $resDestroy = $this->actingAs($appAdmin)->delete(route('app_admin.avisos.destroy', $aviso->id));
+        $resDestroy->assertRedirect(route('app_admin.avisos'));
+        $this->assertDatabaseMissing('avisos_seguridad', ['id' => $aviso->id]);
+    }
+
+    public function test_panel_carrusel_flotante_concientizacion_en_landing_y_welcome_registered(): void
+    {
+        // 1. Crear avisos de prueba (uno activo y uno inactivo)
+        $avisoActivo = \App\Models\AvisoSeguridad::create([
+            'titulo' => 'Consejo Activo de Prueba Ciberseguridad',
+            'descripcion' => 'Recomendación vigente para toda la comunidad académica del LIA.',
+            'severidad' => 'warning',
+            'icono' => 'shield',
+            'orden' => 1,
+            'activo' => true,
+        ]);
+
+        $avisoInactivo = \App\Models\AvisoSeguridad::create([
+            'titulo' => 'Aviso Oculto Desactivado Test',
+            'descripcion' => 'Este consejo no debe figurar en ningún carrusel público ni de bienvenida.',
+            'severidad' => 'info',
+            'icono' => 'lock',
+            'orden' => 99,
+            'activo' => false,
+        ]);
+
+        // 2. Comprobar landing page pública (/)
+        $resLanding = $this->get('/');
+        $resLanding->assertStatus(200);
+        $resLanding->assertSee('Cultura de Seguridad LIA');
+        $resLanding->assertSee('Consejo Activo de Prueba Ciberseguridad');
+        $resLanding->assertSee('Recomendación vigente para toda la comunidad académica del LIA.');
+        $resLanding->assertDontSee('Aviso Oculto Desactivado Test');
+        // Debe encontrarse entre el Hero y la sección Cómo funciona
+        $resLanding->assertSeeInOrder([
+            'BIENVENIDO AL SISTEMA LIA',
+            'Cultura de Seguridad LIA',
+            'COMO FUNCIONA',
+        ]);
+
+        // 3. Comprobar pantalla de bienvenida para usuario con rol registered exclusivo
+        $userRegistered = Usuario::create([
+            'nombre' => 'Alumno Registered Test',
+            'email' => 'alumno_reg@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $userRegistered->roles()->attach(Rol::where('rol', 'registered')->first());
+
+        $resBienvenida = $this->actingAs($userRegistered)->get(route('bienvenida'));
+        $resBienvenida->assertStatus(200);
+        $resBienvenida->assertSee('Cultura de Ciberseguridad LIA');
+        $resBienvenida->assertSee('Consejo Activo de Prueba Ciberseguridad');
+        $resBienvenida->assertDontSee('Aviso Oculto Desactivado Test');
+    }
+
+    public function test_soporte_bd_y_modelo_para_borrado_de_huella_digital_y_usuarios_historicos(): void
+    {
+        // 1. Crear usuario desvinculado hace 7 años con datos personales sensibles
+        $exColaborador = Usuario::create([
+            'nombre' => 'Juan Perez Historico',
+            'email' => 'juan.perez@lia.com',
+            'password' => bcrypt('password123'),
+            'dni' => '28999111',
+            'fecha_nacimiento' => '1982-03-15',
+            'carrera' => 'Licenciatura en Computación',
+            'cargo_actual' => 'Ayudante Técnico',
+            'whatsapp' => '+5492641122334',
+            'direccion' => 'Av. Ignacio de la Roza 590',
+            'activo' => false,
+            'fecha_egreso' => now()->subYears(7),
+        ]);
+        $exColaborador->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        // 2. Asociar movimiento de inventario histórico para verificar integridad referencial
+        $tipo = Tipo::firstOrCreate(['nombre' => 'Gabinete Test'], ['categoria' => 'equipo']);
+        $elemento = Elemento::create(['tipo_id' => $tipo->id, 'modelo' => 'Server Torre HP', 'nro_serie' => 'HP-7711']);
+        $lab = Ubicacion::firstOrCreate(['nombre' => 'Sala Servidores Hist'], ['descripcion' => 'Rack']);
+
+        $movimiento = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'alta',
+            'ubicacion_id' => $lab->id,
+            'user_id' => $exColaborador->id,
+            'fecha' => now()->subYears(7),
+            'solicitante' => 'Juan Perez Historico',
+            'comentario' => 'Alta histórica de equipamiento',
+        ]);
+
+        // 3. Verificar detección automática de ex personal > 6 años (Ley 25.326)
+        $this->assertTrue($exColaborador->isExPersonalMayor6Anios());
+        $this->assertFalse($exColaborador->huella_borrada);
+        $this->assertFalse($exColaborador->esAnonimizado());
+
+        // 4. Ejecutar el borrado irreversible de la huella digital
+        $resultado = $exColaborador->anonimizarHuellaDigital();
+        $this->assertTrue($resultado);
+
+        // 5. Verificar blanqueo de campos sensibles y preservación de ID
+        $exColaborador->refresh();
+        $this->assertEquals("Usuario Histórico #{$exColaborador->id}", $exColaborador->nombre);
+        $this->assertEquals("historico_{$exColaborador->id}@lia.local", $exColaborador->email);
+        $this->assertNull($exColaborador->dni);
+        $this->assertNull($exColaborador->whatsapp);
+        $this->assertNull($exColaborador->direccion);
+        $this->assertNull($exColaborador->fecha_nacimiento);
+        $this->assertNull($exColaborador->carrera);
+        $this->assertNull($exColaborador->carrera_id);
+        $this->assertEquals('Ex Colaborador Histórico', $exColaborador->cargo_actual);
+        $this->assertTrue($exColaborador->huella_borrada);
+        $this->assertNotNull($exColaborador->anonimizado_el);
+        $this->assertFalse($exColaborador->activo);
+        $this->assertTrue($exColaborador->esAnonimizado());
+        $this->assertTrue($exColaborador->esHistorico());
+        $this->assertCount(0, $exColaborador->roles);
+
+        // 6. Integridad de trazabilidad en movimientos preservada
+        $movimiento->refresh();
+        $this->assertEquals($exColaborador->id, $movimiento->user_id);
+        $this->assertEquals("Usuario Histórico #{$exColaborador->id}", $movimiento->usuario->nombre);
+    }
+
+    public function test_operacion_de_borrado_de_huella_en_modulo_de_gestion_de_usuarios(): void
+    {
+        $admin = Usuario::create([
+            'nombre' => 'Admin Gestion Huella Test',
+            'email' => 'admin_huella@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $admin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+
+        // 1. Usuario activo
+        $userActivo = Usuario::create([
+            'nombre' => 'Docente Activo Test',
+            'email' => 'docente_activo@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $userActivo->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        // 2. Ex colaborador desvinculado > 6 años
+        $exDocente = Usuario::create([
+            'nombre' => 'Ex Docente Legal Test',
+            'email' => 'exdocente@test.com',
+            'password' => bcrypt('password'),
+            'dni' => '17444333',
+            'activo' => false,
+            'fecha_egreso' => now()->subYears(8),
+        ]);
+
+        // 3. Usuario ya anonimizado históricamente
+        $historico = Usuario::create([
+            'nombre' => 'Usuario Histórico #999',
+            'email' => 'historico_999@lia.local',
+            'password' => bcrypt('password'),
+            'activo' => false,
+            'huella_borrada' => true,
+        ]);
+
+        // 4. Cargar tabla de gestión de usuarios como administrador
+        $resIndex = $this->actingAs($admin)->get(route('users.index'));
+        $resIndex->assertStatus(200);
+
+        // Comprobar badges de estado
+        $resIndex->assertSee('Activo');
+        $resIndex->assertSee('Inactivo > 6 años');
+        $resIndex->assertSee('Usuario Histórico');
+
+        // Comprobar que figura el botón de borrado de huella para el ex colaborador elegible
+        $resIndex->assertSee('Borrado de Huella Digital');
+        $resIndex->assertSee('modal-borrado-huella');
+
+        // 5. Ejecutar la acción de borrado de huella
+        $resAnon = $this->actingAs($admin)->post(route('users.anonimizar', $exDocente->id));
+        $resAnon->assertRedirect(route('users.index'));
+
+        $exDocente->refresh();
+        $this->assertTrue($exDocente->huella_borrada);
+        $this->assertEquals("Usuario Histórico #{$exDocente->id}", $exDocente->nombre);
+        $this->assertNull($exDocente->dni);
+
+        // 6. Al recargar la tabla, el usuario ahora figura con el badge "Usuario Histórico"
+        $resIndexAfter = $this->actingAs($admin)->get(route('users.index'));
+        $resIndexAfter->assertStatus(200);
+        $resIndexAfter->assertSee("Usuario Histórico #{$exDocente->id}");
+    }
+
+    public function test_widget_informativo_y_accion_en_dashboard_de_user_admin(): void
+    {
+        // 1. Roles y usuarios: un user_admin y un revisor
+        $admin = Usuario::create([
+            'nombre' => 'User Admin Widget Test',
+            'email' => 'admin_widget@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $admin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+
+        $revisor = Usuario::create([
+            'nombre' => 'Revisor Sin Permiso Admin',
+            'email' => 'revisor_widget@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $revisor->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        // 2. Colaborador egresado hace más de 6 años (elegible)
+        $exDocente = Usuario::create([
+            'nombre' => 'Ex Personal Widget Alerta',
+            'email' => 'expersonal_widget@test.com',
+            'password' => bcrypt('password'),
+            'dni' => '19555666',
+            'activo' => false,
+            'fecha_egreso' => now()->subYears(7),
+        ]);
+
+        // 3. User Admin accede a la gestión de usuarios: visualiza el widget informativo y modal legal
+        $resUsers = $this->actingAs($admin)->get(route('users.index'));
+        $resUsers->assertStatus(200);
+        $resUsers->assertSee('widget-alerta-huella');
+        $resUsers->assertSee('Alerta de Privacidad y Prescripción Legal (Ley 25.326)');
+        $resUsers->assertSee('Ex Personal Widget Alerta');
+        $resUsers->assertSee('Borrado de Huella Digital');
+        $resUsers->assertSee('modal-fundamentacion-legal');
+        $resUsers->assertSee('Prescripción Penal y Laboral a los 6 Años');
+        $resUsers->assertSee('Garantía de Trazabilidad del Inventario');
+
+        // 4. User Admin accede al Dashboard general: también visualiza la alerta
+        $resDashAdmin = $this->actingAs($admin)->get(route('dashboard.index'));
+        $resDashAdmin->assertStatus(200);
+        $resDashAdmin->assertSee('widget-alerta-huella');
+        $resDashAdmin->assertSee('Alerta de Privacidad y Prescripción Legal (Ley 25.326)');
+        $resDashAdmin->assertSee('modal-fundamentacion-legal');
+
+        // 5. Usuario sin rol user_admin (ej. rev) accede al Dashboard: no debe ver el widget confidencial
+        $resDashRev = $this->actingAs($revisor)->get(route('dashboard.index'));
+        $resDashRev->assertStatus(200);
+        $resDashRev->assertDontSee('widget-alerta-huella');
+        $resDashRev->assertDontSee('modal-fundamentacion-legal');
+
+        // 6. Ejecución del borrado de huella
+        $resAnon = $this->actingAs($admin)->post(route('users.anonimizar', $exDocente->id));
+        $resAnon->assertRedirect(route('users.index'));
+
+        $exDocente->refresh();
+        $this->assertTrue($exDocente->huella_borrada);
+        $this->assertTrue($exDocente->esHistorico());
+
+        // 7. Al recargar la vista, el colaborador ya no figura pendiente en el widget
+        $resUsersAfter = $this->actingAs($admin)->get(route('users.index'));
+        $resUsersAfter->assertStatus(200);
+        $resUsersAfter->assertDontSee('Ex Personal Widget Alerta');
+    }
+
+    public function test_comando_artisan_de_backup_de_base_de_datos_y_rotacion_de_dumps(): void
+    {
+        $backupDir = storage_path('app/backups_test');
+        \Illuminate\Support\Facades\File::deleteDirectory($backupDir);
+        \Illuminate\Support\Facades\File::makeDirectory($backupDir, 0755, true);
+
+        // 1. Ejecutar el comando de respaldo
+        $exitCode = \Illuminate\Support\Facades\Artisan::call('app:backup-database', [
+            '--keep' => 3,
+            '--path' => $backupDir,
+        ]);
+        $this->assertEquals(0, $exitCode);
+
+        // 2. Verificar que se haya creado el archivo SQL
+        $files = \Illuminate\Support\Facades\File::files($backupDir);
+        $this->assertCount(1, $files);
+
+        $dumpFile = $files[0];
+        $this->assertStringStartsWith('backup_', $dumpFile->getFilename());
+        $this->assertEquals('sql', $dumpFile->getExtension());
+
+        $content = \Illuminate\Support\Facades\File::get($dumpFile->getPathname());
+        $this->assertStringContainsString('Respaldo Automatizado Sistema LIA', $content);
+        $this->assertGreaterThan(50, strlen($content));
+
+        // 3. Probar la rotación automática con límite de 3 archivos
+        // Simular 3 archivos adicionales con marcas de tiempo anteriores
+        for ($i = 1; $i <= 4; $i++) {
+            $dummyPath = $backupDir . DIRECTORY_SEPARATOR . "backup_inventario_lia_2026-01-0{$i}_000000.sql";
+            \Illuminate\Support\Facades\File::put($dummyPath, "-- Dummy dump {$i}");
+            touch($dummyPath, time() - (86400 * (10 - $i)));
+        }
+
+        // Ahora hay 5 archivos en el directorio
+        $this->assertCount(5, \Illuminate\Support\Facades\File::files($backupDir));
+
+        // 4. Volver a ejecutar el comando con rotación --keep=3
+        $exitCodeRotate = \Illuminate\Support\Facades\Artisan::call('app:backup-database', [
+            '--keep' => 3,
+            '--path' => $backupDir,
+        ]);
+        $this->assertEquals(0, $exitCodeRotate);
+
+        // 5. Verificar que se podaron los excedentes y quedaron exactamente 3 archivos
+        $remainingFiles = \Illuminate\Support\Facades\File::files($backupDir);
+        $this->assertCount(3, $remainingFiles);
+
+        // Limpieza del directorio de prueba
+        \Illuminate\Support\Facades\File::deleteDirectory($backupDir);
+    }
+
+    public function test_politica_de_complejidad_de_contrasenas_exclusiva_de_produccion(): void
+    {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+
+        // 1. En entorno de desarrollo/testing (no producción): contraseña corta (4 caracteres) es válida
+        $this->assertFalse(app()->isProduction());
+
+        $resLocal = $this->post('/register', [
+            'nombre' => 'Test Local Pass',
+            'email' => 'local_pass@test.com',
+            'password' => '1234',
+            'password_confirmation' => '1234',
+            'terminos_consentimiento' => '1',
+        ]);
+        $resLocal->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('usuarios', ['email' => 'local_pass@test.com']);
+
+        // 2. Simular entorno de producción
+        app()['env'] = 'production';
+        $this->assertTrue(app()->isProduction());
+
+        // Intentar registrar con contraseña débil (4 caracteres) en producción -> Debe fallar
+        $resProdDebil = $this->post('/register', [
+            'nombre' => 'Test Prod Pass Debil',
+            'email' => 'prod_debil@test.com',
+            'password' => '1234',
+            'password_confirmation' => '1234',
+            'terminos_consentimiento' => '1',
+        ]);
+        $resProdDebil->assertSessionHasErrors(['password']);
+
+        // Intentar registrar con contraseña de 8 caracteres pero sin mezcla (solo números) -> Debe fallar
+        $resProdSinMezcla = $this->post('/register', [
+            'nombre' => 'Test Prod Pass Sin Mezcla',
+            'email' => 'prod_sinmezcla@test.com',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
+            'terminos_consentimiento' => '1',
+        ]);
+        $resProdSinMezcla->assertSessionHasErrors(['password']);
+
+        // Registrar con contraseña robusta (mínimo 8, mayúsculas, minúsculas, números) -> Debe tener éxito
+        $resProdRobusta = $this->post('/register', [
+            'nombre' => 'Test Prod Pass Robusta',
+            'email' => 'prod_robusta@test.com',
+            'password' => 'ClaveRobusta2026',
+            'password_confirmation' => 'ClaveRobusta2026',
+            'terminos_consentimiento' => '1',
+        ]);
+        $resProdRobusta->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('usuarios', ['email' => 'prod_robusta@test.com']);
+
+        // 3. Verificación en actualización de Perfil de Usuario (ProfileController)
+        $user = Usuario::where('email', 'prod_robusta@test.com')->firstOrFail();
+
+        // En producción: actualizar perfil con password débil debe fallar
+        $resProfileFail = $this->actingAs($user)->put(route('profile.update'), [
+            'nombre' => $user->nombre,
+            'password' => '1234',
+            'password_confirmation' => '1234',
+        ]);
+        $resProfileFail->assertSessionHasErrors(['password']);
+
+        // En producción: actualizar perfil con password robusto debe ser exitoso
+        $resProfileOk = $this->actingAs($user)->put(route('profile.update'), [
+            'nombre' => $user->nombre,
+            'password' => 'NuevaClaveSegura2026',
+            'password_confirmation' => 'NuevaClaveSegura2026',
+        ]);
+        $resProfileOk->assertSessionHasNoErrors();
+
+        // 4. Restaurar entorno de testing
+        app()['env'] = 'testing';
+        $this->assertFalse(app()->isProduction());
+    }
+
+    public function test_auditoria_forense_de_base_de_datos_con_mariadb_audit_plugin_en_docker(): void
+    {
+        $composePath = base_path('docker-compose.yml');
+        $this->assertFileExists($composePath);
+
+        $content = file_get_contents($composePath);
+
+        // 1. Verificar carga permanente del plugin nativo server_audit
+        $this->assertStringContainsString('--plugin-load-add=server_audit', $content);
+        $this->assertStringContainsString('--server-audit=FORCE_PLUS_PERMANENT', $content);
+        $this->assertStringContainsString('--server-audit-logging=ON', $content);
+
+        // 2. Verificar eventos requeridos: conexiones (CONNECT), DML y DDL
+        $this->assertStringContainsString('--server-audit-events=CONNECT,QUERY_DML,QUERY_DDL', $content);
+
+        // 3. Verificar almacenamiento y rotación forense (100MB / 5 rotaciones)
+        $this->assertStringContainsString('--server-audit-output-type=FILE', $content);
+        $this->assertStringContainsString('--server-audit-file-path=/var/log/mysql/audit.log', $content);
+        $this->assertStringContainsString('--server-audit-file-rotate-size=104857600', $content);
+        $this->assertStringContainsString('--server-audit-file-rotations=5', $content);
+
+        // 4. Verificar volumen persistente mariadb_audit_logs montado y declarado
+        $this->assertStringContainsString('mariadb_audit_logs:/var/log/mysql', $content);
+        $this->assertMatchesRegularExpression('/mariadb_audit_logs:\s+driver:\s+local/', $content);
+    }
 }
+
+
+
+
+
 
 

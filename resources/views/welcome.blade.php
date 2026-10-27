@@ -2,6 +2,7 @@
 
 @section('content')
     @include('welcome.hero')
+    @include('welcome.carrusel-seguridad')
     @include('welcome.how')
     @include('welcome.lia')
     @include('welcome.cards')

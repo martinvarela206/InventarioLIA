@@ -76,6 +76,9 @@
                         </td>
                         <td class="py-1.5 px-2 border border-gray-400">
                             <strong>{{ $el->marca }}</strong> {{ $el->modelo }}
+                            @if($el->especificacionesSintetizadas(false) !== '-')
+                                <span class="block text-[10px] text-gray-700 font-mono">{{ $el->especificacionesSintetizadas(false) }}</span>
+                            @endif
                             @if($el->nro_serie)
                                 <span class="block text-[10px] text-gray-500 font-mono">S/N: {{ $el->nro_serie }}</span>
                             @endif

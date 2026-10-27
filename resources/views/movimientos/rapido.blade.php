@@ -25,10 +25,9 @@
                 <div id="buscar-spinner" class="hidden absolute right-4 top-4">
                     <svg class="animate-spin h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                 </div>
-            </div>
-
-            <!-- Resultados en Vivo (Dropdown) -->
-            <div id="resultados-dropdown" class="hidden mt-2 bg-white rounded-xl shadow-xl border border-gray-200 max-h-60 overflow-y-auto divide-y divide-gray-100 z-30">
+                <!-- Resultados en Vivo Flotante Estandarizado -->
+                <div id="resultados-dropdown" class="hidden absolute left-0 right-0 mt-1 bg-white rounded-2xl shadow-2xl border border-gray-200 max-h-64 overflow-y-auto divide-y divide-gray-100 z-50">
+                </div>
             </div>
 
             <!-- Ficha del Activo Seleccionado -->
@@ -145,7 +144,12 @@
                 <div id="campos-prestamo" class="space-y-4 hidden">
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Docente / Investigador / Cátedra Solicitante <span class="text-red-500 font-bold">*</span></label>
-                        <input type="text" name="solicitante" id="input-solicitante" placeholder="Ej. Dr. Juan Pérez (Cátedra Algoritmos)" class="w-full px-3.5 py-2.5 border rounded-xl bg-white font-semibold">
+                        <input type="text" name="solicitante" id="input-solicitante" list="lista-solicitantes-rapido" placeholder="Ej. Dr. Juan Pérez (Cátedra Algoritmos)" class="w-full px-3.5 py-2.5 border rounded-xl bg-white font-semibold">
+                        <datalist id="lista-solicitantes-rapido">
+                            @foreach($solicitantesFrecuentes ?? [] as $sol)
+                                <option value="{{ $sol }}"></option>
+                            @endforeach
+                        </datalist>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fecha de Salida</label>

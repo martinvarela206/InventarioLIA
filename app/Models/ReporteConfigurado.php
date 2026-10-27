@@ -77,6 +77,11 @@ class ReporteConfigurado extends Model
         return !empty($this->variables_requeridas['tipo_id']);
     }
 
+    public function requierePuesto(): bool
+    {
+        return !empty($this->variables_requeridas['puesto']);
+    }
+
     public static function generarSlug(string $titulo): string
     {
         $base = Str::slug($titulo);

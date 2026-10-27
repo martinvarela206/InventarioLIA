@@ -25,6 +25,10 @@
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
                         Declarado Irreparable (Baja Patrimonial)
                     </span>
+                @elseif($ticket->estado_ticket === 'solucionado')
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                        Solución Técnica Registrada (Pendiente de Cierre)
+                    </span>
                 @else
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
                         Abierto / En Taller de Reparaciones
@@ -91,6 +95,50 @@
                     <span>Informante: <strong class="text-gray-800">{{ $ticket->solicitante ?: ($ticket->usuario?->nombre ?? 'Sistema') }}</strong></span>
                     <span>Fecha: <strong>{{ $ticket->fecha ? $ticket->fecha->format('d/m/Y H:i') : '-' }}</strong></span>
                 </div>
+            </div>
+
+            <!-- Áreas Multidisciplinarias Involucradas (Acumulativas) -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                        <span>Áreas Involucradas (Multidisciplinario)</span>
+                    </h2>
+                </div>
+
+                @if($ticket->areas->isEmpty())
+                    <p class="text-xs text-gray-400 italic">No hay áreas específicas vinculadas a este ticket.</p>
+                @else
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        @foreach($ticket->areas as $ar)
+                            <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black border shadow-2xs"
+                                 style="background-color: {{ $ar->color ? $ar->color . '20' : '#f3f4f6' }}; color: {{ $ar->color ?: '#374151' }}; border-color: {{ $ar->color ? $ar->color . '60' : '#d1d5db' }};">
+                                <span>{{ $ar->nombre }}</span>
+                                @if($ar->pivot->created_at)
+                                    <span class="text-[10px] opacity-75 font-normal">({{ \Carbon\Carbon::parse($ar->pivot->created_at)->format('d/m H:i') }})</span>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                <!-- Vincular Área Adicional (Acumulativa) -->
+                @if($ticket->esTicketAbierto())
+                    <form action="{{ route('tickets.agregarArea', $ticket->id) }}" method="POST" class="pt-2 border-t border-gray-100 flex items-center gap-2">
+                        @csrf
+                        <select name="area_id" required class="flex-1 bg-gray-50 border border-gray-300 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-gray-800 focus:bg-white focus:ring-2 focus:ring-amber-400">
+                            <option value="">+ Sumar Área...</option>
+                            @foreach($areas as $ar)
+                                @if(!$ticket->areas->contains('id', $ar->id))
+                                    <option value="{{ $ar->id }}">{{ $ar->nombre }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        <button type="submit" class="bg-gray-900 hover:bg-black text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0">
+                            Sumar
+                        </button>
+                    </form>
+                @endif
             </div>
 
             <!-- Evidencia Fotográfica -->
@@ -180,14 +228,223 @@
                 </div>
             @endif
 
-            <!-- Formulario de Resolución (solo si el ticket sigue abierto y usuario es técnico) -->
-            @if($ticket->esTicketAbierto())
+            <!-- Hilo Colaborativo Tipo Foro y Seguimiento del Ticket -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6 space-y-5">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h2 class="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                        <span class="p-1.5 bg-amber-100 text-amber-700 rounded-lg">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        </span>
+                        <span>Hilo de Seguimiento y Discusión Técnica</span>
+                    </h2>
+                    <span class="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{{ $ticket->comentarios->count() }} {{ $ticket->comentarios->count() === 1 ? 'mensaje' : 'mensajes' }}</span>
+                </div>
+
+                @if($ticket->comentarios->isEmpty())
+                    <div class="p-8 text-center bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                        <p class="text-xs text-gray-400 font-medium">No se han registrado mensajes en el hilo de este ticket aún. Sea el primero en aportar un comentario o diagnóstico.</p>
+                    </div>
+                @else
+                    <!-- Timeline tipo Foro -->
+                    <div class="space-y-4">
+                        @foreach($ticket->comentarios as $cmt)
+                            <div class="flex items-start gap-3 p-4 rounded-xl border transition-all {{ $cmt->tipo === 'solucion_propuesta' ? 'bg-blue-50/50 border-blue-200' : 'bg-gray-50/80 border-gray-200' }}">
+                                <!-- Avatar -->
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black shrink-0 shadow-2xs {{ $cmt->tipo === 'solucion_propuesta' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-white' }}">
+                                    {{ strtoupper(substr($cmt->usuario?->nombre ?: ($cmt->usuario?->email ?? 'U'), 0, 2)) }}
+                                </div>
+
+                                <div class="flex-1 min-w-0 space-y-2">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/60 pb-1.5">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="font-extrabold text-xs text-gray-900">{{ $cmt->usuario?->nombre ?: ($cmt->usuario?->email ?? 'Usuario') }}</span>
+                                            
+                                            <!-- Rol del Usuario -->
+                                            @if($cmt->usuario)
+                                                @if($cmt->usuario->hasRole('tec'))
+                                                    <span class="px-2 py-0.2 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">Técnico</span>
+                                                @elseif($cmt->usuario->hasRole('subtec'))
+                                                    <span class="px-2 py-0.2 rounded text-[10px] font-black bg-indigo-100 text-indigo-900 border border-indigo-300">SubTécnico</span>
+                                                @elseif($cmt->usuario->hasRole('rev'))
+                                                    <span class="px-2 py-0.2 rounded text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">Revisor</span>
+                                                @endif
+                                            @endif
+
+                                            @if($cmt->tipo === 'solucion_propuesta')
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-300">Diagnóstico / Solución</span>
+                                            @endif
+                                        </div>
+
+                                        <span class="text-gray-400 text-[11px]" title="{{ $cmt->created_at ? $cmt->created_at->format('d/m/Y H:i:s') : '' }}">
+                                            {{ $cmt->created_at ? $cmt->created_at->diffForHumans() : '' }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Mensaje -->
+                                    <p class="text-xs text-gray-800 leading-relaxed font-medium whitespace-pre-line">{{ $cmt->mensaje }}</p>
+
+                                    <!-- Movimiento de Inventario Asociado a este Mensaje -->
+                                    @if($cmt->movimiento)
+                                        <div class="mt-2 p-3 rounded-xl bg-amber-50/90 border border-amber-300 text-xs text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
+                                            <div class="flex items-center gap-2">
+                                                <span class="px-2 py-0.5 bg-amber-200 text-amber-950 rounded-md font-black text-[10px] tracking-wider uppercase">📦 Traslado Físico Vinculado</span>
+                                                <span class="font-bold">Destino: <strong class="text-gray-900">{{ $cmt->movimiento->ubicacion?->nombre ?? 'N/A' }}</strong> (Puesto: {{ $cmt->movimiento->puesto ?: 'S/P' }})</span>
+                                            </div>
+                                            <span class="text-[11px] text-amber-800 font-mono font-bold">Movimiento #{{ $cmt->movimiento_id }}</span>
+                                        </div>
+                                    @endif
+
+                                    <!-- Evidencia Fotográfica en el Mensaje -->
+                                    @if($cmt->adjuntos && $cmt->adjuntos->isNotEmpty())
+                                        <div class="pt-2">
+                                            <span class="text-[10px] uppercase font-bold text-gray-500 block mb-1.5">Fotos adjuntas ({{ $cmt->adjuntos->count() }}):</span>
+                                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                @foreach($cmt->adjuntos as $foto)
+                                                    <a href="{{ $foto->url }}" target="_blank" class="group relative rounded-lg overflow-hidden border border-gray-200 aspect-video bg-gray-100 block shadow-2xs hover:shadow-md transition-all">
+                                                        <img src="{{ $foto->url }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200">
+                                                        <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
+                                                            Ampliar ↗
+                                                        </div>
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                <!-- Formulario de Respuesta / Mensaje Colaborativo en el Foro -->
+                <form action="{{ route('tickets.comentar', $ticket->id) }}" method="POST" enctype="multipart/form-data" class="pt-4 border-t border-gray-100 space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                            Añadir Respuesta o Evidencia al Foro
+                        </label>
+                        <textarea name="mensaje" rows="2" required placeholder="Escriba un comentario, aclaración de falla o respuesta técnica en el hilo..."
+                                  class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"></textarea>
+                    </div>
+
+                    <!-- Opción de Traslado Físico de Inventario Vinculado (exclusivo personal técnico) -->
+                    @if(Auth::user()->hasRole('tec'))
+                        <div class="p-3.5 bg-amber-50/60 border border-amber-200/80 rounded-xl space-y-2.5">
+                            <label class="flex items-center gap-2 cursor-pointer text-xs font-black text-amber-950">
+                                <input type="checkbox" name="generar_movimiento" value="1" id="toggle_movimiento_check"
+                                       onchange="document.getElementById('contenedor_movimiento_ticket').classList.toggle('hidden', !this.checked)"
+                                       class="rounded text-amber-600 focus:ring-amber-500">
+                                <span>Registrar traslado o cambio de ubicación física con esta respuesta</span>
+                            </label>
+
+                            <div id="contenedor_movimiento_ticket" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Nueva Sala de Ubicación:</label>
+                                    <select name="ubicacion_id" class="w-full bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs text-gray-800">
+                                        <option value="">Seleccione sala de destino...</option>
+                                        @foreach($ubicaciones as $ub)
+                                            <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-700 mb-1">Puesto (opcional):</label>
+                                    <input type="text" name="puesto" placeholder="Ej: Puesto 04, Rack 2"
+                                           class="w-full bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs text-gray-800">
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                        <!-- Adjuntos fotográficos opcionales -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-500 mb-1">
+                                Adjuntar fotos de evidencia (opcional):
+                            </label>
+                            <input type="file" name="fotos[]" multiple accept="image/*"
+                                   class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-amber-100 hover:file:text-amber-900 cursor-pointer">
+                        </div>
+
+                        <!-- Selector de Área adicional opcional y Botón Publicar -->
+                        <div class="flex items-center gap-2 justify-end">
+                            <span class="text-[11px] font-bold text-gray-500 whitespace-nowrap">+ Área:</span>
+                            <select name="nueva_area_id" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 font-medium">
+                                <option value="">Sin nueva área</option>
+                                @foreach($areas as $ar)
+                                    @if(!$ticket->areas->contains('id', $ar->id))
+                                        <option value="{{ $ar->id }}">{{ $ar->nombre }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
+
+                            <button type="submit" class="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-black text-white font-bold text-xs py-2 px-4 rounded-xl transition-all shadow-sm">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                                <span>Publicar</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Panel de Solución Técnica para SubTécnico (si el usuario es SubTec y no puede cerrar) -->
+            @if($ticket->esTicketAbierto() && Auth::user()->canSolveTickets() && !Auth::user()->canCloseTickets())
+                <div class="bg-white rounded-2xl border border-blue-300 shadow-sm p-6 space-y-4">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-base font-black text-gray-900 flex items-center gap-2">
+                            <span class="w-6 h-6 bg-blue-500 text-white rounded-lg flex items-center justify-center text-xs font-black">⚙</span>
+                            Diagnóstico y Solución Técnica (SubTécnico)
+                        </h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Como SubTécnico, registre las tareas técnicas efectuadas. El cierre formal y la asignación física de sala serán concluidos por un Técnico.</p>
+                    </div>
+
+                    <form action="{{ route('tickets.solucionar', $ticket->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        @csrf
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                                Solución Técnica Aplicada y Pruebas Efectuadas <span class="text-rose-500 font-bold">*</span>
+                            </label>
+                            <textarea name="solucion" rows="3" required
+                                      placeholder="Detalle el trabajo realizado: mantenimiento, reemplazo de componente, comprobación de booteo, etc."
+                                      class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-500 mb-1">
+                                Fotos de evidencia del arreglo / mediciones (opcional):
+                            </label>
+                            <input type="file" name="fotos[]" multiple accept="image/*"
+                                   class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-blue-100 hover:file:text-blue-900 cursor-pointer">
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-gray-600">+ Área involucrada:</span>
+                                <select name="nueva_area_id" class="bg-gray-50 border border-gray-300 rounded-xl px-3 py-1.5 text-xs text-gray-700 font-medium">
+                                    <option value="">Mantener áreas actuales</option>
+                                    @foreach($areas as $ar)
+                                        @if(!$ticket->areas->contains('id', $ar->id))
+                                            <option value="{{ $ar->id }}">{{ $ar->nombre }}</option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            </div>
+                            <button type="submit" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-5 py-2.5 rounded-xl text-sm transition-all shadow-md">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                <span>Registrar Solución Técnica</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+
+            <!-- Formulario de Resolución Formal (solo si usuario posee permisos de cierre: Técnico) -->
+            @if($ticket->esTicketAbierto() && Auth::user()->canCloseTickets())
                 <div class="bg-white rounded-2xl border border-amber-300 shadow-sm p-6 space-y-5">
                     <div class="border-b border-gray-100 pb-3 flex items-center justify-between">
                         <div>
                             <h2 class="text-base font-black text-gray-900 flex items-center gap-2">
                                 <span class="w-6 h-6 bg-amber-500 text-black rounded-lg flex items-center justify-center text-xs font-black">✓</span>
-                                Resolución Técnica del Ticket
+                                Resolución Técnica del Ticket (Cierre Formal y Reasignación)
                             </h2>
                             <p class="text-xs text-gray-500 mt-0.5">Registre la intervención técnica, confirme el destino físico o declare la baja del equipo.</p>
                         </div>
@@ -220,7 +477,7 @@
                                     @endphp
                                     @foreach($ubicaciones as $ub)
                                         <option value="{{ $ub->id }}" {{ old('ubicacion_id', $ubicacionSugerida) == $ub->id ? 'selected' : '' }}>
-                                            {{ $ub->nombre }} {{ $movPrevio && $movPrevio->ubicacion_id == $ub->id ? '(Sala Previa)' : '' }}
+                                             {{ $ub->nombre }} {{ $movPrevio && $movPrevio->ubicacion_id == $ub->id ? '(Sala Previa)' : '' }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -255,6 +512,19 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            @endif
+
+            <!-- Notificación informativa para rol Revisor -->
+            @if($ticket->esTicketAbierto() && !Auth::user()->canSolveTickets())
+                <div class="bg-gray-50 rounded-2xl border border-gray-200 p-5 space-y-2">
+                    <div class="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase">
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Perfil Revisor</span>
+                    </div>
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Su perfil le permite participar en la bitácora de mensajes y aportar detalles sobre la falla reportada. La solución técnica y el cierre formal con movimientos de inventario corresponden a los roles SubTécnico y Técnico.
+                    </p>
                 </div>
             @endif
         </div>

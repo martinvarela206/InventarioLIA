@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Usuario;
 use App\Models\Rol;
+use App\Models\UsuarioTrayectoria;
 
 class UserSeeder extends Seeder
 {
@@ -17,6 +18,85 @@ class UserSeeder extends Seeder
         $roles = Rol::all()->keyBy('rol');
 
         $users = [
+            // Usuarios Oficiales y Cuentas Reales
+            [
+                'nombre' => 'Flavia Millan',
+                'email' => 'flavia@lia.com',
+                'password' => Hash::make('1234'),
+                'dni' => '27111222',
+                'cargo_actual' => 'Directora General LIA',
+                'carrera' => 'Licenciatura en Ciencias de la Computación',
+                'activo' => true,
+                'roles' => ['registered', 'user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev'],
+            ],
+            [
+                'nombre' => 'Marcelo Mondre',
+                'email' => 'marcelo@lia.com',
+                'password' => Hash::make('1234'),
+                'dni' => '28333444',
+                'cargo_actual' => 'Coordinador Técnico',
+                'carrera' => 'Licenciatura en Sistemas de Información',
+                'activo' => true,
+                'roles' => ['registered', 'rev', 'subtec', 'tec'],
+            ],
+            [
+                'nombre' => 'Cristina Sosa',
+                'email' => 'cristina@lia.com',
+                'password' => Hash::make('1234'),
+                'dni' => '29555666',
+                'cargo_actual' => 'Administradora Institucional',
+                'carrera' => 'Licenciatura en Ciencias de la Computación',
+                'activo' => true,
+                'roles' => ['registered', 'user_admin', 'app_admin'],
+            ],
+            [
+                'nombre' => 'Martin Varela',
+                'email' => 'martin@lia.com',
+                'password' => Hash::make('1234'),
+                'dni' => '38777888',
+                'cargo_actual' => 'Revisor y Desarrollador',
+                'carrera' => 'Licenciatura en Sistemas de Información',
+                'activo' => true,
+                'roles' => ['registered', 'rev'],
+            ],
+            // 3 usuarios aleatorios complementarios
+            [
+                'nombre' => 'Juan Pérez (Registrado)',
+                'email' => 'juan.perez@lia.com',
+                'password' => Hash::make('1234'),
+                'dni' => '42111333',
+                'cargo_actual' => 'Estudiante / Alumno',
+                'carrera' => 'Licenciatura en Ciencias de la Computación',
+                'activo' => true,
+                'roles' => ['registered'],
+            ],
+            [
+                'nombre' => 'Carlos Gómez (Ex-Personal)',
+                'email' => 'carlos.gomez@ex-lia.com',
+                'password' => Hash::make('1234'),
+                'dni' => '24999888',
+                'cargo_actual' => 'Ex-Técnico de Laboratorio',
+                'carrera' => 'Licenciatura en Sistemas de Información',
+                'activo' => false,
+                'roles' => ['registered'],
+                'trayectoria_fin' => '2019-11-30',
+                'trayectoria_inicio' => '2015-03-01',
+                'trayectoria_cargo' => 'Técnico de Hardware',
+            ],
+            [
+                'nombre' => 'Laura Martínez (Ex-Personal)',
+                'email' => 'laura.martinez@ex-lia.com',
+                'password' => Hash::make('1234'),
+                'dni' => '25444333',
+                'cargo_actual' => 'Ex-Pasante de Investigación',
+                'carrera' => 'Licenciatura en Ciencias de la Computación',
+                'activo' => false,
+                'roles' => ['registered'],
+                'trayectoria_fin' => '2018-10-15',
+                'trayectoria_inicio' => '2016-04-01',
+                'trayectoria_cargo' => 'Pasante de Redes',
+            ],
+            // Cuentas de soporte y compatibilidad operativa
             [
                 'nombre' => 'Administrador General',
                 'email' => 'admin@lia.unsj.edu.ar',
@@ -24,7 +104,7 @@ class UserSeeder extends Seeder
                 'dni' => '30111222',
                 'cargo_actual' => 'Director LIA',
                 'activo' => true,
-                'roles' => ['registered', 'user_admin', 'app_admin', 'item_admin', 'tec', 'rev'],
+                'roles' => ['registered', 'user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev'],
             ],
             [
                 'nombre' => 'Administrador de Aplicación',
@@ -77,6 +157,11 @@ class UserSeeder extends Seeder
             $roleNames = $u['roles'];
             unset($u['roles']);
 
+            $trayectoriaInicio = $u['trayectoria_inicio'] ?? null;
+            $trayectoriaFin = $u['trayectoria_fin'] ?? null;
+            $trayectoriaCargo = $u['trayectoria_cargo'] ?? null;
+            unset($u['trayectoria_inicio'], $u['trayectoria_fin'], $u['trayectoria_cargo']);
+
             $user = Usuario::firstOrCreate(['email' => $u['email']], $u);
             
             $roleIds = [];
@@ -86,6 +171,20 @@ class UserSeeder extends Seeder
                 }
             }
             $user->roles()->sync($roleIds);
+
+            if ($trayectoriaFin) {
+                UsuarioTrayectoria::firstOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'fecha_fin' => $trayectoriaFin,
+                    ],
+                    [
+                        'cargo' => $trayectoriaCargo ?? 'Cargo Histórico',
+                        'fecha_inicio' => $trayectoriaInicio ?? '2016-01-01',
+                        'notas' => 'Vínculo laboral extinguido hace más de 6 años. Sujeto a Ley 25.326.',
+                    ]
+                );
+            }
         }
     }
 }
