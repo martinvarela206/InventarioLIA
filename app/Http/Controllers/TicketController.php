@@ -189,7 +189,9 @@ class TicketController extends Controller
             'adjuntos',
             'resoluciones.usuario',
             'resoluciones.ubicacion',
-            'comentarios.usuario',
+            'comentarios.usuario.roles',
+            'comentarios.adjuntos',
+            'comentarios.movimiento.ubicacion',
             'areas',
         ])->findOrFail($id);
 
@@ -221,17 +223,33 @@ class TicketController extends Controller
         $validated = $request->validate([
             'mensaje' => 'required|string|min:3',
             'nueva_area_id' => 'nullable|exists:areas,id',
+            'fotos' => 'nullable|array',
+            'fotos.*' => 'nullable|image|max:10240',
         ]);
 
         $ticket = Movimiento::findOrFail($id);
         $user = Auth::user();
 
-        \App\Models\TicketComentario::create([
+        $comentario = \App\Models\TicketComentario::create([
             'ticket_id' => $ticket->id,
             'user_id' => $user->id,
             'mensaje' => $validated['mensaje'],
             'tipo' => 'comentario',
         ]);
+
+        if ($request->hasFile('fotos')) {
+            foreach ($request->file('fotos') as $foto) {
+                if ($foto && $foto->isValid()) {
+                    $path = $foto->store('ticket_hilos', 'public');
+                    \App\Models\TicketComentarioAdjunto::create([
+                        'ticket_comentario_id' => $comentario->id,
+                        'archivo_path' => $path,
+                        'nombre_original' => $foto->getClientOriginalName(),
+                        'mime_type' => $foto->getMimeType(),
+                    ]);
+                }
+            }
+        }
 
         if (!empty($validated['nueva_area_id'])) {
             $ticket->areas()->syncWithoutDetaching([
@@ -286,6 +304,8 @@ class TicketController extends Controller
         $validated = $request->validate([
             'solucion' => 'required|string|min:5',
             'nueva_area_id' => 'nullable|exists:areas,id',
+            'fotos' => 'nullable|array',
+            'fotos.*' => 'nullable|image|max:10240',
         ]);
 
         $ticket = Movimiento::findOrFail($id);
@@ -307,12 +327,26 @@ class TicketController extends Controller
             ]);
         }
 
-        \App\Models\TicketComentario::create([
+        $comentario = \App\Models\TicketComentario::create([
             'ticket_id' => $ticket->id,
             'user_id' => $user->id,
             'mensaje' => 'SOLUCIÓN TÉCNICA PROPUESTA / EJECUTADA: ' . $validated['solucion'],
             'tipo' => 'solucion_propuesta',
         ]);
+
+        if ($request->hasFile('fotos')) {
+            foreach ($request->file('fotos') as $foto) {
+                if ($foto && $foto->isValid()) {
+                    $path = $foto->store('ticket_hilos', 'public');
+                    \App\Models\TicketComentarioAdjunto::create([
+                        'ticket_comentario_id' => $comentario->id,
+                        'archivo_path' => $path,
+                        'nombre_original' => $foto->getClientOriginalName(),
+                        'mime_type' => $foto->getMimeType(),
+                    ]);
+                }
+            }
+        }
 
         return redirect()->route('tickets.show', $ticket->id)
             ->with('success', 'Solución técnica registrada. Pendiente de cierre formal y reasignación física por un Técnico.');

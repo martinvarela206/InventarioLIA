@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TicketComentario extends Model
 {
@@ -15,6 +16,7 @@ class TicketComentario extends Model
     protected $fillable = [
         'ticket_id',
         'user_id',
+        'movimiento_id',
         'mensaje',
         'tipo',
     ];
@@ -27,5 +29,15 @@ class TicketComentario extends Model
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(Usuario::class, 'user_id');
+    }
+
+    public function adjuntos(): HasMany
+    {
+        return $this->hasMany(TicketComentarioAdjunto::class, 'ticket_comentario_id');
+    }
+
+    public function movimiento(): BelongsTo
+    {
+        return $this->belongsTo(Movimiento::class, 'movimiento_id');
     }
 }

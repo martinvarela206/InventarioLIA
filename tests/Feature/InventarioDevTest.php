@@ -2488,6 +2488,101 @@ class InventarioDevTest extends TestCase
         $resShow->assertSee('Hardware');
         $resShow->assertSee('Software');
     }
+
+    public function test_modulo_tickets_colaborativo_tipo_foro_y_adjuntos_en_hilo(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $rolTec = Rol::firstOrCreate(['rol' => 'tec']);
+        $rolSubTec = Rol::firstOrCreate(['rol' => 'subtec']);
+        $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+        $rolReg = Rol::firstOrCreate(['rol' => 'registered']);
+
+        $tec = Usuario::create([
+            'email' => 'tec_foro@lia.com',
+            'nombre' => 'Tecnico Foro',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $tec->roles()->sync([$rolReg->id, $rolTec->id]);
+
+        $rev = Usuario::create([
+            'email' => 'rev_foro@lia.com',
+            'nombre' => 'Revisor Foro',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $rev->roles()->sync([$rolReg->id, $rolRev->id]);
+
+        $tipo = \App\Models\Tipo::first();
+        $ubicacion = \App\Models\Ubicacion::first();
+
+        $elemento = \App\Models\Elemento::create([
+            'nro_lia' => 'LIA-FORO-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Lenovo',
+            'modelo' => 'ThinkCentre M720',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        $ticket = \App\Models\Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'ubicacion_id' => $ubicacion->id,
+            'puesto' => 'P-10',
+            'user_id' => $rev->id,
+            'fecha' => now(),
+            'solicitante' => $rev->nombre,
+            'comentario' => 'Equipo no enciende luego de corte de tensión',
+        ]);
+
+        // 1. Revisor publica mensaje con foto adjunta en el hilo
+        $fotoRev = \Illuminate\Http\UploadedFile::fake()->image('fuente_quemada.jpg');
+        $resPostRev = $this->actingAs($rev)->post(route('tickets.comentar', $ticket->id), [
+            'mensaje' => 'Adjunto foto del fusible de la fuente de poder chamuscado.',
+            'fotos' => [$fotoRev],
+        ]);
+        $resPostRev->assertRedirect(route('tickets.show', $ticket->id));
+
+        $this->assertDatabaseHas('ticket_comentarios', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $rev->id,
+            'mensaje' => 'Adjunto foto del fusible de la fuente de poder chamuscado.',
+        ]);
+
+        $comentarioRev = \App\Models\TicketComentario::where('ticket_id', $ticket->id)
+            ->where('user_id', $rev->id)
+            ->first();
+        $this->assertNotNull($comentarioRev);
+        $this->assertCount(1, $comentarioRev->adjuntos);
+        $this->assertEquals('fuente_quemada.jpg', $comentarioRev->adjuntos->first()->nombre_original);
+
+        // 2. Técnico responde en el foro con otra foto
+        $fotoTec = \Illuminate\Http\UploadedFile::fake()->image('reemplazo_fusible.jpg');
+        $resPostTec = $this->actingAs($tec)->post(route('tickets.comentar', $ticket->id), [
+            'mensaje' => 'Recibido en banco de pruebas. Se reemplaza fusible y se testean voltajes de 12V y 5V.',
+            'fotos' => [$fotoTec],
+        ]);
+        $resPostTec->assertRedirect(route('tickets.show', $ticket->id));
+
+        // 3. Verificación de TicketMensaje como modelo
+        $mensajesForo = \App\Models\TicketMensaje::where('ticket_id', $ticket->id)->orderBy('id')->get();
+        $this->assertCount(2, $mensajesForo);
+
+        // 4. Renderizado del foro en la vista tickets.show
+        $resShow = $this->actingAs($tec)->get(route('tickets.show', $ticket->id));
+        $resShow->assertStatus(200);
+        $resShow->assertSee('Hilo de Seguimiento y Discusión Técnica');
+        $resShow->assertSee('Revisor Foro');
+        $resShow->assertSee('Tecnico Foro');
+        $resShow->assertSee('Adjunto foto del fusible');
+        $resShow->assertSee('Recibido en banco de pruebas');
+        $resShow->assertSee('Fotos adjuntas');
+    }
 }
+
 
 

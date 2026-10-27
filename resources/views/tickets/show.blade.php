@@ -228,53 +228,108 @@
                 </div>
             @endif
 
-            <!-- Bitácora de Discusión y Seguimiento del Ticket -->
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
-                <div class="flex items-center justify-between border-b border-gray-100 pb-2">
-                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                        <span>Bitácora y Mensajes de Seguimiento ({{ $ticket->comentarios->count() }})</span>
+            <!-- Hilo Colaborativo Tipo Foro y Seguimiento del Ticket -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6 space-y-5">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h2 class="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                        <span class="p-1.5 bg-amber-100 text-amber-700 rounded-lg">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        </span>
+                        <span>Hilo de Seguimiento y Discusión Técnica</span>
                     </h2>
+                    <span class="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{{ $ticket->comentarios->count() }} {{ $ticket->comentarios->count() === 1 ? 'mensaje' : 'mensajes' }}</span>
                 </div>
 
                 @if($ticket->comentarios->isEmpty())
-                    <p class="text-xs text-gray-400 italic py-2">No se han registrado mensajes ni notas técnicas intermedias en este ticket.</p>
+                    <div class="p-8 text-center bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                        <p class="text-xs text-gray-400 font-medium">No se han registrado mensajes en el hilo de este ticket aún. Sea el primero en aportar un comentario o diagnóstico.</p>
+                    </div>
                 @else
-                    <div class="space-y-3">
+                    <!-- Timeline tipo Foro -->
+                    <div class="space-y-4">
                         @foreach($ticket->comentarios as $cmt)
-                            <div class="p-3.5 rounded-xl border text-xs {{ $cmt->tipo === 'solucion_propuesta' ? 'bg-blue-50/70 border-blue-200' : 'bg-gray-50 border-gray-200' }} space-y-1.5">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-bold text-gray-900">{{ $cmt->usuario?->nombre ?: ($cmt->usuario?->email ?? 'Usuario') }}</span>
-                                        @if($cmt->tipo === 'solucion_propuesta')
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-300">Diagnóstico / Solución</span>
-                                        @else
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-700">Comentario</span>
-                                        @endif
-                                    </div>
-                                    <span class="text-gray-400 text-[11px]">{{ $cmt->created_at ? $cmt->created_at->format('d/m/Y H:i') : '' }}</span>
+                            <div class="flex items-start gap-3 p-4 rounded-xl border transition-all {{ $cmt->tipo === 'solucion_propuesta' ? 'bg-blue-50/50 border-blue-200' : 'bg-gray-50/80 border-gray-200' }}">
+                                <!-- Avatar -->
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black shrink-0 shadow-2xs {{ $cmt->tipo === 'solucion_propuesta' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-white' }}">
+                                    {{ strtoupper(substr($cmt->usuario?->nombre ?: ($cmt->usuario?->email ?? 'U'), 0, 2)) }}
                                 </div>
-                                <p class="text-gray-800 leading-relaxed font-medium whitespace-pre-line">{{ $cmt->mensaje }}</p>
+
+                                <div class="flex-1 min-w-0 space-y-2">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200/60 pb-1.5">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="font-extrabold text-xs text-gray-900">{{ $cmt->usuario?->nombre ?: ($cmt->usuario?->email ?? 'Usuario') }}</span>
+                                            
+                                            <!-- Rol del Usuario -->
+                                            @if($cmt->usuario)
+                                                @if($cmt->usuario->hasRole('tec'))
+                                                    <span class="px-2 py-0.2 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">Técnico</span>
+                                                @elseif($cmt->usuario->hasRole('subtec'))
+                                                    <span class="px-2 py-0.2 rounded text-[10px] font-black bg-indigo-100 text-indigo-900 border border-indigo-300">SubTécnico</span>
+                                                @elseif($cmt->usuario->hasRole('rev'))
+                                                    <span class="px-2 py-0.2 rounded text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">Revisor</span>
+                                                @endif
+                                            @endif
+
+                                            @if($cmt->tipo === 'solucion_propuesta')
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-300">Diagnóstico / Solución</span>
+                                            @endif
+                                        </div>
+
+                                        <span class="text-gray-400 text-[11px]" title="{{ $cmt->created_at ? $cmt->created_at->format('d/m/Y H:i:s') : '' }}">
+                                            {{ $cmt->created_at ? $cmt->created_at->diffForHumans() : '' }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Mensaje -->
+                                    <p class="text-xs text-gray-800 leading-relaxed font-medium whitespace-pre-line">{{ $cmt->mensaje }}</p>
+
+                                    <!-- Evidencia Fotográfica en el Mensaje -->
+                                    @if($cmt->adjuntos && $cmt->adjuntos->isNotEmpty())
+                                        <div class="pt-2">
+                                            <span class="text-[10px] uppercase font-bold text-gray-500 block mb-1.5">Fotos adjuntas ({{ $cmt->adjuntos->count() }}):</span>
+                                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                @foreach($cmt->adjuntos as $foto)
+                                                    <a href="{{ $foto->url }}" target="_blank" class="group relative rounded-lg overflow-hidden border border-gray-200 aspect-video bg-gray-100 block shadow-2xs hover:shadow-md transition-all">
+                                                        <img src="{{ $foto->url }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200">
+                                                        <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
+                                                            Ampliar ↗
+                                                        </div>
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         @endforeach
                     </div>
                 @endif
 
-                <!-- Formulario de Respuesta / Comentario para todos los roles autorizados -->
-                <form action="{{ route('tickets.comentar', $ticket->id) }}" method="POST" class="pt-2 border-t border-gray-100 space-y-3">
+                <!-- Formulario de Respuesta / Mensaje Colaborativo en el Foro -->
+                <form action="{{ route('tickets.comentar', $ticket->id) }}" method="POST" enctype="multipart/form-data" class="pt-4 border-t border-gray-100 space-y-3">
                     @csrf
                     <div>
-                        <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">
-                            Responder o Agregar Observación al Hilo
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                            Añadir Respuesta o Evidencia al Foro
                         </label>
-                        <textarea name="mensaje" rows="2" required placeholder="Escriba un comentario, aclaración de falla o respuesta técnica..."
-                                  class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2 text-xs text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"></textarea>
+                        <textarea name="mensaje" rows="2" required placeholder="Escriba un comentario, aclaración de falla o respuesta técnica en el hilo..."
+                                  class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all"></textarea>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[11px] font-bold text-gray-500 whitespace-nowrap">+ Área adicional:</span>
-                            <select name="nueva_area_id" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                        <!-- Adjuntos fotográficos opcionales -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-500 mb-1">
+                                Adjuntar fotos de evidencia (opcional):
+                            </label>
+                            <input type="file" name="fotos[]" multiple accept="image/*"
+                                   class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-amber-100 hover:file:text-amber-900 cursor-pointer">
+                        </div>
+
+                        <!-- Selector de Área adicional opcional -->
+                        <div class="flex items-center gap-2 justify-end">
+                            <span class="text-[11px] font-bold text-gray-500 whitespace-nowrap">+ Área:</span>
+                            <select name="nueva_area_id" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 font-medium">
                                 <option value="">Sin nueva área</option>
                                 @foreach($areas as $ar)
                                     @if(!$ticket->areas->contains('id', $ar->id))
@@ -282,11 +337,12 @@
                                     @endif
                                 @endforeach
                             </select>
+
+                            <button type="submit" class="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-black text-white font-bold text-xs py-2 px-4 rounded-xl transition-all shadow-sm">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                                <span>Publicar</span>
+                            </button>
                         </div>
-                        <button type="submit" class="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-black text-white font-bold text-xs py-2 px-4 rounded-xl transition-all shadow-sm self-end">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                            <span>Enviar Respuesta</span>
-                        </button>
                     </div>
                 </form>
             </div>
@@ -302,7 +358,7 @@
                         <p class="text-xs text-gray-500 mt-0.5">Como SubTécnico, registre las tareas técnicas efectuadas. El cierre formal y la asignación física de sala serán concluidos por un Técnico.</p>
                     </div>
 
-                    <form action="{{ route('tickets.solucionar', $ticket->id) }}" method="POST" class="space-y-4">
+                    <form action="{{ route('tickets.solucionar', $ticket->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                         @csrf
                         <div>
                             <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
@@ -311,6 +367,14 @@
                             <textarea name="solucion" rows="3" required
                                       placeholder="Detalle el trabajo realizado: mantenimiento, reemplazo de componente, comprobación de booteo, etc."
                                       class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-500 mb-1">
+                                Fotos de evidencia del arreglo / mediciones (opcional):
+                            </label>
+                            <input type="file" name="fotos[]" multiple accept="image/*"
+                                   class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-blue-100 hover:file:text-blue-900 cursor-pointer">
                         </div>
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex items-center gap-2">
