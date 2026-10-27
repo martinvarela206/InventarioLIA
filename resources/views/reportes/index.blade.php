@@ -69,7 +69,10 @@
                                     @if($rep->requiereUbicacion())
                                         <div>
                                             <label class="block text-[10px] font-bold text-gray-600 mb-0.5">Sala / Armario:</label>
-                                            <select name="ubicacion_id" class="w-full text-xs px-2.5 py-1.5 border border-gray-300 rounded-xl bg-gray-50 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" required>
+                                            <select name="ubicacion_id" class="w-full text-xs px-2.5 py-1.5 border border-gray-300 rounded-xl bg-gray-50 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" {{ $rep->slug === 'auditoria-sala' ? 'required' : '' }}>
+                                                @if($rep->slug !== 'auditoria-sala')
+                                                    <option value="">-- Todas las salas y armarios --</option>
+                                                @endif
                                                 @foreach($ubicaciones as $ub)
                                                     <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
                                                 @endforeach

@@ -1745,6 +1745,99 @@ class InventarioDevTest extends TestCase
             ->count();
         $this->assertEquals(0, $countSpecsHeaders, 'No deben existir activos con especificaciones técnicas que dupliquen nombres de columnas.');
     }
+
+    public function test_reporte_configurado_de_fuentes_y_resolucion_de_filtros_de_tipo_y_ubicacion(): void
+    {
+        $revisor = Usuario::where('email', 'martin@lia.com')->first();
+        if (!$revisor) {
+            $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+            $revisor = Usuario::factory()->create([
+                'nombre' => 'Martin Varela',
+                'email' => 'martin@lia.com',
+                'password' => bcrypt('1234'),
+            ]);
+            $revisor->roles()->syncWithoutDetaching([$rolRev->id]);
+        }
+
+        $tipoFuente = Tipo::firstOrCreate(['nombre' => 'fuente'], ['descripcion' => 'Fuente de alimentación']);
+        $salaA = Ubicacion::firstOrCreate(['nombre' => 'Sala A - Laboratorio']);
+        $taller = Ubicacion::firstOrCreate(['nombre' => 'Taller de Hardware']);
+
+        // Crear dos fuentes: una en Sala A y otra en Taller de Hardware
+        $fuente1 = Elemento::create([
+            'nro_lia' => 'LIA-FNT-01',
+            'tipo_id' => $tipoFuente->id,
+            'marca' => 'EVGA',
+            'modelo' => '600W 80 Plus',
+            'activo' => true,
+        ]);
+        Movimiento::create([
+            'elemento_id' => $fuente1->id,
+            'ubicacion_id' => $salaA->id,
+            'user_id' => $revisor->id,
+            'tipo_movimiento' => 'alta',
+            'fecha' => now(),
+        ]);
+
+        $fuente2 = Elemento::create([
+            'nro_lia' => 'LIA-FNT-02',
+            'tipo_id' => $tipoFuente->id,
+            'marca' => 'Corsair',
+            'modelo' => 'CX750M',
+            'activo' => true,
+        ]);
+        Movimiento::create([
+            'elemento_id' => $fuente2->id,
+            'ubicacion_id' => $taller->id,
+            'user_id' => $revisor->id,
+            'tipo_movimiento' => 'alta',
+            'fecha' => now(),
+        ]);
+
+        // 1. Reporte con filtro search='fuente' que debe resolverse automáticamente a tipo_id
+        $reporteFuentes = ReporteConfigurado::create([
+            'slug' => 'reporte-fuentes-test',
+            'titulo' => 'Reporte Oficial de Fuentes',
+            'filtros_fijos' => ['search' => 'fuente'],
+            'variables_requeridas' => ['ubicacion_id' => true],
+            'es_sistema' => false,
+            'activo' => true,
+            'orden' => 99,
+        ]);
+
+        // Sin especificar ubicacion_id en request: debe devolver ambas fuentes y no restringir a ubicacion_id = 1
+        $resAll = $this->actingAs($revisor)->get(route('reportes.show', 'reporte-fuentes-test'));
+        $resAll->assertStatus(200);
+        $resAll->assertSee('LIA-FNT-01');
+        $resAll->assertSee('LIA-FNT-02');
+        $resAll->assertSee('EVGA');
+        $resAll->assertSee('Corsair');
+
+        // Especificando ubicacion_id = $taller->id: debe filtrar solo la del taller
+        $resTaller = $this->actingAs($revisor)->get(route('reportes.show', [
+            'tipo' => 'reporte-fuentes-test',
+            'ubicacion_id' => $taller->id,
+        ]));
+        $resTaller->assertStatus(200);
+        $resTaller->assertSee('LIA-FNT-02');
+        $resTaller->assertDontSee('LIA-FNT-01');
+
+        // 2. Reporte con filtros_fijos con nombre de tipo textual ('tipo' => 'fuente')
+        $reporteTipoSlug = ReporteConfigurado::create([
+            'slug' => 'fuentes-por-tipo-nombre',
+            'titulo' => 'Fuentes por Nombre de Tipo',
+            'filtros_fijos' => ['tipo' => 'fuente'],
+            'variables_requeridas' => [],
+            'es_sistema' => false,
+            'activo' => true,
+            'orden' => 100,
+        ]);
+
+        $resSlug = $this->actingAs($revisor)->get(route('reportes.show', 'fuentes-por-tipo-nombre'));
+        $resSlug->assertStatus(200);
+        $resSlug->assertSee('LIA-FNT-01');
+        $resSlug->assertSee('LIA-FNT-02');
+    }
 }
 
 

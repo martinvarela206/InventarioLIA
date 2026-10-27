@@ -808,14 +808,42 @@ class ReporteController extends Controller
     ): array {
         $filtros = $reporte->filtros_fijos ?? [];
 
-        $tipoId = $request->input('tipo_id', $filtros['tipo_id'] ?? null);
-        $ubicacionId = $request->input('ubicacion_id', $filtros['ubicacion_id'] ?? null);
+        // 1. Resolución robusta de Tipo: soporta tipo_id, tipo (nombre o slug) o filtro search coincidente
+        $tipoId = $request->input('tipo_id', $filtros['tipo_id'] ?? ($filtros['tipo'] ?? null));
+        if (!empty($tipoId) && !is_numeric($tipoId)) {
+            $tipoModel = Tipo::where('nombre', $tipoId)->orWhere('slug', $tipoId)->first();
+            $tipoId = $tipoModel?->id;
+        }
+
+        // 2. Resolución de Ubicación: sólo filtra si se especifica expresamente (no fuerza ubicacion_id = 1)
+        $ubicacionId = $request->input('ubicacion_id', $filtros['ubicacion_id'] ?? ($filtros['ubicacion'] ?? null));
+        if (!empty($ubicacionId) && !is_numeric($ubicacionId)) {
+            $ubModel = Ubicacion::where('nombre', $ubicacionId)->orWhere('slug', $ubicacionId)->first();
+            $ubicacionId = $ubModel?->id;
+        }
+
         $situacion = $request->input('situacion', $filtros['situacion'] ?? null);
         $anio = $request->input('anio', $filtros['anio'] ?? null);
         $search = $request->input('search', $filtros['search'] ?? null);
         $nroLia = $request->input('nro_lia', $filtros['nro_lia'] ?? null);
         $fechaDesde = $request->input('fecha_desde', $filtros['fecha_desde'] ?? null);
         $fechaHasta = $request->input('fecha_hasta', $filtros['fecha_hasta'] ?? null);
+
+        // Si search o filtro fijo coincide con un tipo de activo y no hay tipoId explícito,
+        // resolver como filtro específico por tipo_id para encontrar todos los activos del tipo
+        if (!empty($search) && empty($tipoId)) {
+            $terminoNormalizado = strtolower(trim($search));
+            $tipoCoincidente = Tipo::where('nombre', $terminoNormalizado)
+                ->orWhere('nombre', rtrim($terminoNormalizado, 's'))
+                ->first();
+            if ($tipoCoincidente) {
+                $tipoId = $tipoCoincidente->id;
+                // Si el filtro search configurado coincidía con el nombre de tipo, limpiar search
+                if (isset($filtros['search']) && strtolower(trim($filtros['search'])) === $terminoNormalizado) {
+                    $search = null;
+                }
+            }
+        }
 
         $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
 
@@ -849,7 +877,10 @@ class ReporteController extends Controller
                   ->orWhere('nro_unsj', 'like', "%{$search}%")
                   ->orWhere('marca', 'like', "%{$search}%")
                   ->orWhere('modelo', 'like', "%{$search}%")
-                  ->orWhere('observaciones', 'like', "%{$search}%");
+                  ->orWhere('observaciones', 'like', "%{$search}%")
+                  ->orWhereHas('tipo', function ($qt) use ($search) {
+                      $qt->where('nombre', 'like', "%{$search}%");
+                  });
             });
         }
 
