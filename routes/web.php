@@ -117,6 +117,7 @@ Route::middleware('auth')->group(function () {
         Route::middleware('role:rev,subtec,tec,item_admin,user_admin,app_admin')->group(function () {
             Route::get('/auditorias', [\App\Http\Controllers\AuditoriaController::class, 'index'])->name('auditorias.index');
             Route::get('/auditorias/crear', [\App\Http\Controllers\AuditoriaController::class, 'create'])->name('auditorias.create');
+            Route::get('/auditorias/{auditoria}', [\App\Http\Controllers\AuditoriaController::class, 'show'])->name('auditorias.show');
             Route::post('/auditorias', [\App\Http\Controllers\AuditoriaController::class, 'store'])->name('auditorias.store');
             Route::post('/auditorias/{auditoria}/detalle', [\App\Http\Controllers\AuditoriaController::class, 'guardarDetalle'])->name('auditorias.guardarDetalle');
             Route::post('/auditorias/{auditoria}/ticket', [\App\Http\Controllers\AuditoriaController::class, 'crearTicketInconsistencia'])->name('auditorias.crearTicketInconsistencia');

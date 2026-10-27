@@ -2831,7 +2831,127 @@ class InventarioDevTest extends TestCase
         $this->assertEquals('rotura', $detalle->tipo_discrepancia);
         $this->assertEquals($ticketId, $detalle->ticket_id);
     }
+
+    public function test_archivo_historico_de_auditorias_y_emision_de_informe_oficial(): void
+    {
+        $auditor = Usuario::create([
+            'nombre' => 'Auditor Oficial Test',
+            'email' => 'auditor_oficial@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $auditor->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        $otroAuditor = Usuario::create([
+            'nombre' => 'Otro Auditor Test',
+            'email' => 'otro_auditor@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $otroAuditor->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        $lab1 = Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Alpha Audit'], ['descripcion' => 'Sala 1']);
+        $lab2 = Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Beta Audit'], ['descripcion' => 'Sala 2']);
+
+        // Crear auditoría 1 (en Lab 1 por auditor con inconsistencia)
+        $auditoria1 = \App\Models\Auditoria::create([
+            'ubicacion_id' => $lab1->id,
+            'user_id' => $auditor->id,
+            'fecha' => now()->subDays(2),
+            'estado' => 'finalizada',
+            'total_auditados' => 2,
+            'total_ok' => 1,
+            'total_inconsistencias' => 1,
+            'observaciones' => 'Auditoría semestral con un monitor averiado en puesto 01.',
+        ]);
+
+        $tipo = Tipo::firstOrCreate(['nombre' => 'Pantalla Test'], ['categoria' => 'periferico']);
+        $elementoOk = Elemento::create(['tipo_id' => $tipo->id, 'modelo' => 'Pantalla Samsung 24', 'nro_serie' => 'SAM-9988']);
+        $elementoRotura = Elemento::create(['tipo_id' => $tipo->id, 'modelo' => 'Pantalla LG 27', 'nro_serie' => 'LG-7766']);
+
+        $ticket = Movimiento::create([
+            'elemento_id' => $elementoRotura->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'ubicacion_id' => $lab1->id,
+            'puesto' => 'Puesto 01',
+            'user_id' => $auditor->id,
+            'fecha' => now()->subDays(2),
+            'solicitante' => $auditor->nombre,
+            'comentario' => '[AUDITORÍA INCONSISTENCIA - ROTURA] Pantalla rota',
+        ]);
+
+        \App\Models\AuditoriaDetalle::create([
+            'auditoria_id' => $auditoria1->id,
+            'elemento_id' => $elementoOk->id,
+            'puesto' => 'Puesto 02',
+            'estado' => 'ok',
+        ]);
+
+        \App\Models\AuditoriaDetalle::create([
+            'auditoria_id' => $auditoria1->id,
+            'elemento_id' => $elementoRotura->id,
+            'puesto' => 'Puesto 01',
+            'estado' => 'inconsistencia',
+            'tipo_discrepancia' => 'rotura',
+            'ticket_id' => $ticket->id,
+            'observaciones' => 'Pantalla con panel roto',
+        ]);
+
+        // Crear auditoría 2 (en Lab 2 por otro auditor sin inconsistencias)
+        $auditoria2 = \App\Models\Auditoria::create([
+            'ubicacion_id' => $lab2->id,
+            'user_id' => $otroAuditor->id,
+            'fecha' => now()->subDay(),
+            'estado' => 'en_progreso',
+            'total_auditados' => 5,
+            'total_ok' => 5,
+            'total_inconsistencias' => 0,
+        ]);
+
+        // 1. Consultar bandeja histórica general
+        $resIndex = $this->actingAs($auditor)->get(route('auditorias.index'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Archivo Histórico de Auditorías Físicas');
+        $resIndex->assertSee('Laboratorio Alpha Audit');
+        $resIndex->assertSee('Laboratorio Beta Audit');
+        $resIndex->assertSee('Auditor Oficial Test');
+        $resIndex->assertSee('Otro Auditor Test');
+
+        // 2. Filtrar por sala (Lab 1)
+        $resFilterLab = $this->actingAs($auditor)->get(route('auditorias.index', ['ubicacion_id' => $lab1->id]));
+        $resFilterLab->assertStatus(200);
+        $resFilterLab->assertSee(route('auditorias.show', $auditoria1->id));
+        $resFilterLab->assertDontSee(route('auditorias.show', $auditoria2->id));
+
+        // 3. Filtrar por auditor actuante
+        $resFilterAuditor = $this->actingAs($auditor)->get(route('auditorias.index', ['user_id' => $otroAuditor->id]));
+        $resFilterAuditor->assertStatus(200);
+        $resFilterAuditor->assertSee(route('auditorias.show', $auditoria2->id));
+        $resFilterAuditor->assertDontSee(route('auditorias.show', $auditoria1->id));
+
+        // 4. Filtrar únicamente auditorías con inconsistencias
+        $resFilterInconsistencias = $this->actingAs($auditor)->get(route('auditorias.index', ['con_inconsistencias' => '1']));
+        $resFilterInconsistencias->assertStatus(200);
+        $resFilterInconsistencias->assertSee(route('auditorias.show', $auditoria1->id));
+        $resFilterInconsistencias->assertDontSee(route('auditorias.show', $auditoria2->id));
+
+        // 5. Visualizar Informe Oficial de Auditoría
+        $resShow = $this->actingAs($auditor)->get(route('auditorias.show', $auditoria1->id));
+        $resShow->assertStatus(200);
+        $resShow->assertSee('Acta e Informe Oficial de Auditoría Física de Ubicación');
+        $resShow->assertSee('Laboratorio Alpha Audit');
+        $resShow->assertSee('Auditor Oficial Test');
+        $resShow->assertSee('SAM-9988');
+        $resShow->assertSee('LG-7766');
+        $resShow->assertSee('ROTURA');
+        $resShow->assertSee("#{$ticket->id}");
+        $resShow->assertSee('Certificación y Conformidad de Relevamiento');
+        $resShow->assertSee('Auditor Relevador LIA');
+        $resShow->assertSee('Imprimir / Exportar a PDF');
+    }
 }
+
 
 
 

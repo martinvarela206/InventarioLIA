@@ -7,6 +7,7 @@ use App\Models\AuditoriaDetalle;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Ubicacion;
+use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -79,7 +80,7 @@ class AuditoriaController extends Controller
     }
 
     /**
-     * Muestra la bandeja histórica de auditorías realizadas.
+     * Muestra la bandeja histórica de auditorías realizadas con filtros multicriterio.
      */
     public function index(Request $request): View
     {
@@ -94,10 +95,42 @@ class AuditoriaController extends Controller
             $query->where('estado', $request->estado);
         }
 
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('con_inconsistencias') && $request->con_inconsistencias == '1') {
+            $query->where('total_inconsistencias', '>', 0);
+        }
+
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha', '>=', $request->fecha_desde);
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha', '<=', $request->fecha_hasta);
+        }
+
         $auditorias = $query->paginate(15)->withQueryString();
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
+        $usuarios = Usuario::orderBy('nombre')->get();
 
-        return view('auditorias.index', compact('auditorias', 'ubicaciones'));
+        return view('auditorias.index', compact('auditorias', 'ubicaciones', 'usuarios'));
+    }
+
+    /**
+     * Emisión y visualización del Informe Oficial de Auditoría de Sala.
+     */
+    public function show(int $id): View
+    {
+        $auditoria = Auditoria::with([
+            'ubicacion',
+            'usuario',
+            'detalles.elemento.tipo',
+            'detalles.ticket.usuario',
+        ])->findOrFail($id);
+
+        return view('auditorias.show', compact('auditoria'));
     }
 
     /**
