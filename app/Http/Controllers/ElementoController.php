@@ -53,6 +53,14 @@ class ElementoController extends Controller
             }
         }
 
+        if ($request->filled('puesto')) {
+            $puesto = trim($request->input('puesto'));
+            $query->where(function ($q) use ($puesto) {
+                $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
+                  ->orWhere('puesto', $puesto);
+            });
+        }
+
         if ($request->filled('situacion')) {
             if ($request->situacion === 'operativo') {
                 $query->disponibles();
@@ -104,8 +112,9 @@ class ElementoController extends Controller
         $tipos = Tipo::orderBy('nombre')->get();
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $anios = Elemento::whereNotNull('anio_compra')->distinct()->orderBy('anio_compra', 'desc')->pluck('anio_compra');
+        $puestos = Elemento::whereNotNull('puesto')->where('puesto', '!=', '')->distinct()->orderBy('puesto')->pluck('puesto');
 
-        return view('elementos.index', compact('elementos', 'tipos', 'ubicaciones', 'anios'));
+        return view('elementos.index', compact('elementos', 'tipos', 'ubicaciones', 'anios', 'puestos'));
     }
 
     /**

@@ -274,7 +274,7 @@
             <!-- Filtros Fijos -->
             <div class="border border-amber-200 rounded-2xl p-3 bg-amber-50/50 space-y-2">
                 <span class="block font-bold text-amber-950 text-[11px]">📌 Filtros Fijos Predefinidos (Opcional):</span>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
                     <div>
                         <label class="block text-gray-600 text-[10px] font-semibold mb-0.5">Tipo de Activo:</label>
                         <select name="filtros_fijos[tipo_id]" class="w-full px-2 py-1.5 border border-amber-300 rounded-lg bg-white">
@@ -292,6 +292,10 @@
                                 <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-600 text-[10px] font-semibold mb-0.5">Puesto de Trabajo:</label>
+                        <input type="text" name="filtros_fijos[puesto]" placeholder="Ej. Puesto 04" class="w-full px-2 py-1.5 border border-amber-300 rounded-lg bg-white text-xs">
                     </div>
                     <div>
                         <label class="block text-gray-600 text-[10px] font-semibold mb-0.5">Situación:</label>
@@ -314,6 +318,10 @@
                     <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
                         <input type="checkbox" name="variables_requeridas[ubicacion_id]" value="1" class="rounded text-amber-500 focus:ring-amber-400">
                         <span>Selección de <strong>Sala / Armario</strong></span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
+                        <input type="checkbox" name="variables_requeridas[puesto]" value="1" class="rounded text-amber-500 focus:ring-amber-400">
+                        <span>Selección de <strong>Puesto de Trabajo</strong></span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
                         <input type="checkbox" name="variables_requeridas[tipo_id]" value="1" class="rounded text-amber-500 focus:ring-amber-400">
@@ -421,6 +429,10 @@
                         <span>Selección de <strong>Sala / Armario</strong></span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
+                        <input type="checkbox" name="variables_requeridas[puesto]" id="edit_var_puesto" value="1" class="rounded text-amber-500 focus:ring-amber-400">
+                        <span>Selección de <strong>Puesto de Trabajo</strong></span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
                         <input type="checkbox" name="variables_requeridas[tipo_id]" id="edit_var_tipo" value="1" class="rounded text-amber-500 focus:ring-amber-400">
                         <span>Selección de <strong>Tipo de Activo</strong></span>
                     </label>
@@ -472,6 +484,7 @@
 
         const vars = rep.variables_requeridas || {};
         document.getElementById('edit_var_ubicacion').checked = !!vars.ubicacion_id;
+        document.getElementById('edit_var_puesto').checked = !!vars.puesto;
         document.getElementById('edit_var_tipo').checked = !!vars.tipo_id;
         document.getElementById('edit_var_nro_lia').checked = !!vars.nro_lia;
         document.getElementById('edit_var_fechas').checked = !!vars.fechas;

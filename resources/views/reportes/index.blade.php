@@ -64,7 +64,7 @@
                         </div>
 
                         <div class="mt-5 pt-4 border-t border-amber-100">
-                            @if($rep->requiereUbicacion() || $rep->requiereTipo() || $rep->requiereNroLia() || $rep->requiereRangoFechas())
+                            @if($rep->requiereUbicacion() || $rep->requierePuesto() || $rep->requiereTipo() || $rep->requiereNroLia() || $rep->requiereRangoFechas())
                                 <form action="{{ route('reportes.show', $rep->slug) }}" method="GET" class="space-y-2">
                                     @if($rep->requiereUbicacion())
                                         <div>
@@ -77,6 +77,13 @@
                                                     <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
                                                 @endforeach
                                             </select>
+                                        </div>
+                                    @endif
+
+                                    @if($rep->requierePuesto())
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-gray-600 mb-0.5">Puesto de Trabajo:</label>
+                                            <input type="text" name="puesto" placeholder="Ej. Puesto 04" class="w-full text-xs px-2.5 py-1.5 border border-gray-300 rounded-xl bg-gray-50 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
                                         </div>
                                     @endif
 

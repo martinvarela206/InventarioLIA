@@ -149,6 +149,14 @@ class ReporteController extends Controller
             $query->where('tipo_id', $request->tipo_id);
         }
 
+        if ($request->filled('puesto')) {
+            $puesto = trim($request->input('puesto'));
+            $query->where(function ($q) use ($puesto) {
+                $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
+                  ->orWhere('puesto', $puesto);
+            });
+        }
+
         $elementos = $query->orderBy('puesto', 'asc')->orderBy('id', 'asc')->get();
 
         return view('reportes.auditoria', [
@@ -227,6 +235,14 @@ class ReporteController extends Controller
             case 'inventario-completo':
                 $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
+                if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+                if ($request->filled('puesto')) {
+                    $puesto = trim($request->input('puesto'));
+                    $query->where(function ($q) use ($puesto) {
+                        $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
+                          ->orWhere('puesto', $puesto);
+                    });
+                }
 
                 $items = $query->orderBy('id', 'asc')->get();
                 $filas = $items->map(function ($el) use ($atributos) {
@@ -246,6 +262,13 @@ class ReporteController extends Controller
                 $query = Elemento::disponibles()->with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
                 if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+                if ($request->filled('puesto')) {
+                    $puesto = trim($request->input('puesto'));
+                    $query->where(function ($q) use ($puesto) {
+                        $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
+                          ->orWhere('puesto', $puesto);
+                    });
+                }
 
                 $items = $query->orderBy('id', 'asc')->get();
                 $filas = $items->map(function ($el) use ($atributos) {
@@ -778,6 +801,13 @@ class ReporteController extends Controller
                 $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
                 if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
                 if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+                if ($request->filled('puesto')) {
+                    $puesto = trim($request->input('puesto'));
+                    $query->where(function ($q) use ($puesto) {
+                        $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
+                          ->orWhere('puesto', $puesto);
+                    });
+                }
                 if ($request->filled('anio')) $query->where('anio_compra', $request->anio);
 
                 $items = $query->orderBy('id', 'asc')->get();
@@ -822,6 +852,7 @@ class ReporteController extends Controller
             $ubicacionId = $ubModel?->id;
         }
 
+        $puesto = $request->input('puesto', $filtros['puesto'] ?? null);
         $situacion = $request->input('situacion', $filtros['situacion'] ?? null);
         $anio = $request->input('anio', $filtros['anio'] ?? null);
         $search = $request->input('search', $filtros['search'] ?? null);
@@ -853,6 +884,14 @@ class ReporteController extends Controller
 
         if (!empty($ubicacionId)) {
             $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $ubicacionId));
+        }
+
+        if (!empty($puesto)) {
+            $puesto = trim($puesto);
+            $query->where(function ($q) use ($puesto) {
+                $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
+                  ->orWhere('puesto', $puesto);
+            });
         }
 
         if (!empty($situacion)) {

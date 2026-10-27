@@ -65,7 +65,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     Buscar
                 </button>
-                @if(request()->hasAny(['search', 'tipo', 'ubicacion', 'situacion', 'anio', 'gb', 'garantia']))
+                @if(request()->hasAny(['search', 'tipo', 'ubicacion', 'puesto', 'situacion', 'anio', 'gb', 'garantia']))
                     <a href="{{ route('elementos.index') }}" class="inline-flex items-center gap-1.5 px-3 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs shadow-xs transition-colors">
                         <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         Limpiar filtros
@@ -103,6 +103,16 @@
                     @foreach($ubicaciones as $ub)
                         <option value="{{ $ub->id }}" {{ request('ubicacion') == $ub->id ? 'selected' : '' }}>
                             {{ $ub->nombre }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <!-- Filter Puesto -->
+                <select name="puesto" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100">
+                    <option value="">Todos los Puestos</option>
+                    @foreach($puestos as $p)
+                        <option value="{{ $p }}" {{ request('puesto') === $p ? 'selected' : '' }}>
+                            {{ $p }}
                         </option>
                     @endforeach
                 </select>
@@ -295,11 +305,15 @@
                             <span class="bg-white px-2 py-0.5 rounded border border-amber-200 text-gray-700">Sala: <strong>{{ request('ubicacion') }}</strong></span>
                             <input type="hidden" name="filtros_fijos[ubicacion]" value="{{ request('ubicacion') }}">
                         @endif
+                        @if(request('puesto'))
+                            <span class="bg-white px-2 py-0.5 rounded border border-amber-200 text-gray-700">Puesto: <strong>{{ request('puesto') }}</strong></span>
+                            <input type="hidden" name="filtros_fijos[puesto]" value="{{ request('puesto') }}">
+                        @endif
                         @if(request('anio'))
                             <span class="bg-white px-2 py-0.5 rounded border border-amber-200 text-gray-700">Año: <strong>{{ request('anio') }}</strong></span>
                             <input type="hidden" name="filtros_fijos[anio]" value="{{ request('anio') }}">
                         @endif
-                        @if(!request()->hasAny(['search', 'situacion', 'tipo', 'ubicacion', 'anio']))
+                        @if(!request()->hasAny(['search', 'situacion', 'tipo', 'ubicacion', 'puesto', 'anio']))
                             <span class="text-amber-800 italic">Sin filtros específicos aplicados (abarca todo el inventario).</span>
                         @endif
                     </div>
@@ -313,6 +327,10 @@
                         <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
                             <input type="checkbox" name="variables_requeridas[ubicacion_id]" value="1" class="rounded text-amber-500 focus:ring-amber-400">
                             <span>El usuario seleccionará la <strong>Sala / Armario</strong></span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
+                            <input type="checkbox" name="variables_requeridas[puesto]" value="1" class="rounded text-amber-500 focus:ring-amber-400">
+                            <span>El usuario seleccionará el <strong>Puesto de Trabajo</strong></span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer font-medium text-gray-700">
                             <input type="checkbox" name="variables_requeridas[tipo_id]" value="1" class="rounded text-amber-500 focus:ring-amber-400">

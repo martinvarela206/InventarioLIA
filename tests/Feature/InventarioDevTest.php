@@ -1838,6 +1838,99 @@ class InventarioDevTest extends TestCase
         $resSlug->assertSee('LIA-FNT-01');
         $resSlug->assertSee('LIA-FNT-02');
     }
+
+    public function test_filtrado_multidimensional_por_puesto_de_trabajo_en_inventario_y_reportes(): void
+    {
+        $admin = Usuario::where('email', 'admin@lia.com')->first();
+        if (!$admin) {
+            $rolAdmin = Rol::firstOrCreate(['rol' => 'app_admin']);
+            $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+            $admin = Usuario::factory()->create([
+                'nombre' => 'App Admin User',
+                'email' => 'admin@lia.com',
+                'password' => bcrypt('1234'),
+            ]);
+            $admin->roles()->syncWithoutDetaching([$rolAdmin->id, $rolRev->id]);
+        }
+
+        $tipoPc = Tipo::firstOrCreate(['nombre' => 'computadora escritorio'], ['descripcion' => 'PC de escritorio']);
+        $sala1 = Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Sala 1']);
+
+        // Crear activos en puestos específicos
+        $pcPuesto3 = Elemento::create([
+            'nro_lia' => 'LIA-PST-03',
+            'tipo_id' => $tipoPc->id,
+            'marca' => 'Lenovo',
+            'modelo' => 'ThinkCentre M720',
+            'puesto' => 'Puesto 03',
+            'activo' => true,
+        ]);
+        Movimiento::create([
+            'elemento_id' => $pcPuesto3->id,
+            'ubicacion_id' => $sala1->id,
+            'puesto' => 'Puesto 03',
+            'user_id' => $admin->id,
+            'tipo_movimiento' => 'alta',
+            'fecha' => now(),
+        ]);
+
+        $pcPuesto7 = Elemento::create([
+            'nro_lia' => 'LIA-PST-07',
+            'tipo_id' => $tipoPc->id,
+            'marca' => 'Dell',
+            'modelo' => 'OptiPlex 7080',
+            'puesto' => 'Puesto 07',
+            'activo' => true,
+        ]);
+        Movimiento::create([
+            'elemento_id' => $pcPuesto7->id,
+            'ubicacion_id' => $sala1->id,
+            'puesto' => 'Puesto 07',
+            'user_id' => $admin->id,
+            'tipo_movimiento' => 'alta',
+            'fecha' => now(),
+        ]);
+
+        // 1. Verificar presencia de selector de puesto y filtrado en elementos.index
+        $resIndex = $this->actingAs($admin)->get(route('elementos.index'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Todos los Puestos');
+        $resIndex->assertSee('Puesto 03');
+        $resIndex->assertSee('Puesto 07');
+
+        // Filtrar específicamente por Puesto 03
+        $resFilterPuesto = $this->actingAs($admin)->get(route('elementos.index', ['puesto' => 'Puesto 03']));
+        $resFilterPuesto->assertStatus(200);
+        $resFilterPuesto->assertSee('LIA-PST-03');
+        $resFilterPuesto->assertSee('Lenovo');
+        $resFilterPuesto->assertDontSee('LIA-PST-07');
+
+        // 2. Filtrado por puesto en auditoriaSala
+        $resAuditoria = $this->actingAs($admin)->get(route('reportes.auditoria', [
+            'ubicacion' => $sala1->id,
+            'puesto' => 'Puesto 07',
+        ]));
+        $resAuditoria->assertStatus(200);
+        $resAuditoria->assertSee('LIA-PST-07');
+        $resAuditoria->assertDontSee('LIA-PST-03');
+
+        // 3. Reporte configurado con filtro fijo de puesto
+        $reportePuestoFijo = ReporteConfigurado::create([
+            'slug' => 'auditoria-puesto-3',
+            'titulo' => 'Auditoría de Puesto 03',
+            'filtros_fijos' => ['puesto' => 'Puesto 03'],
+            'variables_requeridas' => [],
+            'es_sistema' => false,
+            'activo' => true,
+            'orden' => 101,
+        ]);
+
+        $resRepPuesto = $this->actingAs($admin)->get(route('reportes.show', 'auditoria-puesto-3'));
+        $resRepPuesto->assertStatus(200);
+        $resRepPuesto->assertSee('LIA-PST-03');
+        $resRepPuesto->assertDontSee('LIA-PST-07');
+    }
 }
+
 
 
