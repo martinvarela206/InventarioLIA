@@ -89,40 +89,54 @@
                         </p>
                     </div>
 
-                    <div>
-                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1">
-                            Nombre y Apellido <span id="nombre_req_label" class="text-rose-600">*</span>
-                        </label>
-                        <input type="text" name="nombre" id="input_nombre" required placeholder="Ej. Dra. María Elena Fernández" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
+                    <!-- Mensaje informativo cuando está vinculado un usuario -->
+                    <div id="usuario_sync_info" class="hidden p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-950 text-xs">
+                        <p class="font-bold flex items-center gap-1.5 mb-0.5 text-emerald-900">
+                            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            <span>Sincronización en Tiempo Real</span>
+                        </p>
+                        <p class="text-[11px] text-emerald-800 leading-snug">
+                            El nombre, cargo oficial, correo y foto de perfil se sincronizan en vivo desde la cuenta del usuario. Cualquier edición futura en su perfil se reflejará aquí y en la portada automáticamente.
+                        </p>
                     </div>
 
-                    <div>
-                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1">
-                            Cargo / Rol en el LIA <span id="cargo_req_label" class="text-rose-600">*</span>
-                        </label>
-                        <input type="text" name="cargo" id="input_cargo" required placeholder="Ej. Directora del LIA / Coordinador de Seguridad" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
+                    <!-- Campos Manuales (Visibles solo si es referente manual / no vinculado) -->
+                    <div id="manual_fields_section" class="space-y-4">
+                        <div>
+                            <label class="block text-gray-700 text-xs font-bold uppercase mb-1">
+                                Nombre y Apellido <span id="nombre_req_label" class="text-rose-600">*</span>
+                            </label>
+                            <input type="text" name="nombre" id="input_nombre" required placeholder="Ej. Dra. María Elena Fernández" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-700 text-xs font-bold uppercase mb-1">
+                                Cargo / Rol en el LIA <span id="cargo_req_label" class="text-rose-600">*</span>
+                            </label>
+                            <input type="text" name="cargo" id="input_cargo" required placeholder="Ej. Directora del LIA / Coordinador de Seguridad" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-700 text-xs font-bold uppercase mb-1">Correo de Contacto Institucional</label>
+                            <input type="email" name="email" id="input_email" placeholder="referente@unsj.edu.ar" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 font-mono">
+                        </div>
+
+                        <div id="foto_custom_section" class="space-y-3">
+                            <div>
+                                <label class="block text-gray-700 text-xs font-bold uppercase mb-1">Subir Foto / Avatar Personalizada</label>
+                                <input type="file" name="foto" accept="image/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-900 hover:file:bg-amber-200 cursor-pointer">
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 text-xs font-bold uppercase mb-1">O Ruta / URL de Foto</label>
+                                <input type="text" name="foto_url" placeholder="/assets/flavia.png" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-xs font-mono text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                            </div>
+                        </div>
                     </div>
 
                     <div>
                         <label class="block text-gray-700 text-xs font-bold uppercase mb-1">Comentario Institucional / Horario de Consulta</label>
                         <textarea name="comentario" rows="3" placeholder="Descripción de funciones, horarios de consulta, responsabilidades..." class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400"></textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1">Correo de Contacto Institucional</label>
-                        <input type="email" name="email" id="input_email" placeholder="referente@unsj.edu.ar" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 font-mono">
-                    </div>
-
-                    <div id="foto_custom_section" class="space-y-3">
-                        <div>
-                            <label class="block text-gray-700 text-xs font-bold uppercase mb-1">Subir Foto / Avatar Personalizada</label>
-                            <input type="file" name="foto" accept="image/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-900 hover:file:bg-amber-200 cursor-pointer">
-                        </div>
-
-                        <div>
-                            <label class="block text-gray-700 text-xs font-bold uppercase mb-1">O Ruta / URL de Foto</label>
-                            <input type="text" name="foto_url" placeholder="/assets/flavia.png" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-xs font-mono text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400">
-                        </div>
                     </div>
 
                     <div>
@@ -207,6 +221,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const inputEmail = document.getElementById('input_email');
     const nombreReqLabel = document.getElementById('nombre_req_label');
     const cargoReqLabel = document.getElementById('cargo_req_label');
+    const manualFieldsSection = document.getElementById('manual_fields_section');
+    const usuarioSyncInfo = document.getElementById('usuario_sync_info');
 
     if (!userSelect) return;
 
@@ -217,13 +233,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const previewText = document.getElementById('selected_user_preview_text');
 
         if (userSelect.value) {
-            // Usuario del sistema seleccionado: campos opcionales para override
+            // Usuario del sistema seleccionado: se ocultan campos manuales redundantes
             inputNombre.required = false;
             inputCargo.required = false;
-            nombreReqLabel.style.display = 'none';
-            cargoReqLabel.style.display = 'none';
+            if (manualFieldsSection) manualFieldsSection.classList.add('hidden');
+            if (usuarioSyncInfo) usuarioSyncInfo.classList.remove('hidden');
 
-            // Actualización reactiva instantánea: SIEMPRE actualiza los datos al alternar entre usuarios
+            // Valores de soporte
             inputNombre.value = selectedOpt.dataset.nombre || '';
             inputCargo.value = selectedOpt.dataset.cargo || '';
             inputEmail.value = selectedOpt.dataset.email || '';
@@ -234,11 +250,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 previewContainer.classList.remove('hidden');
             }
         } else {
-            // Manual / Desvinculado
+            // Manual / Desvinculado: se muestran campos manuales obligatorios
             inputNombre.required = true;
             inputCargo.required = true;
-            nombreReqLabel.style.display = 'inline';
-            cargoReqLabel.style.display = 'inline';
+            if (manualFieldsSection) manualFieldsSection.classList.remove('hidden');
+            if (usuarioSyncInfo) usuarioSyncInfo.classList.add('hidden');
 
             inputNombre.value = '';
             inputCargo.value = '';
