@@ -2020,4 +2020,32 @@ class InventarioDevTest extends TestCase
         // Verificar que no se divulgue X-Powered-By
         $this->assertFalse($response->headers->has('X-Powered-By'));
     }
+
+    public function test_rate_limiting_contra_fuerza_bruta_en_login(): void
+    {
+        // Enviar 5 intentos fallidos
+        for ($i = 0; $i < 5; $i++) {
+            $response = $this->post('/login', [
+                'login' => 'ataque@lia.com',
+                'password' => 'password_erroneo',
+            ]);
+            // Redirige hacia atrás con error de credenciales
+            $response->assertSessionHasErrors('login');
+        }
+
+        // El 6to intento debe ser bloqueado por RateLimiter (o middleware throttle 429)
+        $bloqueado = $this->post('/login', [
+            'login' => 'ataque@lia.com',
+            'password' => 'password_erroneo',
+        ]);
+
+        if ($bloqueado->status() === 429) {
+            $this->assertEquals(429, $bloqueado->status());
+        } else {
+            $bloqueado->assertSessionHasErrors('login');
+            $mensaje = session('errors')->first('login');
+            $this->assertStringContainsString('Demasiados intentos', $mensaje);
+        }
+    }
 }
+
