@@ -75,10 +75,6 @@ class AppAdminSeeder extends Seeder
         if ($flavia) {
             $personal[] = [
                 'user_id' => $flavia->id,
-                'nombre' => $flavia->nombre,
-                'cargo' => $flavia->cargo_actual,
-                'email' => $flavia->email,
-                'foto_path' => $flavia->foto_path,
                 'comentario' => 'Supervisión general del laboratorio, vinculación institucional con decanato y cátedras, y gestión de convenios académicos.',
                 'orden' => 1,
                 'activo' => true,
@@ -87,10 +83,6 @@ class AppAdminSeeder extends Seeder
         if ($marcelo) {
             $personal[] = [
                 'user_id' => $marcelo->id,
-                'nombre' => $marcelo->nombre,
-                'cargo' => $marcelo->cargo_actual,
-                'email' => $marcelo->email,
-                'foto_path' => $marcelo->foto_path,
                 'comentario' => 'A cargo de la conectividad por fibra, administración de servidores, políticas de backup y disponibilidad de salas.',
                 'orden' => 2,
                 'activo' => true,
@@ -99,10 +91,6 @@ class AppAdminSeeder extends Seeder
         if ($cristina) {
             $personal[] = [
                 'user_id' => $cristina->id,
-                'nombre' => $cristina->nombre,
-                'cargo' => $cristina->cargo_actual,
-                'email' => $cristina->email,
-                'foto_path' => $cristina->foto_path,
                 'comentario' => 'Administración general, gestión de personal, trámites de compras y coordinación administrativa del departamento.',
                 'orden' => 3,
                 'activo' => true,
@@ -111,10 +99,6 @@ class AppAdminSeeder extends Seeder
         if ($martin) {
             $personal[] = [
                 'user_id' => $martin->id,
-                'nombre' => $martin->nombre,
-                'cargo' => $martin->cargo_actual,
-                'email' => $martin->email,
-                'foto_path' => $martin->foto_path,
                 'comentario' => 'Desarrollo, revisión técnica y mantenimiento evolutivo del sistema informático de inventario patrimonial.',
                 'orden' => 4,
                 'activo' => true,

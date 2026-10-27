@@ -3556,12 +3556,10 @@ class InventarioDevTest extends TestCase
         $resNavbar->assertStatus(200);
         $resNavbar->assertSee($usuario->foto_url, false);
 
-        // 4. PersonalLia resuelve la foto del usuario por correo
+        // 4. PersonalLia resuelve la foto dinámicamente desde el usuario vinculado
         $personal = \App\Models\PersonalLia::create([
-            'nombre' => 'Colaborador Fotogénico',
-            'cargo' => 'Docente Investigador',
-            'email' => 'fotogenico@lia.com',
-            'foto_path' => null,
+            'user_id' => $usuario->id,
+            'comentario' => 'Docente Investigador',
             'orden' => 10,
             'activo' => true,
         ]);
@@ -3652,11 +3650,6 @@ class InventarioDevTest extends TestCase
         $resStoreDuplicate->assertSessionHasErrors(['user_id']);
         $this->assertEquals(1, \App\Models\PersonalLia::where('user_id', $investigador->id)->count());
 
-        $this->assertNull($personal->getRawOriginal('nombre'));
-        $this->assertNull($personal->getRawOriginal('cargo'));
-        $this->assertNull($personal->getRawOriginal('email'));
-        $this->assertNull($personal->getRawOriginal('foto_path'));
-
         // 3. Landing page renderiza los datos en vivo derivados del usuario
         $resLanding = $this->get('/');
         $resLanding->assertStatus(200);
@@ -3697,13 +3690,36 @@ class InventarioDevTest extends TestCase
         $resLandingUpdated->assertSee('Directora de Área Científica');
         $resLandingUpdated->assertSee('/assets/pamela.png');
 
-        // 5. Integridad relacional: si el usuario es dado de baja, nullOnDelete preserva el registro
+        // 5. Exclusión por usuario inactivo (activo = false)
+        $investigador->update(['activo' => false]);
+        $this->assertEquals(0, \App\Models\PersonalLia::activos()->where('user_id', $investigador->id)->count());
+
+        $resLandingInactivo = $this->get('/');
+        $resLandingInactivo->assertDontSee('Dra. Romina Valenzuela PhD');
+
+        // 6. Reactivación del usuario (activo = true) vuelve a habilitarlo en la portada y consulta
+        $investigador->update(['activo' => true]);
+        $this->assertEquals(1, \App\Models\PersonalLia::activos()->where('user_id', $investigador->id)->count());
+
+        $resLandingReactivado = $this->get('/');
+        $resLandingReactivado->assertSee('Dra. Romina Valenzuela PhD');
+
+        // 7. Exclusión por huella digital borrada (huella_borrada = true)
+        $investigador->anonimizarHuellaDigital();
+        $this->assertTrue($investigador->fresh()->huella_borrada);
+        $this->assertEquals(0, \App\Models\PersonalLia::activos()->where('user_id', $investigador->id)->count());
+
+        $resLandingHuella = $this->get('/');
+        $resLandingHuella->assertDontSee('Dra. Romina Valenzuela PhD');
+
+        // 8. Integridad relacional: si el usuario es eliminado por completo
         $personalId = $personal->id;
         $investigador->delete();
 
         $personalRefreshed = \App\Models\PersonalLia::find($personalId);
         $this->assertNotNull($personalRefreshed);
         $this->assertNull($personalRefreshed->user_id);
+        $this->assertEquals(0, \App\Models\PersonalLia::activos()->where('id', $personalId)->count());
     }
 }
 
