@@ -3400,6 +3400,32 @@ class InventarioDevTest extends TestCase
         app()['env'] = 'testing';
         $this->assertFalse(app()->isProduction());
     }
+
+    public function test_auditoria_forense_de_base_de_datos_con_mariadb_audit_plugin_en_docker(): void
+    {
+        $composePath = base_path('docker-compose.yml');
+        $this->assertFileExists($composePath);
+
+        $content = file_get_contents($composePath);
+
+        // 1. Verificar carga permanente del plugin nativo server_audit
+        $this->assertStringContainsString('--plugin-load-add=server_audit', $content);
+        $this->assertStringContainsString('--server-audit=FORCE_PLUS_PERMANENT', $content);
+        $this->assertStringContainsString('--server-audit-logging=ON', $content);
+
+        // 2. Verificar eventos requeridos: conexiones (CONNECT), DML y DDL
+        $this->assertStringContainsString('--server-audit-events=CONNECT,QUERY_DML,QUERY_DDL', $content);
+
+        // 3. Verificar almacenamiento y rotación forense (100MB / 5 rotaciones)
+        $this->assertStringContainsString('--server-audit-output-type=FILE', $content);
+        $this->assertStringContainsString('--server-audit-file-path=/var/log/mysql/audit.log', $content);
+        $this->assertStringContainsString('--server-audit-file-rotate-size=104857600', $content);
+        $this->assertStringContainsString('--server-audit-file-rotations=5', $content);
+
+        // 4. Verificar volumen persistente mariadb_audit_logs montado y declarado
+        $this->assertStringContainsString('mariadb_audit_logs:/var/log/mysql', $content);
+        $this->assertMatchesRegularExpression('/mariadb_audit_logs:\s+driver:\s+local/', $content);
+    }
 }
 
 
