@@ -194,16 +194,12 @@
                         @auth
                             @if(Auth::user()->hasRole('registered'))
                                 <a href="{{ route('profile.edit') }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-black/10 text-black font-extrabold text-xs xl:text-sm transition-all whitespace-nowrap" title="Mi perfil de usuario">
-                                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
+                                    <img src="{{ Auth::user()->foto_url }}" alt="{{ Auth::user()->nombre }}" class="w-6 h-6 rounded-full object-cover border border-black/20 shadow-xs bg-white shrink-0" onerror="this.src='/assets/placeholder-user.png'">
                                     <span>{{ Auth::user()->nombre }}</span>
                                 </a>
                             @else
                                 <span class="inline-flex items-center gap-2 px-3 py-2 text-black font-extrabold text-xs xl:text-sm whitespace-nowrap">
-                                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
+                                    <img src="{{ Auth::user()->foto_url }}" alt="{{ Auth::user()->nombre }}" class="w-6 h-6 rounded-full object-cover border border-black/20 shadow-xs bg-white shrink-0" onerror="this.src='/assets/placeholder-user.png'">
                                     <span>{{ Auth::user()->nombre }}</span>
                                 </span>
                             @endif
@@ -334,12 +330,12 @@
                     <div class="flex items-center justify-between px-2 py-1">
                         @if(Auth::user()->hasRole('registered'))
                             <a href="{{ route('profile.edit') }}" class="font-bold text-sm text-black flex items-center gap-2">
-                                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                <img src="{{ Auth::user()->foto_url }}" alt="{{ Auth::user()->nombre }}" class="w-6 h-6 rounded-full object-cover border border-black/20 shadow-xs bg-white shrink-0" onerror="this.src='/assets/placeholder-user.png'">
                                 <span>{{ Auth::user()->nombre }}</span>
                             </a>
                         @else
                             <span class="font-bold text-sm text-black flex items-center gap-2">
-                                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                <img src="{{ Auth::user()->foto_url }}" alt="{{ Auth::user()->nombre }}" class="w-6 h-6 rounded-full object-cover border border-black/20 shadow-xs bg-white shrink-0" onerror="this.src='/assets/placeholder-user.png'">
                                 <span>{{ Auth::user()->nombre }}</span>
                             </span>
                         @endif

@@ -97,11 +97,7 @@
                     <div>
                         <div class="flex items-center gap-4 mb-4">
                             <div class="w-16 h-16 rounded-full border-2 border-[#dba800] overflow-hidden bg-black/40 flex-shrink-0 flex items-center justify-center">
-                                @if($p->foto_path)
-                                    <img src="{{ $p->foto_path }}" alt="{{ $p->nombre }}" class="w-full h-full object-cover" onerror="this.src='/assets/placeholder-user.png'" />
-                                @else
-                                    <img src="/assets/placeholder-user.png" alt="{{ $p->nombre }}" class="w-12 h-12 object-contain" />
-                                @endif
+                                <img src="{{ $p->foto_url }}" alt="{{ $p->nombre }}" class="w-full h-full object-cover" onerror="this.src='/assets/placeholder-user.png'" />
                             </div>
                             <div>
                                 <h3 class="text-white font-bold text-base leading-tight">{{ $p->nombre }}</h3>
