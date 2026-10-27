@@ -32,8 +32,14 @@ class TicketController extends Controller
         }
 
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
+        $solicitantesFrecuentes = Movimiento::whereNotNull('solicitante')
+            ->where('solicitante', '!=', '')
+            ->distinct()
+            ->orderBy('solicitante')
+            ->limit(25)
+            ->pluck('solicitante');
 
-        return view('tickets.create', compact('informante', 'isTec', 'elemento', 'ubicaciones'));
+        return view('tickets.create', compact('informante', 'isTec', 'elemento', 'ubicaciones', 'solicitantesFrecuentes'));
     }
 
     /**

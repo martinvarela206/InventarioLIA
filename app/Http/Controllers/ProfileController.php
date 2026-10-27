@@ -6,11 +6,23 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
+use App\Models\Carrera;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
 class ProfileController extends Controller
 {
+    public const CARGOS_ESTANDAR = [
+        'Director',
+        'Secretaria',
+        'Coordinador de Área',
+        'JTP',
+        'Ayudante 1ra',
+        'Ayudante 2da',
+        'Becario',
+        'Pasante',
+    ];
+
     /**
      * Show the form for editing the specified resource.
      */
@@ -20,8 +32,13 @@ class ProfileController extends Controller
             abort(403, 'Requiere el rol registered para gestionar su perfil personal.');
         }
 
+        $carreras = Carrera::activas()->orderBy('nombre')->get();
+        $cargos = self::CARGOS_ESTANDAR;
+
         return view('profile.edit', [
-            'user' => auth()->user()
+            'user' => auth()->user(),
+            'carreras' => $carreras,
+            'cargos' => $cargos,
         ]);
     }
 

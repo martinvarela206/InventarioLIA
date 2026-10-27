@@ -81,7 +81,14 @@ class MovimientoController extends Controller
                 ->first();
         }
 
-        return view('movimientos.rapido', compact('ubicaciones', 'elementoPreseleccionado'));
+        $solicitantesFrecuentes = Movimiento::whereNotNull('solicitante')
+            ->where('solicitante', '!=', '')
+            ->distinct()
+            ->orderBy('solicitante')
+            ->limit(25)
+            ->pluck('solicitante');
+
+        return view('movimientos.rapido', compact('ubicaciones', 'elementoPreseleccionado', 'solicitantesFrecuentes'));
     }
 
     /**

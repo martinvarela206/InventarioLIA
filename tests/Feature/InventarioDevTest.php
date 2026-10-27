@@ -2059,5 +2059,43 @@ class InventarioDevTest extends TestCase
             $this->assertStringContainsString('Demasiados intentos', $mensaje);
         }
     }
-}
 
+    public function test_estandarizacion_de_desplegables_y_autocompletado_consistente_carreras_cargos_y_solicitantes(): void
+    {
+        $userAdmin = Usuario::create([
+            'nombre' => 'Admin Usuarios Datalist',
+            'email' => 'admin_datalist@lia.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $userAdmin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+        $userAdmin->roles()->attach(Rol::where('rol', 'registered')->first());
+        $userAdmin->roles()->attach(Rol::where('rol', 'tec')->first());
+
+        // 1. users.edit debe contener datalists para carreras y cargos oficiales
+        $resUsersEdit = $this->actingAs($userAdmin)->get(route('users.edit', $userAdmin->id));
+        $resUsersEdit->assertStatus(200);
+        $resUsersEdit->assertSee('id="lista-carreras"', false);
+        $resUsersEdit->assertSee('id="lista-cargos"', false);
+        $resUsersEdit->assertSee('Director');
+        $resUsersEdit->assertSee('Coordinador de Área');
+        $resUsersEdit->assertSee('JTP');
+
+        // 2. profile.edit debe contener datalists estandarizados
+        $resProfileEdit = $this->actingAs($userAdmin)->get(route('profile.edit'));
+        $resProfileEdit->assertStatus(200);
+        $resProfileEdit->assertSee('id="lista-carreras-perfil"', false);
+        $resProfileEdit->assertSee('id="lista-cargos-perfil"', false);
+
+        // 3. tickets.create debe tener datalist de solicitantes frecuentes
+        $resTicketCreate = $this->actingAs($userAdmin)->get(route('tickets.create'));
+        $resTicketCreate->assertStatus(200);
+        $resTicketCreate->assertSee('id="lista-solicitantes-ticket"', false);
+
+        // 4. movimientos.rapido debe tener datalist y dropdown estandarizado
+        $resMovRapido = $this->actingAs($userAdmin)->get(route('movimientos.rapido'));
+        $resMovRapido->assertStatus(200);
+        $resMovRapido->assertSee('id="lista-solicitantes-rapido"', false);
+        $resMovRapido->assertSee('id="resultados-dropdown"', false);
+    }
+}

@@ -103,11 +103,21 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
                     <label for="carrera" class="block text-xs font-bold text-gray-700 uppercase mb-1">Carrera / Área Académica</label>
-                    <input type="text" name="carrera" id="carrera" value="{{ old('carrera', $user->carrera) }}" placeholder="Ej. LCC, Programador Web" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    <input type="text" name="carrera" id="carrera" list="lista-carreras-perfil" value="{{ old('carrera', $user->carrera) }}" placeholder="Seleccione o escriba su carrera..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    <datalist id="lista-carreras-perfil">
+                        @foreach($carreras as $c)
+                            <option value="{{ $c->nombre }}">{{ $c->codigo ? "({$c->codigo})" : '' }}</option>
+                        @endforeach
+                    </datalist>
                 </div>
                 <div>
                     <label for="cargo_actual" class="block text-xs font-bold text-gray-700 uppercase mb-1">Cargo en el Laboratorio</label>
-                    <input type="text" name="cargo_actual" id="cargo_actual" value="{{ old('cargo_actual', $user->cargo_actual) }}" placeholder="Ej. Ayudante de 2da, Pasante" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    <input type="text" name="cargo_actual" id="cargo_actual" list="lista-cargos-perfil" value="{{ old('cargo_actual', $user->cargo_actual) }}" placeholder="Seleccione o escriba su cargo..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    <datalist id="lista-cargos-perfil">
+                        @foreach($cargos as $cargo)
+                            <option value="{{ $cargo }}"></option>
+                        @endforeach
+                    </datalist>
                 </div>
             </div>
 

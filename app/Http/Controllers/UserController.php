@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Usuario;
 use App\Models\Rol;
+use App\Models\Carrera;
 use App\Models\UsuarioTrayectoria;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -12,6 +13,17 @@ use Illuminate\Http\JsonResponse;
 
 class UserController extends Controller
 {
+    public const CARGOS_ESTANDAR = [
+        'Director',
+        'Secretaria',
+        'Coordinador de Área',
+        'JTP',
+        'Ayudante 1ra',
+        'Ayudante 2da',
+        'Becario',
+        'Pasante',
+    ];
+
     public function index(): View
     {
         $users = Usuario::with(['roles', 'trayectorias'])->paginate(15);
@@ -22,7 +34,9 @@ class UserController extends Controller
     public function edit(Usuario $user): View
     {
         $roles = Rol::all();
-        return view('users.edit', compact('user', 'roles'));
+        $carreras = Carrera::orderBy('nombre')->get();
+        $cargos = self::CARGOS_ESTANDAR;
+        return view('users.edit', compact('user', 'roles', 'carreras', 'cargos'));
     }
 
     public function update(Request $request, Usuario $user): RedirectResponse
@@ -89,7 +103,8 @@ class UserController extends Controller
     public function trayectoria(Usuario $user): View
     {
         $user->load('trayectorias');
-        return view('users.trayectoria', compact('user'));
+        $cargos = self::CARGOS_ESTANDAR;
+        return view('users.trayectoria', compact('user', 'cargos'));
     }
 
     public function storeTrayectoria(Request $request, Usuario $user): RedirectResponse

@@ -147,9 +147,14 @@
                     Informante / Solicitante <span class="text-rose-500 font-bold">*</span>
                 </label>
                 @if($isTec)
-                    <input type="text" name="solicitante" value="{{ old('solicitante', $informante) }}" required
+                    <input type="text" name="solicitante" list="lista-solicitantes-ticket" value="{{ old('solicitante', $informante) }}" required
                            class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
-                    <span class="text-[11px] text-gray-400 mt-1 block">Como técnico, puede editar o especificar un informante externo.</span>
+                    <datalist id="lista-solicitantes-ticket">
+                        @foreach($solicitantesFrecuentes ?? [] as $sol)
+                            <option value="{{ $sol }}"></option>
+                        @endforeach
+                    </datalist>
+                    <span class="text-[11px] text-gray-400 mt-1 block">Como técnico, puede seleccionar de la lista o tipear un informante/docente externo.</span>
                 @else
                     <input type="text" value="{{ $informante }}" readonly disabled
                            class="w-full bg-gray-100 border border-gray-200 text-gray-500 rounded-xl px-3.5 py-2.5 text-sm font-semibold cursor-not-allowed">
