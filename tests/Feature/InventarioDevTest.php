@@ -3624,13 +3624,12 @@ class InventarioDevTest extends TestCase
         $resPersonalView = $this->actingAs($appAdmin)->get(route('app_admin.personal'));
         $resPersonalView->assertStatus(200);
         $resPersonalView->assertSee('Dra. Romina Valenzuela');
-        $resPersonalView->assertSee('Vincular Usuario Registrado');
+        $resPersonalView->assertSee('Designar Autoridad / Referente');
 
         // 2. App Admin da de alta en PersonalLia asociando el user_id sin reescribir nombre ni cargo
         $resStore = $this->actingAs($appAdmin)->post(route('app_admin.personal.store'), [
             'user_id' => $investigador->id,
             'comentario' => 'Lidera proyectos de investigación aplicada y docencia de grado.',
-            'email' => null,
             'orden' => 1,
         ]);
         $resStore->assertRedirect(route('app_admin.personal'));

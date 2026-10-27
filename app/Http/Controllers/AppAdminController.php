@@ -262,99 +262,64 @@ class AppAdminController extends Controller
             ->with('success', 'Espacio eliminado del catálogo.');
     }
 
-    // ==========================================
     // 3. PERSONAL DEL LIA (FIGURAS CLAVE)
     // ==========================================
     public function personalIndex(): View
     {
-        $personal = PersonalLia::with('user.cargo')->orderBy('orden')->orderBy('id')->get();
+        $personal = PersonalLia::whereHas('user', function ($q) {
+            $q->where('activo', true)->where('huella_borrada', false);
+        })->with('user.cargo')->orderBy('orden')->orderBy('id')->get();
+
         $asignadosIds = $personal->pluck('user_id')->filter()->values();
         $usuarios = Usuario::where('activo', true)
+            ->where('huella_borrada', false)
             ->whereNotIn('id', $asignadosIds)
             ->with('cargo')
             ->orderBy('nombre')
             ->get();
+
         return view('admin.app.personal', compact('personal', 'usuarios'));
     }
 
     public function personalStore(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'user_id' => 'nullable|exists:usuarios,id|unique:personal_lia,user_id',
-            'nombre' => 'nullable|string|max:150|required_without:user_id',
-            'cargo' => 'nullable|string|max:150|required_without:user_id',
+            'user_id' => 'required|exists:usuarios,id|unique:personal_lia,user_id',
             'comentario' => 'nullable|string|max:1000',
-            'email' => 'nullable|email|max:150',
-            'foto' => 'nullable|image|max:4096',
-            'foto_url' => 'nullable|string|max:255',
             'orden' => 'nullable|integer',
         ], [
+            'user_id.required' => 'Debes seleccionar un usuario del sistema para designarlo como autoridad o referente.',
             'user_id.unique' => 'Este usuario ya se encuentra registrado y destacado en el personal del LIA.',
         ]);
 
-        $esUsuarioVinculado = !empty($validated['user_id']);
-
-        $fotoPath = $validated['foto_url'] ?? null;
-        if ($request->hasFile('foto')) {
-            $path = $request->file('foto')->store('personal', 'public');
-            $fotoPath = '/storage/' . $path;
-        }
-
         PersonalLia::create([
-            'user_id' => $validated['user_id'] ?? null,
-            'nombre' => $esUsuarioVinculado ? null : ($validated['nombre'] ?? null),
-            'cargo' => $esUsuarioVinculado ? null : ($validated['cargo'] ?? null),
+            'user_id' => $validated['user_id'],
             'comentario' => $validated['comentario'] ?? null,
-            'email' => $esUsuarioVinculado ? null : ($validated['email'] ?? null),
-            'foto_path' => $esUsuarioVinculado ? null : $fotoPath,
             'orden' => $validated['orden'] ?? (PersonalLia::max('orden') + 1),
             'activo' => true,
         ]);
 
         return redirect()->route('app_admin.personal')
-            ->with('success', 'Miembro institucional añadido con éxito.');
+            ->with('success', 'Referente institucional añadido con éxito.');
     }
 
     public function personalUpdate(Request $request, PersonalLia $personal): RedirectResponse
     {
         $validated = $request->validate([
-            'user_id' => 'nullable|exists:usuarios,id|unique:personal_lia,user_id,' . $personal->id,
-            'nombre' => 'nullable|string|max:150|required_without:user_id',
-            'cargo' => 'nullable|string|max:150|required_without:user_id',
+            'user_id' => 'required|exists:usuarios,id|unique:personal_lia,user_id,' . $personal->id,
             'comentario' => 'nullable|string|max:1000',
-            'email' => 'nullable|email|max:150',
-            'foto' => 'nullable|image|max:4096',
-            'foto_url' => 'nullable|string|max:255',
             'orden' => 'nullable|integer',
             'activo' => 'nullable|boolean',
         ], [
             'user_id.unique' => 'Este usuario ya se encuentra registrado y destacado en el personal del LIA.',
         ]);
 
-        $esUsuarioVinculado = !empty($validated['user_id']);
-
-        $data = [
-            'user_id' => $validated['user_id'] ?? null,
-            'nombre' => $esUsuarioVinculado ? null : ($validated['nombre'] ?? null),
-            'cargo' => $esUsuarioVinculado ? null : ($validated['cargo'] ?? null),
+        $personal->update([
+            'user_id' => $validated['user_id'],
             'comentario' => $validated['comentario'] ?? null,
-            'email' => $esUsuarioVinculado ? null : ($validated['email'] ?? null),
             'orden' => $validated['orden'] ?? $personal->orden,
             'activo' => $request->has('activo'),
-        ];
-
-        if ($esUsuarioVinculado) {
-            $data['foto_path'] = null;
-        } else {
-            if ($request->hasFile('foto')) {
-                $path = $request->file('foto')->store('personal', 'public');
-                $data['foto_path'] = '/storage/' . $path;
-            } elseif (!empty($validated['foto_url'])) {
-                $data['foto_path'] = $validated['foto_url'];
-            }
-        }
-
-        $personal->update($data);
+        ]);
 
         return redirect()->route('app_admin.personal')
             ->with('success', 'Registro de personal actualizado.');

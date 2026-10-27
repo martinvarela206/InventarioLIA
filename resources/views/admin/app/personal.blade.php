@@ -18,7 +18,7 @@
                 </span>
             </h1>
             <p class="text-sm text-gray-600 mt-0.5">
-                Configura a los referentes principales del LIA y vincula usuarios registrados para sincronizar automáticamente su foto oficial y cargo en la portada.
+                Designa a los usuarios del sistema que figuran como referentes institucionales en la portada. Sus nombres, cargos y fotos oficiales se sincronizan en vivo desde sus perfiles.
             </p>
         </div>
         <div>
@@ -50,24 +50,24 @@
         <!-- Formulario Alta de Personal -->
         <div class="lg:col-span-1">
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-20">
-                <h2 class="font-bold text-gray-900 text-base mb-1">Nueva Autoridad / Referente</h2>
-                <p class="text-xs text-gray-500 mb-4">Añadir una figura institucional vinculada a un usuario o personalizada.</p>
+                <h2 class="font-bold text-gray-900 text-base mb-1">Designar Autoridad / Referente</h2>
+                <p class="text-xs text-gray-500 mb-4">Selecciona un usuario registrado del LIA para destacarlo en la portada.</p>
 
-                <form action="{{ route('app_admin.personal.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <form action="{{ route('app_admin.personal.store') }}" method="POST" class="space-y-4">
                     @csrf
 
-                    <!-- Vincular con Usuario del Sistema -->
+                    <!-- Selector de Usuario del Sistema -->
                     <div class="bg-amber-50/70 p-3.5 rounded-xl border border-amber-200">
                         <label class="block text-amber-950 text-xs font-black uppercase mb-1 flex items-center gap-1.5">
                             <svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                            <span>Vincular Usuario Registrado (Recomendado)</span>
+                            <span>Usuario del Sistema *</span>
                         </label>
-                        <select name="user_id" id="user_id_select" class="w-full border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
-                            <option value="">-- Sin vincular / Personal Externo Manual --</option>
+                        <select name="user_id" id="user_id_select" required class="w-full border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+                            <option value="">-- Seleccionar usuario activo --</option>
                             @foreach($usuarios as $u)
                                 <option value="{{ $u->id }}"
                                     data-nombre="{{ $u->nombre }}"
-                                    data-cargo="{{ $u->cargo_actual ?: ($u->cargo ? $u->cargo->nombre : '') }}"
+                                    data-cargo="{{ $u->cargo_actual ?: ($u->cargo ? $u->cargo->nombre : 'Sin cargo oficial') }}"
                                     data-email="{{ $u->email }}"
                                     data-foto="{{ $u->foto_url }}">
                                     {{ $u->nombre }} ({{ $u->cargo_actual ?: ($u->cargo ? $u->cargo->nombre : 'Sin cargo') }}) - {{ $u->email }}
@@ -76,67 +76,23 @@
                         </select>
 
                         <!-- Preview visual del usuario seleccionado -->
-                        <div id="selected_user_preview" class="hidden mt-2.5 p-2 bg-white rounded-lg border border-amber-300 flex items-center gap-2.5 shadow-xs">
-                            <img id="selected_user_preview_img" src="/assets/placeholder-user.png" alt="Avatar" class="w-8 h-8 rounded-full object-cover border border-amber-400">
+                        <div id="selected_user_preview" class="hidden mt-3 p-3 bg-white rounded-xl border border-amber-300 flex items-center gap-3 shadow-xs">
+                            <img id="selected_user_preview_img" src="/assets/placeholder-user.png" alt="Avatar" class="w-10 h-10 rounded-full object-cover border-2 border-amber-400 flex-shrink-0">
                             <div class="min-w-0 flex-1">
-                                <p id="selected_user_preview_text" class="text-xs font-bold text-gray-900 truncate"></p>
-                                <span class="text-[10px] text-emerald-700 font-bold block">✓ Se sincronizará foto, cargo y nombre oficial</span>
+                                <p id="selected_user_preview_name" class="text-xs font-black text-gray-900 truncate"></p>
+                                <p id="selected_user_preview_cargo" class="text-[11px] font-bold text-amber-900 truncate"></p>
+                                <span class="text-[10px] text-emerald-700 font-bold block mt-0.5">✓ Sincronizado en tiempo real</span>
                             </div>
                         </div>
 
-                        <p class="text-[11px] text-amber-900 mt-1.5 leading-snug">
-                            Los usuarios ya destacados no figuran en la lista para prevenir duplicados.
+                        <p class="text-[11px] text-amber-900 mt-2 leading-snug">
+                            Solo figuran usuarios activos con huella digital vigente que aún no hayan sido designados.
                         </p>
-                    </div>
-
-                    <!-- Mensaje informativo cuando está vinculado un usuario -->
-                    <div id="usuario_sync_info" class="hidden p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-950 text-xs">
-                        <p class="font-bold flex items-center gap-1.5 mb-0.5 text-emerald-900">
-                            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                            <span>Sincronización en Tiempo Real</span>
-                        </p>
-                        <p class="text-[11px] text-emerald-800 leading-snug">
-                            El nombre, cargo oficial, correo y foto de perfil se sincronizan en vivo desde la cuenta del usuario. Cualquier edición futura en su perfil se reflejará aquí y en la portada automáticamente.
-                        </p>
-                    </div>
-
-                    <!-- Campos Manuales (Visibles solo si es referente manual / no vinculado) -->
-                    <div id="manual_fields_section" class="space-y-4">
-                        <div>
-                            <label class="block text-gray-700 text-xs font-bold uppercase mb-1">
-                                Nombre y Apellido <span id="nombre_req_label" class="text-rose-600">*</span>
-                            </label>
-                            <input type="text" name="nombre" id="input_nombre" required placeholder="Ej. Dra. María Elena Fernández" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
-                        </div>
-
-                        <div>
-                            <label class="block text-gray-700 text-xs font-bold uppercase mb-1">
-                                Cargo / Rol en el LIA <span id="cargo_req_label" class="text-rose-600">*</span>
-                            </label>
-                            <input type="text" name="cargo" id="input_cargo" required placeholder="Ej. Directora del LIA / Coordinador de Seguridad" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
-                        </div>
-
-                        <div>
-                            <label class="block text-gray-700 text-xs font-bold uppercase mb-1">Correo de Contacto Institucional</label>
-                            <input type="email" name="email" id="input_email" placeholder="referente@unsj.edu.ar" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 font-mono">
-                        </div>
-
-                        <div id="foto_custom_section" class="space-y-3">
-                            <div>
-                                <label class="block text-gray-700 text-xs font-bold uppercase mb-1">Subir Foto / Avatar Personalizada</label>
-                                <input type="file" name="foto" accept="image/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-900 hover:file:bg-amber-200 cursor-pointer">
-                            </div>
-
-                            <div>
-                                <label class="block text-gray-700 text-xs font-bold uppercase mb-1">O Ruta / URL de Foto</label>
-                                <input type="text" name="foto_url" placeholder="/assets/flavia.png" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-xs font-mono text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400">
-                            </div>
-                        </div>
                     </div>
 
                     <div>
                         <label class="block text-gray-700 text-xs font-bold uppercase mb-1">Comentario Institucional / Horario de Consulta</label>
-                        <textarea name="comentario" rows="3" placeholder="Descripción de funciones, horarios de consulta, responsabilidades..." class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400"></textarea>
+                        <textarea name="comentario" rows="3" placeholder="Ej: Dirección general, coordinación de investigación, atención martes y jueves..." class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400"></textarea>
                     </div>
 
                     <div>
@@ -146,7 +102,7 @@
 
                     <button type="submit" class="w-full bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow text-sm transition-colors mt-2 flex items-center justify-center gap-2">
                         <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-                        <span>Registrar Autoridad</span>
+                        <span>Designar como Autoridad</span>
                     </button>
                 </form>
             </div>
@@ -172,16 +128,10 @@
                             </div>
 
                             <div class="mb-2">
-                                @if($p->user_id)
-                                    <span class="inline-flex items-center gap-1 text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
-                                        <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                        <span>Usuario LIA Sincronizado</span>
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1 text-[11px] bg-gray-50 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full font-medium">
-                                        Referente Manual / Externo
-                                    </span>
-                                @endif
+                                <span class="inline-flex items-center gap-1 text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                                    <svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                    <span>Usuario del Sistema Sincronizado</span>
+                                </span>
                             </div>
 
                             <p class="text-xs text-gray-600 italic bg-gray-50 p-3 rounded-xl border border-gray-100 line-clamp-3">
@@ -194,18 +144,18 @@
                         </div>
 
                         <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-end">
-                            <form action="{{ route('app_admin.personal.destroy', $p->id) }}" method="POST" onsubmit="return confirm('¿Eliminar a este referente del personal?')">
+                            <form action="{{ route('app_admin.personal.destroy', $p->id) }}" method="POST" onsubmit="return confirm('¿Quitar a este referente de las autoridades institucionales?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-bold rounded-xl px-3 py-1 text-xs transition-colors">
-                                    Eliminar
+                                    Quitar Autoridad
                                 </button>
                             </form>
                         </div>
                     </div>
                 @empty
                     <div class="col-span-2 bg-white rounded-2xl p-10 text-center text-gray-400 text-xs italic">
-                        No hay autoridades registradas aún.
+                        No hay autoridades o referentes registrados actualmente.
                     </div>
                 @endforelse
             </div>
@@ -216,53 +166,23 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const userSelect = document.getElementById('user_id_select');
-    const inputNombre = document.getElementById('input_nombre');
-    const inputCargo = document.getElementById('input_cargo');
-    const inputEmail = document.getElementById('input_email');
-    const nombreReqLabel = document.getElementById('nombre_req_label');
-    const cargoReqLabel = document.getElementById('cargo_req_label');
-    const manualFieldsSection = document.getElementById('manual_fields_section');
-    const usuarioSyncInfo = document.getElementById('usuario_sync_info');
+    const previewContainer = document.getElementById('selected_user_preview');
+    const previewImg = document.getElementById('selected_user_preview_img');
+    const previewName = document.getElementById('selected_user_preview_name');
+    const previewCargo = document.getElementById('selected_user_preview_cargo');
 
     if (!userSelect) return;
 
     userSelect.addEventListener('change', function () {
         const selectedOpt = userSelect.options[userSelect.selectedIndex];
-        const previewContainer = document.getElementById('selected_user_preview');
-        const previewImg = document.getElementById('selected_user_preview_img');
-        const previewText = document.getElementById('selected_user_preview_text');
 
-        if (userSelect.value) {
-            // Usuario del sistema seleccionado: se ocultan campos manuales redundantes
-            inputNombre.required = false;
-            inputCargo.required = false;
-            if (manualFieldsSection) manualFieldsSection.classList.add('hidden');
-            if (usuarioSyncInfo) usuarioSyncInfo.classList.remove('hidden');
-
-            // Valores de soporte
-            inputNombre.value = selectedOpt.dataset.nombre || '';
-            inputCargo.value = selectedOpt.dataset.cargo || '';
-            inputEmail.value = selectedOpt.dataset.email || '';
-
-            if (previewContainer && previewImg && previewText) {
-                previewImg.src = selectedOpt.dataset.foto || '/assets/placeholder-user.png';
-                previewText.textContent = `${selectedOpt.dataset.nombre} (${selectedOpt.dataset.cargo || 'Sin cargo'})`;
-                previewContainer.classList.remove('hidden');
-            }
-        } else {
-            // Manual / Desvinculado: se muestran campos manuales obligatorios
-            inputNombre.required = true;
-            inputCargo.required = true;
-            if (manualFieldsSection) manualFieldsSection.classList.remove('hidden');
-            if (usuarioSyncInfo) usuarioSyncInfo.classList.add('hidden');
-
-            inputNombre.value = '';
-            inputCargo.value = '';
-            inputEmail.value = '';
-
-            if (previewContainer) {
-                previewContainer.classList.add('hidden');
-            }
+        if (userSelect.value && previewContainer && previewImg && previewName && previewCargo) {
+            previewImg.src = selectedOpt.dataset.foto || '/assets/placeholder-user.png';
+            previewName.textContent = selectedOpt.dataset.nombre || '';
+            previewCargo.textContent = selectedOpt.dataset.cargo || '';
+            previewContainer.classList.remove('hidden');
+        } else if (previewContainer) {
+            previewContainer.classList.add('hidden');
         }
     });
 });
