@@ -3653,6 +3653,11 @@ class InventarioDevTest extends TestCase
         $resStoreDuplicate->assertSessionHasErrors(['user_id']);
         $this->assertEquals(1, \App\Models\PersonalLia::where('user_id', $investigador->id)->count());
 
+        $this->assertNull($personal->getRawOriginal('nombre'));
+        $this->assertNull($personal->getRawOriginal('cargo'));
+        $this->assertNull($personal->getRawOriginal('email'));
+        $this->assertNull($personal->getRawOriginal('foto_path'));
+
         // 3. Landing page renderiza los datos en vivo derivados del usuario
         $resLanding = $this->get('/');
         $resLanding->assertStatus(200);
@@ -3661,15 +3666,36 @@ class InventarioDevTest extends TestCase
         $resLanding->assertSee('/assets/flavia.png');
         $resLanding->assertSee('rvalenzuela@lia.unsj.edu.ar');
 
-        // 4. Actualización en tiempo real: el usuario cambia su nombre y foto de perfil
+        // 4. Actualización en tiempo real: el usuario cambia su nombre, cargo oficial, email y avatar
+        $cargoDirectora = \App\Models\Cargo::firstOrCreate(
+            ['nombre' => 'Directora de Área Científica'],
+            ['descripcion' => 'Dirección de proyectos', 'activo' => true]
+        );
+
         $investigador->update([
             'nombre' => 'Dra. Romina Valenzuela PhD',
+            'cargo_id' => $cargoDirectora->id,
+            'email' => 'romina.phd@lia.unsj.edu.ar',
             'foto_path' => '/assets/pamela.png',
         ]);
+
+        $personal->refresh();
+        $this->assertEquals('Dra. Romina Valenzuela PhD', $personal->nombre);
+        $this->assertEquals('Directora de Área Científica', $personal->cargo);
+        $this->assertEquals('romina.phd@lia.unsj.edu.ar', $personal->email);
+        $this->assertEquals('/assets/pamela.png', $personal->foto_url);
+
+        // Comprobar reflejo inmediato en panel de administración y portada
+        $resAdminUpdated = $this->actingAs($appAdmin)->get(route('app_admin.personal'));
+        $resAdminUpdated->assertStatus(200);
+        $resAdminUpdated->assertSee('Dra. Romina Valenzuela PhD');
+        $resAdminUpdated->assertSee('Directora de Área Científica');
+        $resAdminUpdated->assertSee('romina.phd@lia.unsj.edu.ar');
 
         $resLandingUpdated = $this->get('/');
         $resLandingUpdated->assertStatus(200);
         $resLandingUpdated->assertSee('Dra. Romina Valenzuela PhD');
+        $resLandingUpdated->assertSee('Directora de Área Científica');
         $resLandingUpdated->assertSee('/assets/pamela.png');
 
         // 5. Integridad relacional: si el usuario es dado de baja, nullOnDelete preserva el registro
