@@ -60,9 +60,14 @@ class Usuario extends Authenticatable
         return $this->belongsTo(Carrera::class, 'carrera_id');
     }
 
-    public function cargoRelacion(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function cargo(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Cargo::class, 'cargo_id');
+    }
+
+    public function cargoRelacion(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->cargo();
     }
 
     public function getCarreraAttribute(): ?string

@@ -3590,6 +3590,79 @@ class InventarioDevTest extends TestCase
         $usuario->anonimizarHuellaDigital();
         $this->assertNull($usuario->foto_path);
     }
+
+    public function test_unificacion_autoridades_y_personal_lia_con_usuarios_del_sistema(): void
+    {
+        $appAdmin = \App\Models\Usuario::where('email', 'admin@app.com')->first();
+        if (!$appAdmin) {
+            $appAdmin = \App\Models\Usuario::factory()->create([
+                'nombre' => 'Admin App Test',
+                'email' => 'admin_test@lia.com',
+                'password' => bcrypt('password123'),
+                'activo' => true,
+            ]);
+            $rolAppAdmin = \App\Models\Rol::firstOrCreate(['rol' => 'app_admin']);
+            $appAdmin->roles()->syncWithoutDetaching([$rolAppAdmin->id]);
+        }
+
+        // 1. Crear un usuario institucional con cargo oficial y foto
+        $cargoCoordinador = \App\Models\Cargo::firstOrCreate(
+            ['nombre' => 'Coordinador de Laboratorios Avanzados'],
+            ['descripcion' => 'Coordinación técnica', 'activo' => true]
+        );
+
+        $investigador = \App\Models\Usuario::factory()->create([
+            'nombre' => 'Dra. Romina Valenzuela',
+            'email' => 'rvalenzuela@lia.unsj.edu.ar',
+            'password' => bcrypt('password123'),
+            'cargo_id' => $cargoCoordinador->id,
+            'foto_path' => '/assets/flavia.png',
+            'activo' => true,
+        ]);
+
+        // 2. App Admin da de alta en PersonalLia asociando el user_id sin reescribir nombre ni cargo
+        $resStore = $this->actingAs($appAdmin)->post(route('app_admin.personal.store'), [
+            'user_id' => $investigador->id,
+            'comentario' => 'Lidera proyectos de investigación aplicada y docencia de grado.',
+            'email' => null,
+            'orden' => 1,
+        ]);
+        $resStore->assertRedirect(route('app_admin.personal'));
+
+        $personal = \App\Models\PersonalLia::where('user_id', $investigador->id)->first();
+        $this->assertNotNull($personal);
+        $this->assertEquals('Dra. Romina Valenzuela', $personal->nombre);
+        $this->assertEquals('Coordinador de Laboratorios Avanzados', $personal->cargo);
+        $this->assertEquals('rvalenzuela@lia.unsj.edu.ar', $personal->email);
+        $this->assertEquals('/assets/flavia.png', $personal->foto_url);
+
+        // 3. Landing page renderiza los datos en vivo derivados del usuario
+        $resLanding = $this->get('/');
+        $resLanding->assertStatus(200);
+        $resLanding->assertSee('Dra. Romina Valenzuela');
+        $resLanding->assertSee('Coordinador de Laboratorios Avanzados');
+        $resLanding->assertSee('/assets/flavia.png');
+        $resLanding->assertSee('rvalenzuela@lia.unsj.edu.ar');
+
+        // 4. Actualización en tiempo real: el usuario cambia su nombre y foto de perfil
+        $investigador->update([
+            'nombre' => 'Dra. Romina Valenzuela PhD',
+            'foto_path' => '/assets/pamela.png',
+        ]);
+
+        $resLandingUpdated = $this->get('/');
+        $resLandingUpdated->assertStatus(200);
+        $resLandingUpdated->assertSee('Dra. Romina Valenzuela PhD');
+        $resLandingUpdated->assertSee('/assets/pamela.png');
+
+        // 5. Integridad relacional: si el usuario es dado de baja, nullOnDelete preserva el registro
+        $personalId = $personal->id;
+        $investigador->delete();
+
+        $personalRefreshed = \App\Models\PersonalLia::find($personalId);
+        $this->assertNotNull($personalRefreshed);
+        $this->assertNull($personalRefreshed->user_id);
+    }
 }
 
 
