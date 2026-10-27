@@ -207,19 +207,19 @@
         </div>
 
         <!-- Botones de Acción -->
-        <div class="flex items-center justify-end gap-3 pt-4">
+        <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4">
             @if(Auth::user()->hasRole('tec'))
-                <a href="{{ route('tickets.index') }}" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-100 transition-colors">
+                <a href="{{ route('tickets.index') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-100 transition-colors w-full sm:w-auto text-center">
                     Cancelar
                 </a>
             @else
-                <a href="{{ route('dashboard.index') }}" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-100 transition-colors">
+                <a href="{{ route('dashboard.index') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-100 transition-colors w-full sm:w-auto text-center">
                     Cancelar
                 </a>
             @endif
-            <button type="submit" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-6 py-2.5 rounded-xl text-sm transition-all shadow-md">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                Registrar e Iniciar Ticket
+            <button type="submit" class="inline-flex items-center justify-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-6 py-2.5 rounded-xl text-sm transition-all shadow-md w-full sm:w-auto text-center">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                <span>Crear Ticket de Reparación</span>
             </button>
         </div>
     </form>
