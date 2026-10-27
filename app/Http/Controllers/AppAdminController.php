@@ -261,15 +261,20 @@ class AppAdminController extends Controller
     // ==========================================
     public function personalIndex(): View
     {
-        $personal = PersonalLia::orderBy('orden')->orderBy('id')->get();
-        return view('admin.app.personal', compact('personal'));
+        $personal = PersonalLia::with('user.cargo')->orderBy('orden')->orderBy('id')->get();
+        $usuarios = Usuario::where('activo', true)
+            ->with('cargo')
+            ->orderBy('nombre')
+            ->get();
+        return view('admin.app.personal', compact('personal', 'usuarios'));
     }
 
     public function personalStore(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:150',
-            'cargo' => 'required|string|max:150',
+            'user_id' => 'nullable|exists:usuarios,id',
+            'nombre' => 'nullable|string|max:150|required_without:user_id',
+            'cargo' => 'nullable|string|max:150|required_without:user_id',
             'comentario' => 'nullable|string|max:1000',
             'email' => 'nullable|email|max:150',
             'foto' => 'nullable|image|max:4096',
@@ -284,8 +289,9 @@ class AppAdminController extends Controller
         }
 
         PersonalLia::create([
-            'nombre' => $validated['nombre'],
-            'cargo' => $validated['cargo'],
+            'user_id' => $validated['user_id'] ?? null,
+            'nombre' => $validated['nombre'] ?? null,
+            'cargo' => $validated['cargo'] ?? null,
             'comentario' => $validated['comentario'] ?? null,
             'email' => $validated['email'] ?? null,
             'foto_path' => $fotoPath,
@@ -300,8 +306,9 @@ class AppAdminController extends Controller
     public function personalUpdate(Request $request, PersonalLia $personal): RedirectResponse
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:150',
-            'cargo' => 'required|string|max:150',
+            'user_id' => 'nullable|exists:usuarios,id',
+            'nombre' => 'nullable|string|max:150|required_without:user_id',
+            'cargo' => 'nullable|string|max:150|required_without:user_id',
             'comentario' => 'nullable|string|max:1000',
             'email' => 'nullable|email|max:150',
             'foto' => 'nullable|image|max:4096',
@@ -311,8 +318,9 @@ class AppAdminController extends Controller
         ]);
 
         $data = [
-            'nombre' => $validated['nombre'],
-            'cargo' => $validated['cargo'],
+            'user_id' => $validated['user_id'] ?? null,
+            'nombre' => $validated['nombre'] ?? null,
+            'cargo' => $validated['cargo'] ?? null,
             'comentario' => $validated['comentario'] ?? null,
             'email' => $validated['email'] ?? null,
             'orden' => $validated['orden'] ?? $personal->orden,
