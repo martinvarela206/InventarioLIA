@@ -46,11 +46,16 @@ class ReporteController extends Controller
      */
     public function index(): View
     {
+        if (ReporteConfigurado::count() === 0) {
+            (new \Database\Seeders\ReporteConfiguradoSeeder())->run();
+        }
+
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $tipos = Tipo::orderBy('nombre')->get();
-        $reportesPersonalizados = ReporteConfigurado::activos()->where('es_sistema', false)->ordenados()->get();
+        $reportes = ReporteConfigurado::activos()->ordenados()->get();
+        $reportesPersonalizados = $reportes->where('es_sistema', false);
 
-        return view('reportes.index', compact('ubicaciones', 'tipos', 'reportesPersonalizados'));
+        return view('reportes.index', compact('ubicaciones', 'tipos', 'reportes', 'reportesPersonalizados'));
     }
 
     /**

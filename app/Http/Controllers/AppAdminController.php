@@ -481,9 +481,9 @@ class AppAdminController extends Controller
         return redirect()->back()->with('success', "El reporte \"{$reporte->titulo}\" ha sido {$estado}.");
     }
 
-    public function reporteDestroy(ReporteConfigurado $reporte): RedirectResponse
+    public function reporteDestroy(ReporteConfigurado $reporte, Request $request): RedirectResponse
     {
-        if ($reporte->es_sistema) {
+        if ($reporte->es_sistema && !$request->boolean('force')) {
             $reporte->activo = false;
             $reporte->save();
             return redirect()->route('app_admin.reportes')->with('success', "El reporte del sistema \"{$reporte->titulo}\" ha sido desactivado.");

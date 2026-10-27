@@ -2098,4 +2098,38 @@ class InventarioDevTest extends TestCase
         $resMovRapido->assertSee('id="lista-solicitantes-rapido"', false);
         $resMovRapido->assertSee('id="resultados-dropdown"', false);
     }
+
+    public function test_unificacion_y_ordenamiento_de_reportes_oficiales_y_personalizados(): void
+    {
+        $admin = Usuario::create([
+            'nombre' => 'Admin Reportes Unificados',
+            'email' => 'admin_unificados@lia.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $admin->roles()->attach(Rol::where('rol', 'app_admin')->first());
+        $admin->roles()->attach(Rol::where('rol', 'rev')->first());
+
+        // 1. Acceder al hub unificado de reportes
+        $res = $this->actingAs($admin)->get(route('reportes.index'));
+        $res->assertStatus(200);
+        $res->assertSee('Catálogo unificado de reportes');
+        $res->assertSee('Listado completo del Inventario');
+        $res->assertSee('Inventario por ubicación');
+        // No debe existir división con encabezado "Reportes Oficiales del Sistema"
+        $res->assertDontSee('Reportes Oficiales del Sistema');
+
+        // 2. Administrador puede desactivar u ordenar cualquier reporte inicial gestionado en reportes_configurados
+        $reporteInicial = \App\Models\ReporteConfigurado::where('slug', 'bajas-basura')->first();
+        if ($reporteInicial) {
+            $resDelete = $this->actingAs($admin)->delete(route('app_admin.reportes.destroy', $reporteInicial->id));
+            $resDelete->assertRedirect(route('app_admin.reportes'));
+            $this->assertDatabaseHas('reportes_configurados', ['id' => $reporteInicial->id, 'activo' => false]);
+
+            // Con parámetro force puede removerse definitivamente
+            $this->actingAs($admin)->delete(route('app_admin.reportes.destroy', $reporteInicial->id), ['force' => 1]);
+            $this->assertDatabaseMissing('reportes_configurados', ['id' => $reporteInicial->id]);
+        }
+    }
 }
+
