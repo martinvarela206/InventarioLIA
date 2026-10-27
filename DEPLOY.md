@@ -2,7 +2,7 @@
 
 Esta rama (`produccion`) contiene la arquitectura final basada en **dos contenedores Docker** orquestados mediante Docker Compose:
 
-1. **`app` (`laravel_prod`)**: Aplicación web Laravel con PHP 8.2 Parcheado, servidor web Apache, extensiones PHP de alto rendimiento (`pdo_mysql`, `mbstring`, `gd`, `zip`, `opcache`), assets compilados con Vite + Tailwind CSS (Node 20 LTS en etapa multi-stage) y script de inicialización inteligente (`entrypoint.sh`).
+1. **`app` (`laravel_prod`)**: Aplicación web Laravel con PHP 8.2.35 Parcheado (o versiones seguras >= 8.2.35 / 8.3.36 / 8.4.27 / 8.5.12 mitigando CVE-2026-109618/19), servidor web Apache, extensiones PHP de alto rendimiento (`pdo_mysql`, `mbstring`, `gd`, `zip`, `opcache`), assets compilados con Vite + Tailwind CSS (Node 20 LTS en etapa multi-stage) y script de inicialización inteligente (`entrypoint.sh`).
 2. **`db` (`mariadb_prod`)**: Motor de base de datos relacional MariaDB 11.4 LTS, configurado con `utf8mb4_unicode_ci`, volumen persistente y healthcheck activo.
 
 ---

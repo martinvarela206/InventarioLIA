@@ -14,9 +14,10 @@ COPY . .
 RUN npm run build
 
 # ==============================================================================
-# ETAPA 2: Servidor de Aplicación (PHP 8.2 Parcheado + Apache)
+# ETAPA 2: Servidor de Aplicación (PHP 8.2.35 Parcheado >= 8.2.35 / 8.3.36 / 8.4.27 / 8.5.12 + Apache)
 # ==============================================================================
-FROM php:8.2-apache
+ARG PHP_VERSION=8.2.35
+FROM php:${PHP_VERSION}-apache
 
 # Instalación de librerías del sistema y clientes de base de datos
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
