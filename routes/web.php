@@ -28,7 +28,7 @@ Route::post('/register', [RegisterController::class, 'register']);
 // Portada / Welcome (datos dinámicos administrados por app_admin)
 Route::get('/', function () {
     $espacios = EspacioLia::activos()->get();
-    $personal = PersonalLia::activos()->get();
+    $personal = PersonalLia::activos()->with('user.cargo')->get();
     $actividades = ActividadLia::activos()->with('autor')->take(6)->get();
     $avisos = AvisoSeguridad::activos()->get();
     return view('welcome', compact('espacios', 'personal', 'actividades', 'avisos'));

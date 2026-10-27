@@ -96,18 +96,18 @@
                 <div class="bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/10 hover:border-amber-400/50 rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between shadow-xl">
                     <div>
                         <div class="flex items-center gap-4 mb-4">
-                            <div class="w-16 h-16 rounded-full border-2 border-[#dba800] overflow-hidden bg-black/40 flex-shrink-0 flex items-center justify-center">
+                            <div class="w-16 h-16 rounded-full border-2 border-[#dba800] overflow-hidden bg-black/40 flex-shrink-0 flex items-center justify-center shadow-md">
                                 <img src="{{ $p->foto_url }}" alt="{{ $p->nombre }}" class="w-full h-full object-cover" onerror="this.src='/assets/placeholder-user.png'" />
                             </div>
-                            <div>
-                                <h3 class="text-white font-bold text-base leading-tight">{{ $p->nombre }}</h3>
+                            <div class="min-w-0 flex-1">
+                                <h3 class="text-white font-bold text-base leading-tight truncate">{{ $p->nombre }}</h3>
                                 <span class="inline-block mt-1 bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full">
                                     {{ $p->cargo }}
                                 </span>
                             </div>
                         </div>
 
-                        <p class="text-white/80 text-xs leading-relaxed italic bg-black/20 p-3 rounded-xl border border-white/5">
+                        <p class="text-white/80 text-xs leading-relaxed italic bg-black/20 p-3.5 rounded-xl border border-white/5">
                             "{{ $p->comentario ?: 'Responsable asignado al soporte académico y técnico del laboratorio.' }}"
                         </p>
                     </div>
@@ -115,7 +115,7 @@
                     @if($p->email)
                         <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px]">
                             <span class="text-white/50">Contacto oficial:</span>
-                            <a href="mailto:{{ $p->email }}" class="text-amber-400 hover:underline font-mono">{{ $p->email }}</a>
+                            <a href="mailto:{{ $p->email }}" class="text-amber-400 hover:underline font-mono truncate max-w-[220px]">{{ $p->email }}</a>
                         </div>
                     @endif
                 </div>
