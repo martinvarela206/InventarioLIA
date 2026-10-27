@@ -127,7 +127,7 @@ class ReporteController extends Controller
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Encabezados
-            $columnas = $data['columnas'] ?? ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Ubicación', 'Puesto', 'Situación', 'Solicitante / Obs'];
+            $columnas = $data['columnas'] ?? ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Especificaciones / Hardware', 'Ubicación', 'Puesto', 'Situación', 'Solicitante / Obs'];
             fputcsv($handle, $columnas, ';');
 
             foreach ($filas as $fila) {
@@ -203,6 +203,7 @@ class ReporteController extends Controller
             $el->nro_unsj ?? '-',
             $el->marca ?? '-',
             $el->modelo ?? '-',
+            $el->especificacionesSintetizadas(false),
             $ubicacionNombre,
             $puesto,
             $situacion,
@@ -225,7 +226,7 @@ class ReporteController extends Controller
     {
         $atributos = self::obtenerAtributosDinamicos();
         $columnasStandard = array_merge(
-            ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Ubicación', 'Puesto', 'Situación'],
+            ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Especificaciones / Hardware', 'Ubicación', 'Puesto', 'Situación'],
             $atributos,
             ['Solicitante', 'Garantía / Obs']
         );

@@ -158,6 +158,7 @@
                         <th class="py-3 px-4">Identificadores</th>
                         <th class="py-3 px-4">Tipo / Categoría</th>
                         <th class="py-3 px-4">Marca y Modelo</th>
+                        <th class="py-3 px-4">Especificaciones / Hardware</th>
                         <th class="py-3 px-4">Ubicación y Puesto</th>
                         <th class="py-3 px-4">Situación</th>
                         <th class="py-3 px-4">Garantía / Adq.</th>
@@ -185,6 +186,11 @@
                                 <div class="text-xs text-gray-500">{{ $el->modelo ?: '-' }}</div>
                             </td>
                             <td class="py-3 px-4">
+                                <div class="max-w-xs text-xs text-gray-700">
+                                    {!! $el->presenter()->especificacionesHtml() !!}
+                                </div>
+                            </td>
+                            <td class="py-3 px-4">
                                 <div class="font-medium text-gray-900">{{ $el->presenter()->puestoUbicacion() }}</div>
                             </td>
                             <td class="py-3 px-4 whitespace-nowrap">
@@ -210,7 +216,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-12 text-center text-gray-400 text-sm">
+                            <td colspan="8" class="py-12 text-center text-gray-400 text-sm">
                                 No se encontraron activos que coincidan con los criterios de búsqueda.
                             </td>
                         </tr>

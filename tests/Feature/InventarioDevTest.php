@@ -1930,7 +1930,79 @@ class InventarioDevTest extends TestCase
         $resRepPuesto->assertSee('LIA-PST-03');
         $resRepPuesto->assertDontSee('LIA-PST-07');
     }
+
+    public function test_columna_compuesta_de_especificaciones_hardware_en_inventario_y_reportes(): void
+    {
+        $admin = Usuario::where('email', 'admin@lia.com')->first();
+        if (!$admin) {
+            $rolAdmin = Rol::firstOrCreate(['rol' => 'app_admin']);
+            $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+            $admin = Usuario::factory()->create([
+                'nombre' => 'App Admin User',
+                'email' => 'admin@lia.com',
+                'password' => bcrypt('1234'),
+            ]);
+            $admin->roles()->syncWithoutDetaching([$rolAdmin->id, $rolRev->id]);
+        }
+
+        $tipoPc = Tipo::firstOrCreate(['nombre' => 'computadora escritorio'], ['descripcion' => 'PC']);
+        $sala1 = Ubicacion::firstOrCreate(['nombre' => 'Sala 1']);
+
+        $attrProc = Atributo::firstOrCreate(['nombre' => 'Procesador']);
+        $attrRam = Atributo::firstOrCreate(['nombre' => 'RAM'], ['unidad_medida' => 'GB']);
+        $attrDisco = Atributo::firstOrCreate(['nombre' => 'Disco'], ['unidad_medida' => 'GB']);
+
+        // Crear elemento con especificaciones
+        $pc = Elemento::create([
+            'nro_lia' => 'LIA-SPEC-01',
+            'tipo_id' => $tipoPc->id,
+            'marca' => 'Dell',
+            'modelo' => 'OptiPlex 3080',
+            'puesto' => 'Puesto 01',
+            'activo' => true,
+        ]);
+        Movimiento::create([
+            'elemento_id' => $pc->id,
+            'ubicacion_id' => $sala1->id,
+            'puesto' => 'Puesto 01',
+            'user_id' => $admin->id,
+            'tipo_movimiento' => 'alta',
+            'fecha' => now(),
+        ]);
+
+        \App\Models\ElementoAtributoValor::create(['elemento_id' => $pc->id, 'atributo_id' => $attrProc->id, 'valor' => 'i5-10400']);
+        \App\Models\ElementoAtributoValor::create(['elemento_id' => $pc->id, 'atributo_id' => $attrRam->id, 'valor' => '16']);
+        \App\Models\ElementoAtributoValor::create(['elemento_id' => $pc->id, 'atributo_id' => $attrDisco->id, 'valor' => '480 SSD']);
+
+        // 1. Probar método sintetizado directo
+        $pc->load('valoresAtributos.atributo');
+        $specs = $pc->especificacionesSintetizadas(false);
+        $this->assertStringContainsString('i5-10400', $specs);
+        $this->assertStringContainsString('16 GB', $specs);
+        $this->assertStringContainsString('480 SSD', $specs);
+
+        // 2. Verificar que index.blade.php renderiza la columna y los badges de hardware
+        $resIndex = $this->actingAs($admin)->get(route('elementos.index'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Especificaciones / Hardware');
+        $resIndex->assertSee('i5-10400');
+        $resIndex->assertSee('16 GB');
+
+        // 3. Verificar exportCsv de elementos
+        $resCsv = $this->actingAs($admin)->get(route('elementos.exportCsv'));
+        $resCsv->assertStatus(200);
+        $csvText = $resCsv->streamedContent();
+        $this->assertStringContainsString('Especificaciones / Hardware', $csvText);
+        $this->assertStringContainsString('i5-10400', $csvText);
+
+        // 4. Verificar reporte inventario-completo
+        $resRep = $this->actingAs($admin)->get(route('reportes.show', 'inventario-completo'));
+        $resRep->assertStatus(200);
+        $resRep->assertSee('Especificaciones / Hardware');
+        $resRep->assertSee('i5-10400');
+    }
 }
+
 
 
 
