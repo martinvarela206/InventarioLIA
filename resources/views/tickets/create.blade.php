@@ -125,6 +125,24 @@
             </div>
 
             <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Área o Especialidad Inicial Involucrada
+                </label>
+                <select name="area_id" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all">
+                    <option value="">-- Seleccionar área inicial (opcional) --</option>
+                    @foreach($areas as $ar)
+                        <option value="{{ $ar->id }}" {{ old('area_id') == $ar->id ? 'selected' : '' }}>
+                            {{ $ar->nombre }} @if($ar->descripcion) - {{ $ar->descripcion }} @endif
+                        </option>
+                    @endforeach
+                </select>
+                <p class="text-[11px] text-gray-400 mt-1">El área es acumulativa: los técnicos podrán sumar más áreas de especialidad si la falla lo requiere sin desvincular la original.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Detalle de los Síntomas y Anomalías <span class="text-rose-500 font-bold">*</span>
+                </label>
                 <textarea name="comentario" rows="4" required
                           placeholder="Describa el comportamiento anómalo detectado: reinicios espontáneos, código de error en pantalla, capacitor inflado, artefactos visuales, daño físico, ruido en ventilador, etc."
                           class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all">{{ old('comentario') }}</textarea>

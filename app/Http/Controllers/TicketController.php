@@ -11,6 +11,7 @@ use App\Models\Movimiento;
 use App\Models\MovimientoAdjunto;
 use App\Models\Elemento;
 use App\Models\Ubicacion;
+use App\Models\Area;
 
 class TicketController extends Controller
 {
@@ -32,6 +33,7 @@ class TicketController extends Controller
         }
 
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
+        $areas = Area::where('activo', true)->orderBy('nombre')->get();
         $solicitantesFrecuentes = Movimiento::whereNotNull('solicitante')
             ->where('solicitante', '!=', '')
             ->distinct()
@@ -39,7 +41,7 @@ class TicketController extends Controller
             ->limit(25)
             ->pluck('solicitante');
 
-        return view('tickets.create', compact('informante', 'isTec', 'elemento', 'ubicaciones', 'solicitantesFrecuentes'));
+        return view('tickets.create', compact('informante', 'isTec', 'elemento', 'ubicaciones', 'areas', 'solicitantesFrecuentes'));
     }
 
     /**
@@ -49,6 +51,7 @@ class TicketController extends Controller
     {
         $validated = $request->validate([
             'elemento_id' => 'required|exists:elementos,id',
+            'area_id' => 'nullable|exists:areas,id',
             'comentario' => 'required|string|min:5',
             'solicitante' => 'nullable|string|max:150',
             'tipo_traslado' => 'nullable|in:insitu,taller',
@@ -90,6 +93,13 @@ class TicketController extends Controller
                 'comentario' => $validated['comentario'],
             ]);
 
+            if (!empty($validated['area_id'])) {
+                $movimiento->areas()->attach($validated['area_id'], [
+                    'user_id' => $user->id,
+                    'created_at' => now(),
+                ]);
+            }
+
             if ($request->hasFile('fotos')) {
                 foreach ($request->file('fotos') as $foto) {
                     if ($foto && $foto->isValid()) {
@@ -123,7 +133,7 @@ class TicketController extends Controller
     {
         $estado = $request->input('estado', 'abierto');
 
-        $query = Movimiento::tickets()->with(['elemento.tipo', 'ubicacion', 'usuario', 'adjuntos']);
+        $query = Movimiento::tickets()->with(['elemento.tipo', 'ubicacion', 'usuario', 'adjuntos', 'areas']);
 
         if ($estado === 'resuelto') {
             $query->where('estado_ticket', 'resuelto');
@@ -133,6 +143,12 @@ class TicketController extends Controller
             // todos los tickets
         } else {
             $query->ticketsAbiertos();
+        }
+
+        if ($request->filled('area_id')) {
+            $query->whereHas('areas', function ($q) use ($request) {
+                $q->where('areas.id', $request->area_id);
+            });
         }
 
         if ($request->filled('search')) {
@@ -151,12 +167,13 @@ class TicketController extends Controller
 
         $tickets = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
 
+        $areas = Area::where('activo', true)->orderBy('nombre')->get();
         $conteoAbiertos = Movimiento::ticketsAbiertos()->count();
         $conteoResueltos = Movimiento::tickets()->where('estado_ticket', 'resuelto')->count();
         $conteoBajas = Movimiento::tickets()->where('estado_ticket', 'baja')->count();
         $conteoTodos = Movimiento::tickets()->count();
 
-        return view('tickets.index', compact('tickets', 'estado', 'conteoAbiertos', 'conteoResueltos', 'conteoBajas', 'conteoTodos'));
+        return view('tickets.index', compact('tickets', 'estado', 'areas', 'conteoAbiertos', 'conteoResueltos', 'conteoBajas', 'conteoTodos'));
     }
 
     /**
@@ -173,6 +190,7 @@ class TicketController extends Controller
             'resoluciones.usuario',
             'resoluciones.ubicacion',
             'comentarios.usuario',
+            'areas',
         ])->findOrFail($id);
 
         // Movimiento previo al ingreso del ticket para heredar ubicación original
@@ -189,8 +207,9 @@ class TicketController extends Controller
             ->first();
 
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
+        $areas = Area::where('activo', true)->orderBy('nombre')->get();
 
-        return view('tickets.show', compact('ticket', 'movPrevio', 'ultimoPrestamo', 'ubicaciones'));
+        return view('tickets.show', compact('ticket', 'movPrevio', 'ultimoPrestamo', 'ubicaciones', 'areas'));
     }
 
     /**
@@ -201,6 +220,7 @@ class TicketController extends Controller
     {
         $validated = $request->validate([
             'mensaje' => 'required|string|min:3',
+            'nueva_area_id' => 'nullable|exists:areas,id',
         ]);
 
         $ticket = Movimiento::findOrFail($id);
@@ -213,8 +233,42 @@ class TicketController extends Controller
             'tipo' => 'comentario',
         ]);
 
+        if (!empty($validated['nueva_area_id'])) {
+            $ticket->areas()->syncWithoutDetaching([
+                $validated['nueva_area_id'] => [
+                    'user_id' => $user->id,
+                    'created_at' => now(),
+                ]
+            ]);
+        }
+
         return redirect()->route('tickets.show', $ticket->id)
             ->with('success', 'Mensaje registrado en la bitácora del ticket.');
+    }
+
+    /**
+     * Permite asociar o acumular un área de especialidad adicional al ticket.
+     */
+    public function agregarArea(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'area_id' => 'required|exists:areas,id',
+        ]);
+
+        $ticket = Movimiento::findOrFail($id);
+        $user = Auth::user();
+
+        $ticket->areas()->syncWithoutDetaching([
+            $validated['area_id'] => [
+                'user_id' => $user->id,
+                'created_at' => now(),
+            ]
+        ]);
+
+        $area = Area::find($validated['area_id']);
+
+        return redirect()->route('tickets.show', $ticket->id)
+            ->with('success', "Área '{$area->nombre}' vinculada acumulativamente al ticket.");
     }
 
     /**
@@ -231,6 +285,7 @@ class TicketController extends Controller
 
         $validated = $request->validate([
             'solucion' => 'required|string|min:5',
+            'nueva_area_id' => 'nullable|exists:areas,id',
         ]);
 
         $ticket = Movimiento::findOrFail($id);
@@ -242,6 +297,15 @@ class TicketController extends Controller
 
         $ticket->estado_ticket = 'solucionado';
         $ticket->save();
+
+        if (!empty($validated['nueva_area_id'])) {
+            $ticket->areas()->syncWithoutDetaching([
+                $validated['nueva_area_id'] => [
+                    'user_id' => $user->id,
+                    'created_at' => now(),
+                ]
+            ]);
+        }
 
         \App\Models\TicketComentario::create([
             'ticket_id' => $ticket->id,

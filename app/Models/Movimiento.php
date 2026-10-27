@@ -9,6 +9,7 @@ use App\Presenters\MovimientoPresenter;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Builder;
 
 class Movimiento extends Model
@@ -152,6 +153,12 @@ class Movimiento extends Model
     public function comentarios(): HasMany
     {
         return $this->hasMany(TicketComentario::class, 'ticket_id')->orderBy('id', 'asc');
+    }
+
+    public function areas(): BelongsToMany
+    {
+        return $this->belongsToMany(Area::class, 'ticket_areas', 'ticket_id', 'area_id')
+            ->withPivot('user_id', 'created_at');
     }
 
     public function esReparacion(): bool

@@ -2407,5 +2407,87 @@ class InventarioDevTest extends TestCase
         $resVacio->assertSee('El usuario no posee participaciones registradas en tickets');
         $resVacio->assertSee('El usuario no posee registros históricos de movimientos');
     }
+
+    public function test_areas_multidisciplinarias_y_acumulativas_en_tickets(): void
+    {
+        $rolTec = Rol::firstOrCreate(['rol' => 'tec']);
+        $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+        $rolReg = Rol::firstOrCreate(['rol' => 'registered']);
+
+        $tec = Usuario::create([
+            'email' => 'tec_area_test@lia.com',
+            'nombre' => 'Tec Area Test',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $tec->roles()->sync([$rolReg->id, $rolTec->id]);
+
+        $rev = Usuario::create([
+            'email' => 'rev_area_test@lia.com',
+            'nombre' => 'Rev Area Test',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $rev->roles()->sync([$rolReg->id, $rolRev->id]);
+
+        $tipo = \App\Models\Tipo::firstOrCreate(['nombre' => 'Laptop']);
+        $ubicacion = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Redes']);
+
+        $areaHw = \App\Models\Area::firstOrCreate(['codigo' => 'HW'], ['nombre' => 'Hardware', 'color' => '#f97316', 'activo' => true]);
+        $areaSw = \App\Models\Area::firstOrCreate(['codigo' => 'SW'], ['nombre' => 'Software', 'color' => '#3b82f6', 'activo' => true]);
+
+        $elemento = \App\Models\Elemento::create([
+            'nro_lia' => 'LIA-AREA-TEST',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'Latitude 5420',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        // 1. Crear ticket con área inicial Hardware
+        $resStore = $this->actingAs($rev)->post(route('tickets.store'), [
+            'elemento_id' => $elemento->id,
+            'area_id' => $areaHw->id,
+            'comentario' => 'Falla de pantalla azul persistente y posible capacitor quemado',
+            'tipo_traslado' => 'insitu',
+        ]);
+        $resStore->assertRedirect(route('dashboard.index'));
+
+        $ticket = \App\Models\Movimiento::where('elemento_id', $elemento->id)
+            ->where('tipo_movimiento', 'reparacion')
+            ->first();
+        $this->assertNotNull($ticket);
+        $this->assertTrue($ticket->areas->contains('id', $areaHw->id));
+        $this->assertCount(1, $ticket->areas);
+
+        // 2. Acumular área Software vía comentario/hilo
+        $resComentario = $this->actingAs($tec)->post(route('tickets.comentar', $ticket->id), [
+            'mensaje' => 'Se detectó además corrupción en el kernel de Windows, requiere intervención de Software',
+            'nueva_area_id' => $areaSw->id,
+        ]);
+        $resComentario->assertRedirect(route('tickets.show', $ticket->id));
+
+        $ticket->refresh();
+        $this->assertCount(2, $ticket->areas);
+        $this->assertTrue($ticket->areas->contains('id', $areaHw->id));
+        $this->assertTrue($ticket->areas->contains('id', $areaSw->id));
+
+        // 3. Filtrar bandeja de tickets por área
+        $resFiltroHw = $this->actingAs($tec)->get(route('tickets.index', ['area_id' => $areaHw->id]));
+        $resFiltroHw->assertStatus(200);
+        $resFiltroHw->assertSee('LIA-AREA-TEST');
+        $resFiltroHw->assertSee('Hardware');
+        $resFiltroHw->assertSee('Software');
+
+        // 4. Verificación en la vista de detalle
+        $resShow = $this->actingAs($tec)->get(route('tickets.show', $ticket->id));
+        $resShow->assertStatus(200);
+        $resShow->assertSee('Áreas Involucradas (Multidisciplinario)');
+        $resShow->assertSee('Hardware');
+        $resShow->assertSee('Software');
+    }
 }
+
 

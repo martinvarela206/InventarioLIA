@@ -87,6 +87,7 @@ Route::middleware('auth')->group(function () {
         Route::middleware('role:rev,subtec,tec,item_admin,user_admin,app_admin')->group(function () {
             Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
             Route::post('/tickets/{ticket}/comentar', [TicketController::class, 'comentar'])->name('tickets.comentar');
+            Route::post('/tickets/{ticket}/area', [TicketController::class, 'agregarArea'])->name('tickets.agregarArea');
         });
 
         // Bandeja y Solución Técnica de Tickets (subtec, tec)
