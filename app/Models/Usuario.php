@@ -60,6 +60,31 @@ class Usuario extends Authenticatable
         return $this->hasMany(UsuarioTrayectoria::class, 'user_id')->orderBy('fecha_inicio', 'desc');
     }
 
+    public function isExPersonalMayor6Anios(): bool
+    {
+        if ($this->activo) {
+            return false;
+        }
+
+        if ($this->relationLoaded('trayectorias')) {
+            $ultima = $this->trayectorias->whereNotNull('fecha_fin')->sortByDesc('fecha_fin')->first();
+        } else {
+            $ultima = $this->trayectorias()->whereNotNull('fecha_fin')->orderBy('fecha_fin', 'desc')->first();
+        }
+
+        if ($ultima && $ultima->fecha_fin) {
+            $fechaFin = $ultima->fecha_fin instanceof \Carbon\Carbon ? $ultima->fecha_fin : \Carbon\Carbon::parse($ultima->fecha_fin);
+            return $fechaFin->diffInYears(now()) >= 6;
+        }
+
+        return false;
+    }
+
+    public function esAnonimizado(): bool
+    {
+        return str_starts_with((string)$this->email, 'anonimo_') || str_starts_with((string)$this->nombre, 'Usuario Anonimizado');
+    }
+
     public function hasRole(string|array $role): bool
     {
         $roleList = is_array($role) ? $role : func_get_args();

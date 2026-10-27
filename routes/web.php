@@ -120,6 +120,7 @@ Route::middleware('auth')->group(function () {
             Route::resource('users', UserController::class)->only(['index', 'edit', 'update']);
             Route::post('/users/{user}/role', [UserController::class, 'toggleRole'])->name('users.toggleRole');
             Route::post('/users/{user}/toggle-activo', [UserController::class, 'toggleActivo'])->name('users.toggleActivo');
+            Route::post('/users/{user}/anonimizar', [UserController::class, 'anonimizar'])->name('users.anonimizar');
             Route::get('/users/{user}/trayectoria', [UserController::class, 'trayectoria'])->name('users.trayectoria');
             Route::post('/users/{user}/trayectoria', [UserController::class, 'storeTrayectoria'])->name('users.trayectoria.store');
             Route::delete('/trayectorias/{trayectoria}', [UserController::class, 'destroyTrayectoria'])->name('trayectorias.destroy');

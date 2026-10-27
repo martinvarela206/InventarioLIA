@@ -130,4 +130,35 @@ class UserController extends Controller
         return redirect()->route('users.trayectoria', $userId)
             ->with('success', 'Periodo de trayectoria eliminado.');
     }
+
+    /**
+     * Aplica el derecho al olvido y borrado irreversible de huella digital (Ley 25.326)
+     * a personal desvinculado con antigüedad mayor a 6 años, preservando integridad relacional.
+     */
+    public function anonimizar(Usuario $user): RedirectResponse
+    {
+        if ($user->activo) {
+            return redirect()->route('users.index')
+                ->with('error', 'No se puede anonimizar un usuario que se encuentra activo en el sistema.');
+        }
+
+        $id = $user->id;
+        $user->update([
+            'nombre' => "Usuario Anonimizado #{$id}",
+            'email' => "anonimo_{$id}@anonimizado.lia.local",
+            'dni' => null,
+            'whatsapp' => null,
+            'direccion' => null,
+            'fecha_nacimiento' => null,
+            'cargo_actual' => 'Ex-personal (Huella Anonimizada)',
+            'carrera' => null,
+            'activo' => false,
+            'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(32)),
+        ]);
+
+        $user->roles()->detach();
+
+        return redirect()->route('users.index')
+            ->with('success', "Se ha borrado la huella digital del usuario #{$id} conforme a la Ley 25.326. Sus datos personales han sido anonimizados de forma irreversible.");
+    }
 }

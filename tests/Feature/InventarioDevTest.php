@@ -2271,5 +2271,63 @@ class InventarioDevTest extends TestCase
             'estado_ticket' => 'resuelto',
         ]);
     }
+
+    public function test_seeder_cuentas_reales_roles_y_anonimizacion_ley_25326(): void
+    {
+        $this->seed(\Database\Seeders\RoleSeeder::class);
+        $this->seed(\Database\Seeders\UserSeeder::class);
+
+        // 1. Verificación de cuentas oficiales
+        $flavia = \App\Models\Usuario::where('email', 'flavia@lia.com')->firstOrFail();
+        $this->assertTrue($flavia->hasRole(['user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev', 'registered']));
+
+        $marcelo = \App\Models\Usuario::where('email', 'marcelo@lia.com')->firstOrFail();
+        $this->assertTrue($marcelo->hasRole('subtec'));
+        $this->assertTrue($marcelo->hasRole('tec'));
+        $this->assertTrue($marcelo->hasRole('rev'));
+        $this->assertFalse($marcelo->hasRole('user_admin'));
+
+        $cristina = \App\Models\Usuario::where('email', 'cristina@lia.com')->firstOrFail();
+        $this->assertTrue($cristina->hasRole('user_admin'));
+        $this->assertTrue($cristina->hasRole('app_admin'));
+        $this->assertFalse($cristina->hasRole('tec'));
+
+        $martin = \App\Models\Usuario::where('email', 'martin@lia.com')->firstOrFail();
+        $this->assertTrue($martin->hasRole('rev'));
+        $this->assertFalse($martin->hasRole('tec'));
+
+        // 2. Verificación de casos > 6 años
+        $carlos = \App\Models\Usuario::where('email', 'carlos.gomez@ex-lia.com')->firstOrFail();
+        $this->assertFalse($carlos->activo);
+        $this->assertTrue($carlos->isExPersonalMayor6Anios());
+
+        $laura = \App\Models\Usuario::where('email', 'laura.martinez@ex-lia.com')->firstOrFail();
+        $this->assertFalse($laura->activo);
+        $this->assertTrue($laura->isExPersonalMayor6Anios());
+
+        // 3. Visualización en panel de User Admin
+        $resIndex = $this->actingAs($flavia)->get(route('users.index'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Plazo Legal Cumplido');
+        $resIndex->assertSee('Borrar Huella');
+
+        // 4. Ejecución del borrado de huella digital y anonimización (Ley 25.326)
+        $resAnon = $this->actingAs($flavia)->post(route('users.anonimizar', $carlos->id));
+        $resAnon->assertRedirect(route('users.index'));
+
+        $carlos->refresh();
+        $this->assertTrue($carlos->esAnonimizado());
+        $this->assertNull($carlos->dni);
+        $this->assertNull($carlos->whatsapp);
+        $this->assertStringStartsWith('anonimo_' . $carlos->id, $carlos->email);
+        $this->assertCount(0, $carlos->roles);
+
+        // Su historial de trayectorias permanece íntegro sin quebrar claves foráneas
+        $this->assertGreaterThan(0, $carlos->trayectorias()->count());
+
+        // La vista de usuarios ahora refleja el estado anonimizado
+        $resIndexDespues = $this->actingAs($flavia)->get(route('users.index'));
+        $resIndexDespues->assertSee('Huella Anonimizada (Ley 25.326)');
+    }
 }
 
