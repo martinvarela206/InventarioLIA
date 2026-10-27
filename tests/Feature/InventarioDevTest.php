@@ -3023,6 +3023,57 @@ class InventarioDevTest extends TestCase
         $resDestroy->assertRedirect(route('app_admin.avisos'));
         $this->assertDatabaseMissing('avisos_seguridad', ['id' => $aviso->id]);
     }
+
+    public function test_panel_carrusel_flotante_concientizacion_en_landing_y_welcome_registered(): void
+    {
+        // 1. Crear avisos de prueba (uno activo y uno inactivo)
+        $avisoActivo = \App\Models\AvisoSeguridad::create([
+            'titulo' => 'Consejo Activo de Prueba Ciberseguridad',
+            'descripcion' => 'Recomendación vigente para toda la comunidad académica del LIA.',
+            'severidad' => 'warning',
+            'icono' => 'shield',
+            'orden' => 1,
+            'activo' => true,
+        ]);
+
+        $avisoInactivo = \App\Models\AvisoSeguridad::create([
+            'titulo' => 'Aviso Oculto Desactivado Test',
+            'descripcion' => 'Este consejo no debe figurar en ningún carrusel público ni de bienvenida.',
+            'severidad' => 'info',
+            'icono' => 'lock',
+            'orden' => 99,
+            'activo' => false,
+        ]);
+
+        // 2. Comprobar landing page pública (/)
+        $resLanding = $this->get('/');
+        $resLanding->assertStatus(200);
+        $resLanding->assertSee('Cultura de Seguridad LIA');
+        $resLanding->assertSee('Consejo Activo de Prueba Ciberseguridad');
+        $resLanding->assertSee('Recomendación vigente para toda la comunidad académica del LIA.');
+        $resLanding->assertDontSee('Aviso Oculto Desactivado Test');
+        // Debe encontrarse entre el Hero y la sección Cómo funciona
+        $resLanding->assertSeeInOrder([
+            'BIENVENIDO AL SISTEMA LIA',
+            'Cultura de Seguridad LIA',
+            'COMO FUNCIONA',
+        ]);
+
+        // 3. Comprobar pantalla de bienvenida para usuario con rol registered exclusivo
+        $userRegistered = Usuario::create([
+            'nombre' => 'Alumno Registered Test',
+            'email' => 'alumno_reg@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $userRegistered->roles()->attach(Rol::where('rol', 'registered')->first());
+
+        $resBienvenida = $this->actingAs($userRegistered)->get(route('bienvenida'));
+        $resBienvenida->assertStatus(200);
+        $resBienvenida->assertSee('Cultura de Ciberseguridad LIA');
+        $resBienvenida->assertSee('Consejo Activo de Prueba Ciberseguridad');
+        $resBienvenida->assertDontSee('Aviso Oculto Desactivado Test');
+    }
 }
 
 

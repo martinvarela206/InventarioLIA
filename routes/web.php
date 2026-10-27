@@ -15,6 +15,7 @@ use App\Http\Controllers\TicketController;
 use App\Models\EspacioLia;
 use App\Models\PersonalLia;
 use App\Models\ActividadLia;
+use App\Models\AvisoSeguridad;
 
 // Autenticación
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -29,7 +30,8 @@ Route::get('/', function () {
     $espacios = EspacioLia::activos()->get();
     $personal = PersonalLia::activos()->get();
     $actividades = ActividadLia::activos()->with('autor')->take(6)->get();
-    return view('welcome', compact('espacios', 'personal', 'actividades'));
+    $avisos = AvisoSeguridad::activos()->get();
+    return view('welcome', compact('espacios', 'personal', 'actividades', 'avisos'));
 });
 
 // Rutas de revisión técnica / registro
@@ -42,7 +44,8 @@ Route::middleware('auth')->group(function () {
         if (Auth::user()->hasActivePermissions()) {
             return redirect()->route('dashboard.index');
         }
-        return view('auth.bienvenida');
+        $avisos = AvisoSeguridad::activos()->get();
+        return view('auth.bienvenida', compact('avisos'));
     })->name('bienvenida');
 
     // Perfil de Usuario (requiere rol registered para gestionar sus datos personales)
