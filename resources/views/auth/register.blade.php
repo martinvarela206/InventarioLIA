@@ -32,13 +32,14 @@
                     @enderror
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="dni">
-                            DNI (Opcional)
-                        </label>
-                        <input class="w-full border rounded-xl px-3.5 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="dni" type="text" name="dni" value="{{ old('dni') }}" placeholder="35123456">
-                    </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="dni">
+                        DNI (Opcional)
+                    </label>
+                    <input class="w-full border rounded-xl px-3.5 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="dni" type="text" name="dni" value="{{ old('dni') }}" placeholder="35123456">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                     <div>
                         <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="carrera_id">
                             Carrera Universitaria
@@ -48,6 +49,19 @@
                             @foreach($carreras as $c)
                                 <option value="{{ $c->id }}" {{ old('carrera_id') == $c->id ? 'selected' : '' }}>
                                     {{ $c->nombre }} {{ $c->codigo ? "({$c->codigo})" : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="cargo_id">
+                            Cargo en el Laboratorio
+                        </label>
+                        <select class="w-full border rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium" id="cargo_id" name="cargo_id">
+                            <option value="">Selecciona tu cargo (opcional)...</option>
+                            @foreach($cargos as $cargo)
+                                <option value="{{ $cargo->id }}" {{ old('cargo_id') == $cargo->id ? 'selected' : '' }}>
+                                    {{ $cargo->nombre }}
                                 </option>
                             @endforeach
                         </select>

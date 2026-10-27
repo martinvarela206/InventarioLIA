@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Usuario;
 use App\Models\Rol;
 use App\Models\Carrera;
+use App\Models\Cargo;
 use App\Models\UsuarioTrayectoria;
 use App\Models\Movimiento;
 use App\Models\ReporteConfigurado;
@@ -49,7 +50,7 @@ class UserController extends Controller
     {
         $roles = Rol::all();
         $carreras = Carrera::orderBy('nombre')->get();
-        $cargos = self::CARGOS_ESTANDAR;
+        $cargos = Cargo::activos()->orderBy('orden')->orderBy('nombre')->get();
         return view('users.edit', compact('user', 'roles', 'carreras', 'cargos'));
     }
 
@@ -60,8 +61,8 @@ class UserController extends Controller
             'email' => 'required|email|max:150|unique:usuarios,email,' . $user->id,
             'dni' => 'nullable|string|max:15|unique:usuarios,dni,' . $user->id,
             'fecha_nacimiento' => 'nullable|date',
-            'carrera' => 'nullable|string|max:100',
-            'cargo_actual' => 'nullable|string|max:50',
+            'carrera_id' => 'nullable|exists:carreras,id',
+            'cargo_id' => 'nullable|exists:cargos,id',
             'whatsapp' => 'nullable|string|max:30',
             'direccion' => 'nullable|string|max:255',
             'activo' => 'nullable|boolean',
@@ -117,7 +118,7 @@ class UserController extends Controller
     public function trayectoria(Usuario $user): View
     {
         $user->load('trayectorias');
-        $cargos = self::CARGOS_ESTANDAR;
+        $cargos = Cargo::activos()->orderBy('orden')->orderBy('nombre')->get();
         return view('users.trayectoria', compact('user', 'cargos'));
     }
 

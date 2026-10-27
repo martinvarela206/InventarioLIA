@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Usuario;
 use App\Models\Rol;
 use App\Models\UsuarioTrayectoria;
+use App\Models\Cargo;
+use App\Models\Carrera;
 
 class UserSeeder extends Seeder
 {
@@ -16,6 +18,8 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $roles = Rol::all()->keyBy('rol');
+        $cargosMap = Cargo::all()->pluck('id', 'nombre');
+        $carrerasMap = Carrera::all()->pluck('id', 'nombre');
 
         $users = [
             // Usuarios Oficiales y Cuentas Reales
@@ -161,6 +165,24 @@ class UserSeeder extends Seeder
             $trayectoriaFin = $u['trayectoria_fin'] ?? null;
             $trayectoriaCargo = $u['trayectoria_cargo'] ?? null;
             unset($u['trayectoria_inicio'], $u['trayectoria_fin'], $u['trayectoria_cargo']);
+
+            $cargoNombre = $u['cargo_actual'] ?? null;
+            $carreraNombre = $u['carrera'] ?? null;
+            unset($u['cargo_actual'], $u['carrera']);
+
+            if ($cargoNombre) {
+                $cargoId = $cargosMap[$cargoNombre] ?? null;
+                if (!$cargoId) {
+                    $nuevoCargo = Cargo::firstOrCreate(['nombre' => $cargoNombre]);
+                    $cargoId = $nuevoCargo->id;
+                    $cargosMap[$cargoNombre] = $cargoId;
+                }
+                $u['cargo_id'] = $cargoId;
+            }
+
+            if ($carreraNombre && isset($carrerasMap[$carreraNombre])) {
+                $u['carrera_id'] = $carrerasMap[$carreraNombre];
+            }
 
             $user = Usuario::firstOrCreate(['email' => $u['email']], $u);
             

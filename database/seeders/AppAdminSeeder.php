@@ -23,7 +23,6 @@ class AppAdminSeeder extends Seeder
             ['nombre' => 'Licenciatura en Astronomía', 'codigo' => 'LA', 'activa' => true],
             ['nombre' => 'Licenciatura en Biología', 'codigo' => 'LB', 'activa' => true],
             ['nombre' => 'Licenciatura en Ciencias Geológicas', 'codigo' => 'LCG', 'activa' => true],
-            ['nombre' => 'Analista Programador Universitario (Plan Anterior)', 'codigo' => 'APU-HIST', 'activa' => false], // Ejemplo histórico
         ];
 
         foreach ($carreras as $c) {

@@ -102,8 +102,15 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
-                    <label for="carrera" class="block text-xs font-bold text-gray-700 uppercase mb-1">Carrera / Área Académica</label>
-                    <input type="text" name="carrera" id="carrera" list="lista-carreras-perfil" value="{{ old('carrera', $user->carrera) }}" placeholder="Seleccione o escriba su carrera..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    <label for="carrera_id" class="block text-xs font-bold text-gray-700 uppercase mb-1">Carrera / Área Académica</label>
+                    <select name="carrera_id" id="carrera_id" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                        <option value="">Seleccione su carrera...</option>
+                        @foreach($carreras as $c)
+                            <option value="{{ $c->id }}" {{ old('carrera_id', $user->carrera_id ?? ($carreras->firstWhere('nombre', $user->carrera)?->id)) == $c->id ? 'selected' : '' }}>
+                                {{ $c->nombre }} {{ $c->codigo ? "({$c->codigo})" : '' }}
+                            </option>
+                        @endforeach
+                    </select>
                     <datalist id="lista-carreras-perfil">
                         @foreach($carreras as $c)
                             <option value="{{ $c->nombre }}">{{ $c->codigo ? "({$c->codigo})" : '' }}</option>
@@ -111,11 +118,21 @@
                     </datalist>
                 </div>
                 <div>
-                    <label for="cargo_actual" class="block text-xs font-bold text-gray-700 uppercase mb-1">Cargo en el Laboratorio</label>
-                    <input type="text" name="cargo_actual" id="cargo_actual" list="lista-cargos-perfil" value="{{ old('cargo_actual', $user->cargo_actual) }}" placeholder="Seleccione o escriba su cargo..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    <label for="cargo_id" class="block text-xs font-bold text-gray-700 uppercase mb-1">Cargo en el Laboratorio</label>
+                    <select name="cargo_id" id="cargo_id" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                        <option value="">Seleccione su cargo...</option>
+                        @foreach($cargos as $cargo)
+                            <option value="{{ $cargo->id }}" {{ old('cargo_id', $user->cargo_id ?? ($cargos->firstWhere('nombre', $user->cargo_actual)?->id)) == $cargo->id ? 'selected' : '' }}>
+                                {{ $cargo->nombre }}
+                            </option>
+                        @endforeach
+                        @if($user->cargo_actual && !$cargos->contains('nombre', $user->cargo_actual))
+                            <option value="" selected disabled>{{ $user->cargo_actual }} (Histórico)</option>
+                        @endif
+                    </select>
                     <datalist id="lista-cargos-perfil">
                         @foreach($cargos as $cargo)
-                            <option value="{{ $cargo }}"></option>
+                            <option value="{{ $cargo->nombre }}"></option>
                         @endforeach
                     </datalist>
                 </div>

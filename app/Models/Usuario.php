@@ -21,9 +21,8 @@ class Usuario extends Authenticatable
         'password',
         'dni',
         'fecha_nacimiento',
-        'carrera',
         'carrera_id',
-        'cargo_actual',
+        'cargo_id',
         'whatsapp',
         'direccion',
         'activo',
@@ -60,9 +59,27 @@ class Usuario extends Authenticatable
         return $this->belongsTo(Carrera::class, 'carrera_id');
     }
 
+    public function cargoRelacion(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Cargo::class, 'cargo_id');
+    }
+
+    public function getCarreraAttribute(): ?string
+    {
+        return $this->carreraRelacion?->nombre;
+    }
+
+    public function getCargoActualAttribute(): ?string
+    {
+        if ($this->esHistorico()) {
+            return 'Ex Colaborador Histórico';
+        }
+        return $this->cargoRelacion?->nombre;
+    }
+
     public function getCarreraNombreAttribute(): string
     {
-        return $this->carreraRelacion?->nombre ?? $this->carrera ?? 'Sin carrera';
+        return $this->carreraRelacion?->nombre ?? 'Sin carrera';
     }
 
     public function trayectorias(): HasMany
@@ -140,9 +157,8 @@ class Usuario extends Authenticatable
         $this->whatsapp = null;
         $this->direccion = null;
         $this->fecha_nacimiento = null;
-        $this->carrera = null;
         $this->carrera_id = null;
-        $this->cargo_actual = 'Ex Colaborador Histórico';
+        $this->cargo_id = null;
         $this->nombre = "Usuario Histórico #{$id}";
         $this->email = "historico_{$id}@lia.local";
         $this->password = bcrypt(\Illuminate\Support\Str::random(40));

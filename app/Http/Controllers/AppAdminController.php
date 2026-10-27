@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Carrera;
+use App\Models\Cargo;
 use App\Models\EspacioLia;
 use App\Models\PersonalLia;
 use App\Models\ActividadLia;
@@ -24,6 +25,8 @@ class AppAdminController extends Controller
     {
         $totalCarreras = Carrera::count();
         $carrerasActivas = Carrera::activas()->count();
+        $totalCargos = Cargo::count();
+        $cargosActivos = Cargo::activos()->count();
         $totalEspacios = EspacioLia::count();
         $totalPersonal = PersonalLia::count();
         $totalActividades = ActividadLia::count();
@@ -40,6 +43,8 @@ class AppAdminController extends Controller
         return view('admin.app.index', compact(
             'totalCarreras',
             'carrerasActivas',
+            'totalCargos',
+            'cargosActivos',
             'totalEspacios',
             'totalPersonal',
             'totalActividades',
@@ -98,28 +103,86 @@ class AppAdminController extends Controller
     public function carreraToggle(Carrera $carrera): RedirectResponse
     {
         $carrera->update(['activa' => !$carrera->activa]);
-        $estado = $carrera->activa ? 'habilitada' : 'deshabilitada / archivada';
+        $estado = $carrera->activa ? 'habilitada' : 'deshabilitada';
 
         return redirect()->route('app_admin.carreras')
-            ->with('success', "La carrera {$carrera->nombre} fue {$estado}. Los usuarios históricos mantienen su registro inmutable.");
+            ->with('success', "La carrera {$carrera->nombre} fue {$estado}.");
     }
 
     public function carreraDestroy(Carrera $carrera): RedirectResponse
     {
-        if ($carrera->usuarios()->exists()) {
-            // Preservación histórica garantizada: no borrar físicamente si hay usuarios
-            $carrera->update(['activa' => false]);
-            return redirect()->route('app_admin.carreras')
-                ->with('success', "La carrera {$carrera->nombre} cuenta con {$carrera->usuarios()->count()} usuarios asociados. Se desactivó de la oferta de registro para proteger el historial inmutable.");
-        }
-
+        Usuario::where('carrera_id', $carrera->id)->update(['carrera_id' => null]);
         $carrera->delete();
+
         return redirect()->route('app_admin.carreras')
-            ->with('success', 'Carrera eliminada exitosamente del catálogo.');
+            ->with('success', 'Carrera eliminada exitosamente.');
     }
 
     // ==========================================
-    // 2. GESTIÓN DE ESPACIOS DEL LIA (FOTOS)
+    // 2. GESTIÓN DE CARGOS DEL LABORATORIO
+    // ==========================================
+    public function cargosIndex(): View
+    {
+        $cargos = Cargo::withCount('usuarios')->orderBy('orden')->orderBy('nombre')->get();
+        return view('admin.app.cargos', compact('cargos'));
+    }
+
+    public function cargoStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100|unique:cargos,nombre',
+            'descripcion' => 'nullable|string|max:255',
+            'orden' => 'nullable|integer',
+            'activo' => 'nullable|boolean',
+        ]);
+
+        $validated['activo'] = $request->has('activo');
+        $validated['orden'] = $validated['orden'] ?? 0;
+
+        Cargo::create($validated);
+
+        return redirect()->route('app_admin.cargos')
+            ->with('success', 'Cargo del laboratorio registrado exitosamente.');
+    }
+
+    public function cargoUpdate(Request $request, Cargo $cargo): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100|unique:cargos,nombre,' . $cargo->id,
+            'descripcion' => 'nullable|string|max:255',
+            'orden' => 'nullable|integer',
+            'activo' => 'nullable|boolean',
+        ]);
+
+        $validated['activo'] = $request->has('activo');
+        $validated['orden'] = $validated['orden'] ?? 0;
+
+        $cargo->update($validated);
+
+        return redirect()->route('app_admin.cargos')
+            ->with('success', 'Datos del cargo actualizados correctamente.');
+    }
+
+    public function cargoToggle(Cargo $cargo): RedirectResponse
+    {
+        $cargo->update(['activo' => !$cargo->activo]);
+        $estado = $cargo->activo ? 'habilitado' : 'deshabilitado';
+
+        return redirect()->route('app_admin.cargos')
+            ->with('success', "El cargo {$cargo->nombre} fue {$estado}.");
+    }
+
+    public function cargoDestroy(Cargo $cargo): RedirectResponse
+    {
+        Usuario::where('cargo_id', $cargo->id)->update(['cargo_id' => null]);
+        $cargo->delete();
+
+        return redirect()->route('app_admin.cargos')
+            ->with('success', 'Cargo eliminado exitosamente.');
+    }
+
+    // ==========================================
+    // 3. GESTIÓN DE ESPACIOS DEL LIA (FOTOS)
     // ==========================================
     public function espaciosIndex(): View
     {

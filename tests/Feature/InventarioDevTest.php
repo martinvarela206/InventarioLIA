@@ -3084,8 +3084,6 @@ class InventarioDevTest extends TestCase
             'password' => bcrypt('password123'),
             'dni' => '28999111',
             'fecha_nacimiento' => '1982-03-15',
-            'carrera' => 'Licenciatura en Computación',
-            'cargo_actual' => 'Ayudante Técnico',
             'whatsapp' => '+5492641122334',
             'direccion' => 'Av. Ignacio de la Roza 590',
             'activo' => false,
@@ -3425,6 +3423,104 @@ class InventarioDevTest extends TestCase
         // 4. Verificar volumen persistente mariadb_audit_logs montado y declarado
         $this->assertStringContainsString('mariadb_audit_logs:/var/log/mysql', $content);
         $this->assertMatchesRegularExpression('/mariadb_audit_logs:\s+driver:\s+local/', $content);
+    }
+
+    public function test_gestion_de_cargos_y_carreras_por_app_admin_y_seleccion_en_perfil_y_registro(): void
+    {
+        $appAdmin = Usuario::create([
+            'nombre' => 'App Admin Cargos Test',
+            'email' => 'appadmin_cargos@lia.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $appAdmin->roles()->attach(Rol::where('rol', 'app_admin')->first());
+        $appAdmin->roles()->attach(Rol::where('rol', 'registered')->first());
+
+        // 1. app_admin gestiona cargos
+        $resIndex = $this->actingAs($appAdmin)->get(route('app_admin.cargos'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Cargos y Funciones en el Laboratorio');
+
+        // Store
+        $resStore = $this->actingAs($appAdmin)->post(route('app_admin.cargos.store'), [
+            'nombre' => 'Investigador Principal LIA',
+            'descripcion' => 'Líder de proyectos de IA aplicada',
+            'orden' => 15,
+            'activo' => 1,
+        ]);
+        $resStore->assertRedirect(route('app_admin.cargos'));
+        $this->assertDatabaseHas('cargos', ['nombre' => 'Investigador Principal LIA']);
+
+        $cargo = \App\Models\Cargo::where('nombre', 'Investigador Principal LIA')->first();
+
+        // Update
+        $resUpdate = $this->actingAs($appAdmin)->put(route('app_admin.cargos.update', $cargo->id), [
+            'nombre' => 'Investigador Principal Senior LIA',
+            'descripcion' => 'Líder sénior de proyectos de IA',
+            'orden' => 20,
+            'activo' => 1,
+        ]);
+        $resUpdate->assertRedirect(route('app_admin.cargos'));
+        $this->assertDatabaseHas('cargos', ['nombre' => 'Investigador Principal Senior LIA']);
+        $cargo->refresh();
+
+        // Toggle
+        $resToggle = $this->actingAs($appAdmin)->post(route('app_admin.cargos.toggle', $cargo->id));
+        $resToggle->assertRedirect(route('app_admin.cargos'));
+        $this->assertDatabaseHas('cargos', ['id' => $cargo->id, 'activo' => false]);
+
+        // Reactivar para asignarlo
+        $cargo->refresh();
+        $cargo->update(['activo' => true]);
+
+        // 2. Selección en perfil de usuario (profile.edit y update)
+        $carrera = \App\Models\Carrera::first();
+        $resProfile = $this->actingAs($appAdmin)->get(route('profile.edit'));
+        $resProfile->assertStatus(200);
+        $resProfile->assertSee('id="carrera_id"', false);
+        $resProfile->assertSee('id="cargo_id"', false);
+        $resProfile->assertSee('Investigador Principal Senior LIA');
+
+        $resProfileUpdate = $this->actingAs($appAdmin)->put(route('profile.update'), [
+            'nombre' => 'App Admin Cargos Test Actualizado',
+            'carrera_id' => $carrera->id,
+            'cargo_id' => $cargo->id,
+        ]);
+        $resProfileUpdate->assertRedirect(route('profile.edit'));
+        $appAdmin->refresh();
+        $this->assertEquals($cargo->id, $appAdmin->cargo_id);
+        $this->assertEquals('Investigador Principal Senior LIA', $appAdmin->cargo_actual);
+        $this->assertEquals($carrera->id, $appAdmin->carrera_id);
+        $this->assertEquals($carrera->nombre, $appAdmin->carrera);
+
+        // 3. Registro de nuevo usuario seleccionando carrera y cargo desde catálogo
+        auth()->logout();
+        $resRegisterForm = $this->get(route('register'));
+        $resRegisterForm->assertStatus(200);
+        $resRegisterForm->assertSee('id="carrera_id"', false);
+        $resRegisterForm->assertSee('id="cargo_id"', false);
+        $resRegisterForm->assertSee('Investigador Principal Senior LIA');
+
+        $resRegister = $this->post(route('register'), [
+            'nombre' => 'Nuevo Postulante LIA',
+            'email' => 'postulante@lia.com',
+            'carrera_id' => $carrera->id,
+            'cargo_id' => $cargo->id,
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'terminos_consentimiento' => '1',
+        ]);
+        $resRegister->assertRedirect(route('revision.index'));
+
+        $this->assertDatabaseHas('usuarios', [
+            'email' => 'postulante@lia.com',
+            'carrera_id' => $carrera->id,
+            'cargo_id' => $cargo->id,
+        ]);
+
+        $postulante = Usuario::where('email', 'postulante@lia.com')->firstOrFail();
+        $this->assertEquals($carrera->nombre, $postulante->carrera);
+        $this->assertEquals('Investigador Principal Senior LIA', $postulante->cargo_actual);
     }
 }
 

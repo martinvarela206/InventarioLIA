@@ -53,8 +53,15 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label for="carrera" class="block text-xs font-bold text-gray-700 uppercase mb-1">Carrera / Área Académica</label>
-                <input type="text" name="carrera" id="carrera" list="lista-carreras" value="{{ old('carrera', $user->carrera) }}" placeholder="Seleccione o escriba su carrera..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                <label for="carrera_id" class="block text-xs font-bold text-gray-700 uppercase mb-1">Carrera / Área Académica</label>
+                <select name="carrera_id" id="carrera_id" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    <option value="">-- Seleccionar carrera --</option>
+                    @foreach($carreras as $c)
+                        <option value="{{ $c->id }}" {{ (string)old('carrera_id', $user->carrera_id) === (string)$c->id ? 'selected' : '' }}>
+                            {{ $c->nombre }} {{ $c->codigo ? "({$c->codigo})" : '' }}
+                        </option>
+                    @endforeach
+                </select>
                 <datalist id="lista-carreras">
                     @foreach($carreras as $c)
                         <option value="{{ $c->nombre }}">{{ $c->codigo ? "({$c->codigo})" : '' }}</option>
@@ -62,11 +69,18 @@
                 </datalist>
             </div>
             <div>
-                <label for="cargo_actual" class="block text-xs font-bold text-gray-700 uppercase mb-1">Cargo Institucional Oficial</label>
-                <input type="text" name="cargo_actual" id="cargo_actual" list="lista-cargos" value="{{ old('cargo_actual', $user->cargo_actual) }}" placeholder="Seleccione o escriba su cargo..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                <label for="cargo_id" class="block text-xs font-bold text-gray-700 uppercase mb-1">Cargo Institucional Oficial</label>
+                <select name="cargo_id" id="cargo_id" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    <option value="">-- Seleccionar cargo --</option>
+                    @foreach($cargos as $cargo)
+                        <option value="{{ $cargo->id }}" {{ (string)old('cargo_id', $user->cargo_id) === (string)$cargo->id ? 'selected' : '' }}>
+                            {{ $cargo->nombre }}
+                        </option>
+                    @endforeach
+                </select>
                 <datalist id="lista-cargos">
                     @foreach($cargos as $cargo)
-                        <option value="{{ $cargo }}"></option>
+                        <option value="{{ is_string($cargo) ? $cargo : $cargo->nombre }}"></option>
                     @endforeach
                 </datalist>
             </div>

@@ -153,6 +153,13 @@ Route::middleware('auth')->group(function () {
             Route::post('/app-admin/carreras/{carrera}/toggle', [AppAdminController::class, 'carreraToggle'])->name('app_admin.carreras.toggle');
             Route::delete('/app-admin/carreras/{carrera}', [AppAdminController::class, 'carreraDestroy'])->name('app_admin.carreras.destroy');
 
+            // Cargos del Laboratorio (Estructura de roles y funciones institucionales)
+            Route::get('/app-admin/cargos', [AppAdminController::class, 'cargosIndex'])->name('app_admin.cargos');
+            Route::post('/app-admin/cargos', [AppAdminController::class, 'cargoStore'])->name('app_admin.cargos.store');
+            Route::put('/app-admin/cargos/{cargo}', [AppAdminController::class, 'cargoUpdate'])->name('app_admin.cargos.update');
+            Route::post('/app-admin/cargos/{cargo}/toggle', [AppAdminController::class, 'cargoToggle'])->name('app_admin.cargos.toggle');
+            Route::delete('/app-admin/cargos/{cargo}', [AppAdminController::class, 'cargoDestroy'])->name('app_admin.cargos.destroy');
+
             // Espacios y Fotos de Laboratorios
             Route::get('/app-admin/espacios', [AppAdminController::class, 'espaciosIndex'])->name('app_admin.espacios');
             Route::post('/app-admin/espacios', [AppAdminController::class, 'espacioStore'])->name('app_admin.espacios.store');
