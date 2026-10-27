@@ -1194,7 +1194,7 @@ class InventarioDevTest extends TestCase
         $resFormRev->assertSee('Trasladar físicamente a Taller de Hardware / Depósito');
 
         // Registro de Ticket con imagen adjunta
-        $fotoFake = UploadedFile::fake()->image('falla_fuente.jpg', 600, 400);
+        $fotoFake = UploadedFile::fake()->create('falla_fuente.jpg', 600, 'image/jpeg');
         $resStore = $this->actingAs($rev)->post(route('tickets.store'), [
             'elemento_id' => $pcReparar->id,
             'comentario' => 'Capacitor de fuente de poder inflado, produce reinicios intermitentes.',
@@ -2540,7 +2540,7 @@ class InventarioDevTest extends TestCase
         ]);
 
         // 1. Revisor publica mensaje con foto adjunta en el hilo
-        $fotoRev = \Illuminate\Http\UploadedFile::fake()->image('fuente_quemada.jpg');
+        $fotoRev = \Illuminate\Http\UploadedFile::fake()->create('fuente_quemada.jpg', 150, 'image/jpeg');
         $resPostRev = $this->actingAs($rev)->post(route('tickets.comentar', $ticket->id), [
             'mensaje' => 'Adjunto foto del fusible de la fuente de poder chamuscado.',
             'fotos' => [$fotoRev],
@@ -2561,7 +2561,7 @@ class InventarioDevTest extends TestCase
         $this->assertEquals('fuente_quemada.jpg', $comentarioRev->adjuntos->first()->nombre_original);
 
         // 2. Técnico responde en el foro con otra foto
-        $fotoTec = \Illuminate\Http\UploadedFile::fake()->image('reemplazo_fusible.jpg');
+        $fotoTec = \Illuminate\Http\UploadedFile::fake()->create('reemplazo_fusible.jpg', 150, 'image/jpeg');
         $resPostTec = $this->actingAs($tec)->post(route('tickets.comentar', $ticket->id), [
             'mensaje' => 'Recibido en banco de pruebas. Se reemplaza fusible y se testean voltajes de 12V y 5V.',
             'fotos' => [$fotoTec],
