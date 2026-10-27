@@ -12,6 +12,7 @@ class PersonalLia extends Model
     protected $table = 'personal_lia';
 
     protected $fillable = [
+        'user_id',
         'nombre',
         'cargo',
         'comentario',
@@ -26,9 +27,43 @@ class PersonalLia extends Model
         'orden' => 'integer',
     ];
 
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'user_id');
+    }
+
     public function usuario(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(Usuario::class, 'email', 'email');
+        return $this->user();
+    }
+
+    public function getResolvedUserAttribute(): ?Usuario
+    {
+        if ($this->relationLoaded('user') && $this->user) {
+            return $this->user;
+        }
+        if ($this->user_id) {
+            return $this->user;
+        }
+        if ($this->email) {
+            return Usuario::where('email', $this->email)->first();
+        }
+        return null;
+    }
+
+    public function getNombreAttribute(?string $value): string
+    {
+        return $value ?: ($this->resolved_user?->nombre ?? 'Personal del LIA');
+    }
+
+    public function getCargoAttribute(?string $value): string
+    {
+        return $value ?: ($this->resolved_user?->cargo_actual ?? 'Miembro del LIA');
+    }
+
+    public function getEmailAttribute(?string $value): ?string
+    {
+        return $value ?: $this->resolved_user?->email;
     }
 
     public function getFotoUrlAttribute(): string
@@ -39,8 +74,9 @@ class PersonalLia extends Model
             }
             return asset($this->foto_path);
         }
-        if ($this->usuario && $this->usuario->foto_path) {
-            return $this->usuario->foto_url;
+        $user = $this->resolved_user;
+        if ($user && $user->foto_path) {
+            return $user->foto_url;
         }
         return asset('assets/placeholder-user.png');
     }
