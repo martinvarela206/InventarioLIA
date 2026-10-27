@@ -3324,6 +3324,82 @@ class InventarioDevTest extends TestCase
         // Limpieza del directorio de prueba
         \Illuminate\Support\Facades\File::deleteDirectory($backupDir);
     }
+
+    public function test_politica_de_complejidad_de_contrasenas_exclusiva_de_produccion(): void
+    {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+
+        // 1. En entorno de desarrollo/testing (no producción): contraseña corta (4 caracteres) es válida
+        $this->assertFalse(app()->isProduction());
+
+        $resLocal = $this->post('/register', [
+            'nombre' => 'Test Local Pass',
+            'email' => 'local_pass@test.com',
+            'password' => '1234',
+            'password_confirmation' => '1234',
+            'terminos_consentimiento' => '1',
+        ]);
+        $resLocal->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('usuarios', ['email' => 'local_pass@test.com']);
+
+        // 2. Simular entorno de producción
+        app()['env'] = 'production';
+        $this->assertTrue(app()->isProduction());
+
+        // Intentar registrar con contraseña débil (4 caracteres) en producción -> Debe fallar
+        $resProdDebil = $this->post('/register', [
+            'nombre' => 'Test Prod Pass Debil',
+            'email' => 'prod_debil@test.com',
+            'password' => '1234',
+            'password_confirmation' => '1234',
+            'terminos_consentimiento' => '1',
+        ]);
+        $resProdDebil->assertSessionHasErrors(['password']);
+
+        // Intentar registrar con contraseña de 8 caracteres pero sin mezcla (solo números) -> Debe fallar
+        $resProdSinMezcla = $this->post('/register', [
+            'nombre' => 'Test Prod Pass Sin Mezcla',
+            'email' => 'prod_sinmezcla@test.com',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
+            'terminos_consentimiento' => '1',
+        ]);
+        $resProdSinMezcla->assertSessionHasErrors(['password']);
+
+        // Registrar con contraseña robusta (mínimo 8, mayúsculas, minúsculas, números) -> Debe tener éxito
+        $resProdRobusta = $this->post('/register', [
+            'nombre' => 'Test Prod Pass Robusta',
+            'email' => 'prod_robusta@test.com',
+            'password' => 'ClaveRobusta2026',
+            'password_confirmation' => 'ClaveRobusta2026',
+            'terminos_consentimiento' => '1',
+        ]);
+        $resProdRobusta->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('usuarios', ['email' => 'prod_robusta@test.com']);
+
+        // 3. Verificación en actualización de Perfil de Usuario (ProfileController)
+        $user = Usuario::where('email', 'prod_robusta@test.com')->firstOrFail();
+
+        // En producción: actualizar perfil con password débil debe fallar
+        $resProfileFail = $this->actingAs($user)->put(route('profile.update'), [
+            'nombre' => $user->nombre,
+            'password' => '1234',
+            'password_confirmation' => '1234',
+        ]);
+        $resProfileFail->assertSessionHasErrors(['password']);
+
+        // En producción: actualizar perfil con password robusto debe ser exitoso
+        $resProfileOk = $this->actingAs($user)->put(route('profile.update'), [
+            'nombre' => $user->nombre,
+            'password' => 'NuevaClaveSegura2026',
+            'password_confirmation' => 'NuevaClaveSegura2026',
+        ]);
+        $resProfileOk->assertSessionHasNoErrors();
+
+        // 4. Restaurar entorno de testing
+        app()['env'] = 'testing';
+        $this->assertFalse(app()->isProduction());
+    }
 }
 
 
