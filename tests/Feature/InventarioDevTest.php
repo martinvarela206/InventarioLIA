@@ -2751,7 +2751,88 @@ class InventarioDevTest extends TestCase
         $this->assertEquals(1, $auditoria->total_ok);
         $this->assertEquals(1, $auditoria->total_inconsistencias);
     }
+
+    public function test_interfaz_interactiva_de_auditoria_grilla_de_puestos_y_apertura_ticket_in_situ(): void
+    {
+        $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
+        $rolReg = Rol::firstOrCreate(['rol' => 'registered']);
+
+        $auditor = Usuario::create([
+            'email' => 'auditor_grilla@lia.com',
+            'nombre' => 'Auditor Grilla',
+            'password' => bcrypt('1234'),
+            'activo' => true,
+        ]);
+        $auditor->roles()->sync([$rolReg->id, $rolRev->id]);
+
+        $tipo = \App\Models\Tipo::first();
+        $sala = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Redes y Puestos']);
+
+        $elementoPuesto = \App\Models\Elemento::create([
+            'nro_lia' => 'LIA-PUESTO-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'Precision',
+            'origen' => 'compra',
+            'fecha_ingreso' => now(),
+            'activo' => true,
+        ]);
+
+        \App\Models\Movimiento::create([
+            'elemento_id' => $elementoPuesto->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $sala->id,
+            'puesto' => 'Puesto 01',
+            'user_id' => $auditor->id,
+            'fecha' => now(),
+            'comentario' => 'Asignado a Puesto 01',
+        ]);
+
+        // 1. Cargar pantalla interactiva de auditoría
+        $resView = $this->actingAs($auditor)->get(route('auditorias.create', ['ubicacion_id' => $sala->id]));
+        $resView->assertStatus(200);
+        $resView->assertSee('Auditoría Física de Ubicación: Laboratorio Redes y Puestos');
+        $resView->assertSee('Grilla de Puestos y Mesones');
+        $resView->assertSee('Puesto 01');
+        $resView->assertSee('LIA-PUESTO-01');
+
+        $auditoria = \App\Models\Auditoria::where('ubicacion_id', $sala->id)->first();
+        $this->assertNotNull($auditoria);
+
+        // 2. Apertura de Ticket In Situ derivado de inconsistencia
+        $resTicket = $this->actingAs($auditor)->postJson(route('auditorias.crearTicketInconsistencia', $auditoria->id), [
+            'puesto' => 'Puesto 01',
+            'elemento_id' => $elementoPuesto->id,
+            'tipo_discrepancia' => 'rotura',
+            'descripcion' => 'Monitor con líneas verticales y parpadeo continuo en panel IPS',
+        ]);
+        $resTicket->assertStatus(200);
+        $resTicket->assertJson([
+            'success' => true,
+            'elemento_id' => $elementoPuesto->id,
+            'puesto' => 'Puesto 01',
+        ]);
+
+        $ticketId = $resTicket->json('ticket_id');
+        $this->assertNotNull($ticketId);
+
+        $ticket = \App\Models\Movimiento::find($ticketId);
+        $this->assertNotNull($ticket);
+        $this->assertEquals('reparacion', $ticket->tipo_movimiento);
+        $this->assertEquals('abierto', $ticket->estado_ticket);
+        $this->assertStringContainsString('ROTURA', $ticket->comentario);
+
+        // 3. Verificar detalle de auditoría actualizado
+        $detalle = \App\Models\AuditoriaDetalle::where('auditoria_id', $auditoria->id)
+            ->where('elemento_id', $elementoPuesto->id)
+            ->first();
+        $this->assertNotNull($detalle);
+        $this->assertEquals('inconsistencia', $detalle->estado);
+        $this->assertEquals('rotura', $detalle->tipo_discrepancia);
+        $this->assertEquals($ticketId, $detalle->ticket_id);
+    }
 }
+
 
 
 
