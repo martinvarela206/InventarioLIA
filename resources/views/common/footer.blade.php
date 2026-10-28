@@ -1,20 +1,18 @@
-<footer class="bg-[#111] flex flex-col items-center p-4">
-    <div class="flex flex-col md:flex-row justify-between w-full max-w-[1196px] text-center md:text-left">
-        <div class="flex items-center gap-3 justify-center md:justify-start">
-            <!-- Logo SVG embedded -->
-            @include('common.logo', ['variant' => 'light', 'class' => 'w-16 h-16 block'])
-            <span class="text-2xl font-bold text-[#dba800]">Sistema LIA</span>
+<footer class="w-full bg-[var(--figma-bg-panel)] border-t border-[var(--figma-border-subtle)] py-4 px-4 sm:px-6 transition-colors">
+    <div class="max-w-[1400px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2 text-[var(--figma-text-secondary)] font-mono text-[11px]">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="font-bold text-[var(--figma-text-primary)]">LIA Studio</span>
+            <span class="text-[var(--figma-text-dim)]">•</span>
+            <span>UNSJ FCEFN</span>
+            <span class="text-[var(--figma-text-dim)]">•</span>
+            <span>v1.6.20</span>
         </div>
-        <div class="flex gap-4 py-8 ml-auto flex-wrap justify-center md:justify-end">
-            <img src="/assets/logo-lia.svg" alt="LIA" class="h-10 md:h-12" />
-            <img src="/assets/logo-di.svg" alt="DI" class="h-10 md:h-12" />
-            <img src="/assets/logo-exactas.svg" alt="Exactas" class="h-10 md:h-12" />
-            <img src="/assets/logo-unsj.svg" alt="UNSJ" class="h-10 md:h-12" />
+
+        <div class="flex items-center gap-4 text-[var(--figma-text-tertiary)] text-[11px]">
+            <span>© {{ date('Y') }} Nexo LIA</span>
+            <span class="text-[var(--figma-text-dim)]">•</span>
+            <span>Diseñado con Figma Studio UX</span>
         </div>
-    </div>
-    <div class="h-[2px] bg-[#dba800]/50 w-full max-w-[1196px] my-8"></div>
-    <div class="flex flex-col md:flex-row gap-4 items-center justify-between w-full max-w-[1196px] my-8 text-center md:text-left">
-        <p class="text-xs text-[#dba800]">2025 Sistema LIA. Todos los derechos reservados.</p>
-        <p class="text-xs text-[#dba800]">Diseñado y Desarrollado por Martín Varela | 2025</p>
     </div>
 </footer>
