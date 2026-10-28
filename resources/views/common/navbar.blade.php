@@ -117,32 +117,32 @@
                                         </button>
 
                                         <div id="admin-dropdown-menu" 
-                                             class="hidden absolute left-0 mt-2 w-64 rounded-2xl bg-white shadow-2xl border border-gray-100 ring-1 ring-black/10 divide-y divide-gray-100 focus:outline-none z-50 py-1.5">
+                                             class="hidden absolute left-0 mt-2 w-72 rounded-2xl bg-[#18181b] shadow-2xl border border-zinc-800 ring-1 ring-black/40 text-white divide-y divide-zinc-800/70 focus:outline-none z-50 p-1.5 backdrop-blur-md">
                                             @if(Auth::user()->hasRole('item_admin'))
                                                 <div class="py-1">
                                                     <a href="{{ route('tipos.index') }}" 
-                                                       class="flex items-center gap-3 px-4 py-2.5 text-xs xl:text-sm font-semibold transition-colors {{ Request::routeIs('tipos.*') ? 'bg-amber-50 text-amber-900 font-bold' : 'text-gray-700 hover:bg-gray-50 hover:text-black' }}">
-                                                        <span class="p-1.5 rounded-lg bg-gray-100 text-gray-700">
+                                                       class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs xl:text-sm font-semibold transition-all group {{ Request::routeIs('tipos.*') ? 'bg-black text-[#fbc101] font-bold ring-1 ring-amber-400/30' : 'text-zinc-200 hover:bg-zinc-800 hover:text-white' }}">
+                                                        <span class="p-2 rounded-xl bg-zinc-900 border border-zinc-700/80 text-[#fbc101] group-hover:bg-[#fbc101] group-hover:text-black transition-colors shrink-0">
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                                                             </svg>
                                                         </span>
-                                                        <div class="flex flex-col">
-                                                            <span>Tipos de Hardware</span>
-                                                            <span class="text-[10px] text-gray-400 font-normal">Categorías y atributos</span>
+                                                        <div class="flex flex-col min-w-0">
+                                                            <span class="truncate">Tipos de Hardware</span>
+                                                            <span class="text-[10px] text-zinc-400 font-normal truncate">Categorías y atributos</span>
                                                         </div>
                                                     </a>
 
                                                     <a href="{{ route('ubicaciones.index') }}" 
-                                                       class="flex items-center gap-3 px-4 py-2.5 text-xs xl:text-sm font-semibold transition-colors {{ Request::routeIs('ubicaciones.*') ? 'bg-amber-50 text-amber-900 font-bold' : 'text-gray-700 hover:bg-gray-50 hover:text-black' }}">
-                                                        <span class="p-1.5 rounded-lg bg-gray-100 text-gray-700">
+                                                       class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs xl:text-sm font-semibold transition-all group mt-0.5 {{ Request::routeIs('ubicaciones.*') ? 'bg-black text-[#fbc101] font-bold ring-1 ring-amber-400/30' : 'text-zinc-200 hover:bg-zinc-800 hover:text-white' }}">
+                                                        <span class="p-2 rounded-xl bg-zinc-900 border border-zinc-700/80 text-[#fbc101] group-hover:bg-[#fbc101] group-hover:text-black transition-colors shrink-0">
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                                                             </svg>
                                                         </span>
-                                                        <div class="flex flex-col">
-                                                            <span>Salas y Espacios</span>
-                                                            <span class="text-[10px] text-gray-400 font-normal">Distribución física LIA</span>
+                                                        <div class="flex flex-col min-w-0">
+                                                            <span class="truncate">Salas y Espacios</span>
+                                                            <span class="text-[10px] text-zinc-400 font-normal truncate">Distribución física LIA</span>
                                                         </div>
                                                     </a>
                                                 </div>
@@ -151,16 +151,16 @@
                                             @if(Auth::user()->isAppAdmin())
                                                 <div class="py-1">
                                                     <a href="{{ route('app_admin.index') }}" 
-                                                       class="flex items-center gap-3 px-4 py-2.5 text-xs xl:text-sm font-semibold transition-colors {{ Request::routeIs('app_admin.*') ? 'bg-amber-50 text-amber-900 font-bold' : 'text-gray-700 hover:bg-gray-50 hover:text-black' }}">
-                                                        <span class="p-1.5 rounded-lg bg-gray-100 text-gray-700">
+                                                       class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs xl:text-sm font-semibold transition-all group {{ Request::routeIs('app_admin.*') ? 'bg-black text-[#fbc101] font-bold ring-1 ring-amber-400/30' : 'text-zinc-200 hover:bg-zinc-800 hover:text-white' }}">
+                                                        <span class="p-2 rounded-xl bg-zinc-900 border border-zinc-700/80 text-[#fbc101] group-hover:bg-[#fbc101] group-hover:text-black transition-colors shrink-0">
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                             </svg>
                                                         </span>
-                                                        <div class="flex flex-col">
-                                                            <span>Gestión App</span>
-                                                            <span class="text-[10px] text-gray-400 font-normal">Cargos, carreras y feed</span>
+                                                        <div class="flex flex-col min-w-0">
+                                                            <span class="truncate">Gestión App</span>
+                                                            <span class="text-[10px] text-zinc-400 font-normal truncate">Cargos, carreras y feed</span>
                                                         </div>
                                                     </a>
                                                 </div>
@@ -169,15 +169,15 @@
                                             @if(Auth::user()->isAdmin())
                                                 <div class="py-1">
                                                     <a href="{{ route('users.index') }}" 
-                                                       class="flex items-center gap-3 px-4 py-2.5 text-xs xl:text-sm font-semibold transition-colors {{ Request::routeIs('users.*') ? 'bg-amber-50 text-amber-900 font-bold' : 'text-gray-700 hover:bg-gray-50 hover:text-black' }}">
-                                                        <span class="p-1.5 rounded-lg bg-gray-100 text-gray-700">
+                                                       class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs xl:text-sm font-semibold transition-all group {{ Request::routeIs('users.*') ? 'bg-black text-[#fbc101] font-bold ring-1 ring-amber-400/30' : 'text-zinc-200 hover:bg-zinc-800 hover:text-white' }}">
+                                                        <span class="p-2 rounded-xl bg-zinc-900 border border-zinc-700/80 text-[#fbc101] group-hover:bg-[#fbc101] group-hover:text-black transition-colors shrink-0">
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                                             </svg>
                                                         </span>
-                                                        <div class="flex flex-col">
-                                                            <span>Gestión de Usuarios</span>
-                                                            <span class="text-[10px] text-gray-400 font-normal">Roles y permisos</span>
+                                                        <div class="flex flex-col min-w-0">
+                                                            <span class="truncate">Gestión de Usuarios</span>
+                                                            <span class="text-[10px] text-zinc-400 font-normal truncate">Roles y permisos</span>
                                                         </div>
                                                     </a>
                                                 </div>

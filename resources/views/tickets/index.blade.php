@@ -32,9 +32,9 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
             <a href="{{ route('tickets.index', ['estado' => 'abierto', 'search' => request('search')]) }}" 
-               class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 {{ $estado === 'abierto' ? 'bg-amber-500 text-black shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50' }}">
+               class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 {{ $estado === 'abierto' ? 'bg-[#fbc101] text-black shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50' }}">
                 <span>Abiertos / En Taller</span>
-                <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold {{ $estado === 'abierto' ? 'bg-black text-amber-300' : 'bg-amber-100 text-amber-900' }}">{{ $conteoAbiertos }}</span>
+                <span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold {{ $estado === 'abierto' ? 'bg-black text-[#fbc101]' : 'bg-amber-100 text-amber-900' }}">{{ $conteoAbiertos }}</span>
             </a>
 
             <a href="{{ route('tickets.index', ['estado' => 'resuelto', 'search' => request('search')]) }}" 

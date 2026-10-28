@@ -1,16 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="min-h-[calc(100vh-64px)] flex flex-col justify-between">
-    <div class="flex-grow flex items-center justify-center py-12">
+<div class="min-h-[calc(100vh-64px)] flex flex-col justify-between overflow-x-hidden w-full">
+    <div class="flex-grow flex items-center justify-center py-8 sm:py-12 px-4 w-full">
         <div class="w-full max-w-md">
-            <form action="{{ route('register') }}" method="POST" enctype="multipart/form-data" class="bg-white shadow-md rounded-2xl px-8 pt-6 pb-8 mb-4 border border-gray-200">
+            <form action="{{ route('register') }}" method="POST" enctype="multipart/form-data" class="bg-white shadow-sm rounded-2xl px-5 sm:px-8 pt-6 pb-8 mb-4 border border-slate-200">
                 @csrf
                 <div class="flex justify-center mb-4">
                     @include('common.logo', ['variant' => 'dark', 'class' => 'w-16 h-16'])
                 </div>
-                <h2 class="text-2xl font-bold mb-2 text-center text-gray-900">Registro de Usuario</h2>
-                <p class="text-xs text-gray-500 text-center mb-6">Acceso institucional a la plataforma Nexo LIA</p>
+                <h2 class="text-2xl font-bold mb-1 text-center text-slate-900">Registro de Usuario</h2>
+                <p class="text-xs text-slate-500 text-center mb-6">Acceso institucional a la plataforma Nexo LIA</p>
                 
                 <div class="mb-4">
                     <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="nombre">
