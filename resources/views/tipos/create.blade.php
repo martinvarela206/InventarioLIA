@@ -1,27 +1,31 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-[800px] mx-auto px-2 space-y-6">
+<div class="max-w-[800px] mx-auto py-4 space-y-4">
 
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-4">
+    <!-- Header Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-figma-border-subtle">
         <div>
-            <h1 class="text-2xl font-black text-gray-900">Crear Nuevo Tipo de Activo</h1>
-            <p class="text-xs text-gray-500 mt-0.5">
-                Define una nueva familia de activos y selecciona los atributos técnicos requeridos.
-            </p>
+            <div class="flex items-center gap-2 text-[11px] font-semibold text-figma-text-tertiary uppercase tracking-wider mb-0.5">
+                <a href="{{ route('tipos.index') }}" class="hover:text-figma-brand transition-colors">Tipos de Activos</a>
+                <span>/</span>
+                <span class="text-figma-text-primary">Nuevo</span>
+            </div>
+            <h1 class="text-xl font-bold text-figma-text-primary flex items-center gap-2">
+                <span>Crear Nuevo Tipo de Activo</span>
+            </h1>
         </div>
         <div>
-            <a href="{{ route('tipos.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
-                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <a href="{{ route('tipos.index') }}" class="figma-btn-secondary text-xs">
+                <svg class="w-3.5 h-3.5 text-figma-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Volver a Tipos</span>
             </a>
         </div>
     </div>
 
     @if($errors->any())
-        <div class="p-4 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl font-medium">
-            <ul class="list-disc pl-5 space-y-1">
+        <div class="figma-card p-3 border-rose-500/40 text-rose-400 text-xs">
+            <ul class="list-disc pl-4 space-y-0.5">
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
@@ -29,84 +33,81 @@
         </div>
     @endif
 
-    <form action="{{ route('tipos.store') }}" method="POST" class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6">
+    <form action="{{ route('tipos.store') }}" method="POST" class="figma-panel p-5 sm:p-6 space-y-5">
         @csrf
 
         <!-- Datos Base del Tipo -->
-        <div class="space-y-4">
+        <div class="space-y-3.5">
             <div>
-                <label class="block text-xs font-bold text-gray-800 mb-1">Nombre de la Familia / Tipo *</label>
-                <input type="text" name="nombre" value="{{ old('nombre') }}" placeholder="Ej: Router, Impresora 3D, Dron, Sensor..." class="w-full text-xs px-3 py-2 border rounded-lg bg-gray-50 focus:bg-white" required>
+                <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Nombre de la Familia / Tipo <span class="text-rose-400">*</span></label>
+                <input type="text" name="nombre" value="{{ old('nombre') }}" placeholder="Ej: Router, Impresora 3D, Dron, Sensor..." class="figma-input w-full px-3 py-1.5 text-xs font-semibold" required>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-800 mb-1">Descripción</label>
-                <input type="text" name="descripcion" value="{{ old('descripcion') }}" placeholder="Breve descripción del equipamiento comprendido..." class="w-full text-xs px-3 py-2 border rounded-lg bg-gray-50 focus:bg-white">
+                <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Descripción</label>
+                <input type="text" name="descripcion" value="{{ old('descripcion') }}" placeholder="Breve descripción del equipamiento comprendido..." class="figma-input w-full px-3 py-1.5 text-xs">
             </div>
         </div>
 
         <!-- Atributos Técnicos Específicos (Pivot tipo_atributo) -->
-        <div class="pt-4 border-t border-gray-200 space-y-3">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="text-xs font-black uppercase text-gray-800 tracking-wider">Atributos Técnicos que Aplican (Pivot)</h3>
-                    <p class="text-[11px] text-gray-500">Marca los campos adicionales que deben registrarse para este tipo de hardware.</p>
-                </div>
+        <div class="pt-3 border-t border-figma-border-subtle space-y-3">
+            <div>
+                <h3 class="text-xs font-bold uppercase text-figma-text-primary tracking-wider">Atributos Técnicos que Aplican (Pivot)</h3>
+                <p class="text-[11px] text-figma-text-tertiary mt-0.5">Marca los campos adicionales que deben registrarse para este tipo de hardware.</p>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 figma-card p-3">
                 @foreach($atributos as $attr)
-                    <label class="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-gray-200 hover:border-amber-400 cursor-pointer transition-all">
-                        <input type="checkbox" name="atributos[]" value="{{ $attr->id }}" {{ in_array($attr->id, old('atributos', [])) ? 'checked' : '' }} class="rounded border-gray-300 text-amber-500 focus:ring-amber-400">
+                    <label class="flex items-center gap-2.5 p-2 rounded bg-figma-bg-deep border border-figma-border-subtle hover:border-figma-brand cursor-pointer transition-colors">
+                        <input type="checkbox" name="atributos[]" value="{{ $attr->id }}" {{ in_array($attr->id, old('atributos', [])) ? 'checked' : '' }} class="rounded text-figma-brand focus:ring-figma-brand">
                         <div class="text-xs">
-                            <span class="font-bold text-gray-800 block">{{ $attr->nombre }}</span>
+                            <span class="font-bold text-figma-text-primary block">{{ $attr->nombre }}</span>
                             @if($attr->unidad_medida)
-                                <span class="text-[10px] text-gray-400">Unidad: {{ $attr->unidad_medida }}</span>
+                                <span class="text-[10px] text-figma-text-tertiary">Unidad: {{ $attr->unidad_medida }}</span>
                             @endif
                         </div>
                     </label>
                 @endforeach
             </div>
 
-            <!-- Sección Dinámica para definir múltiples nuevos atributos al vuelo -->
-            <div class="p-4 bg-amber-50/60 rounded-xl border border-amber-200 space-y-3">
+            <!-- Sección Dinámica para definir atributos al vuelo -->
+            <div class="p-3.5 figma-card space-y-2.5 border-figma-brand/30">
                 <div class="flex items-center justify-between">
                     <div>
-                        <span class="text-xs font-bold text-amber-900 block">¿Necesitas atributos que no están en la lista? Añádelos aquí:</span>
-                        <p class="text-[11px] text-amber-700">Puedes agregar todos los atributos técnicos que hagan falta y remover los que no correspondan.</p>
+                        <span class="text-xs font-bold text-figma-text-primary block">¿Atributos adicionales al vuelo?</span>
+                        <p class="text-[11px] text-figma-text-tertiary">Agrégalos aquí y se crearán automáticamente vinculados a esta familia.</p>
                     </div>
-                    <button type="button" id="btn-agregar-atributo" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-amber-400 hover:bg-amber-500 text-black rounded-lg shadow-sm transition-all">
+                    <button type="button" id="btn-agregar-atributo" class="figma-btn-secondary text-xs">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        + Añadir otro atributo
+                        <span>Añadir fila</span>
                     </button>
                 </div>
 
-                <!-- Contenedor dinámico de filas de nuevos atributos -->
                 <div id="contenedor-nuevos-atributos" class="space-y-2">
-                    <div class="fila-nuevo-atributo flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 bg-white rounded-lg border border-amber-200 shadow-2xs">
-                        <input type="text" name="nuevos_atributos_nombre[]" placeholder="Nombre (ej: Tasa de Muestreo, Interfaz, Voltaje)..." class="flex-1 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-amber-400">
-                        <input type="text" name="nuevos_atributos_unidad[]" placeholder="Unidad (ej: MHz, V, Pulgadas)..." class="sm:w-44 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-amber-400">
-                        <select name="nuevos_atributos_tipo[]" class="sm:w-36 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white font-medium text-gray-700">
+                    <div class="fila-nuevo-atributo flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 rounded bg-figma-bg-deep border border-figma-border-subtle">
+                        <input type="text" name="nuevos_atributos_nombre[]" placeholder="Nombre (ej: Interfaz, Voltaje)..." class="figma-input flex-1 px-2.5 py-1 text-xs">
+                        <input type="text" name="nuevos_atributos_unidad[]" placeholder="Unidad (ej: MHz, V)..." class="figma-input sm:w-36 px-2.5 py-1 text-xs">
+                        <select name="nuevos_atributos_tipo[]" class="figma-input sm:w-32 px-2.5 py-1 text-xs">
                             <option value="texto">Texto</option>
                             <option value="numero">Número</option>
                             <option value="fecha">Fecha</option>
-                            <option value="booleano">Booleano (Sí/No)</option>
+                            <option value="booleano">Booleano</option>
                         </select>
-                        <button type="button" class="btn-eliminar-fila p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center self-end sm:self-center" title="Eliminar este atributo">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <button type="button" class="btn-eliminar-fila p-1.5 text-figma-text-tertiary hover:text-rose-400 rounded transition-colors" title="Eliminar este atributo">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-            <a href="{{ route('tipos.index') }}" class="px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold rounded-xl text-xs shadow-sm transition-all inline-flex items-center gap-1.5">
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-figma-border-subtle">
+            <a href="{{ route('tipos.index') }}" class="figma-btn-secondary">
                 Cancelar
             </a>
-            <button type="submit" class="px-5 py-2.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl text-xs shadow-sm transition-all inline-flex items-center gap-1.5">
-                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                <span>Crear Familia y Guardar Atributos</span>
+            <button type="submit" class="figma-btn-primary">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span>Guardar Familia y Atributos</span>
             </button>
         </div>
     </form>
@@ -120,25 +121,24 @@
         if (btnAgregar && contenedor) {
             btnAgregar.addEventListener('click', function () {
                 const fila = document.createElement('div');
-                fila.className = 'fila-nuevo-atributo flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 bg-white rounded-lg border border-amber-200 shadow-2xs animate-fadeIn';
+                fila.className = 'fila-nuevo-atributo flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 rounded bg-figma-bg-deep border border-figma-border-subtle';
                 fila.innerHTML = `
-                    <input type="text" name="nuevos_atributos_nombre[]" placeholder="Nombre (ej: Tasa de Muestreo, Interfaz, Voltaje)..." class="flex-1 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-amber-400">
-                    <input type="text" name="nuevos_atributos_unidad[]" placeholder="Unidad (ej: MHz, V, Pulgadas)..." class="sm:w-44 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-amber-400">
-                    <select name="nuevos_atributos_tipo[]" class="sm:w-36 text-xs px-2.5 py-1.5 border border-gray-300 rounded-lg bg-white font-medium text-gray-700">
+                    <input type="text" name="nuevos_atributos_nombre[]" placeholder="Nombre (ej: Interfaz, Voltaje)..." class="figma-input flex-1 px-2.5 py-1 text-xs">
+                    <input type="text" name="nuevos_atributos_unidad[]" placeholder="Unidad (ej: MHz, V)..." class="figma-input sm:w-36 px-2.5 py-1 text-xs">
+                    <select name="nuevos_atributos_tipo[]" class="figma-input sm:w-32 px-2.5 py-1 text-xs">
                         <option value="texto">Texto</option>
                         <option value="numero">Número</option>
                         <option value="fecha">Fecha</option>
-                        <option value="booleano">Booleano (Sí/No)</option>
+                        <option value="booleano">Booleano</option>
                     </select>
-                    <button type="button" class="btn-eliminar-fila p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center self-end sm:self-center" title="Eliminar este atributo">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <button type="button" class="btn-eliminar-fila p-1.5 text-figma-text-tertiary hover:text-rose-400 rounded transition-colors" title="Eliminar este atributo">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     </button>
                 `;
                 contenedor.appendChild(fila);
                 fila.querySelector('input').focus();
             });
 
-            // Delegación de eventos para eliminar filas
             contenedor.addEventListener('click', function (e) {
                 const btnEliminar = e.target.closest('.btn-eliminar-fila');
                 if (btnEliminar) {
@@ -148,7 +148,6 @@
                         if (todasFilas.length > 1) {
                             fila.remove();
                         } else {
-                            // Si es la única fila, limpiar los campos en lugar de remover el nodo
                             fila.querySelectorAll('input').forEach(i => i.value = '');
                         }
                     }

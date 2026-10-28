@@ -1,82 +1,82 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-[1300px] mx-auto px-2 print:p-0 print:m-0 print:max-w-none">
+<div class="max-w-[1300px] mx-auto py-4 space-y-4 print:p-0 print:m-0 print:max-w-none">
     
     <!-- BARRA SUPERIOR DE ACCIONES (Oculta al imprimir) -->
-    <div class="print:hidden flex flex-wrap items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+    <div class="print:hidden flex flex-wrap items-center justify-between gap-3 p-3 figma-panel">
         <div class="flex items-center gap-2">
-            <a href="{{ route('reportes.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
-                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <a href="{{ route('reportes.index') }}" class="figma-btn-secondary text-xs">
+                <svg class="w-3.5 h-3.5 text-figma-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Volver a Reportes</span>
             </a>
-            <span class="text-xs bg-amber-100 text-amber-900 font-extrabold px-2.5 py-1 rounded-xl border border-amber-300">
+            <span class="text-[10px] bg-figma-bg-deep text-figma-brand font-mono font-bold px-2 py-0.5 rounded border border-figma-border-subtle">
                 {{ count($filas) }} registros
             </span>
-            <span id="badge-columnas-ocultas" class="hidden text-xs bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded-full border border-rose-300">
+            <span id="badge-columnas-ocultas" class="hidden text-[10px] bg-rose-500/10 text-rose-400 font-bold px-2 py-0.5 rounded border border-rose-500/30">
                 <span id="count-columnas-ocultas">0</span> columnas ocultas
             </span>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
             <!-- Botón Restaurar Columnas (Visible si hay ocultas) -->
-            <button type="button" id="btn-restaurar-columnas" onclick="restaurarTodasLasColumnas()" class="hidden text-xs text-amber-700 hover:text-amber-900 font-bold underline px-2 py-1">
-                Restaurar todas las columnas
+            <button type="button" id="btn-restaurar-columnas" onclick="restaurarTodasLasColumnas()" class="hidden text-xs text-figma-brand hover:underline font-bold px-2 py-1">
+                Restaurar columnas
             </button>
 
             <!-- Botón Imprimir / PDF -->
-            <button type="button" onclick="window.print()" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition-all">
-                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            <button type="button" onclick="window.print()" class="figma-btn-secondary text-xs">
+                <svg class="w-3.5 h-3.5 text-figma-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <span>Imprimir / PDF</span>
             </button>
 
             <!-- Botón Exportar CSV -->
-            <a id="btn-export-csv" href="{{ route('reportes.exportCsv', array_merge(['tipo' => $tipoReporte], request()->all())) }}" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs shadow-sm transition-all">
-                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <a id="btn-export-csv" href="{{ route('reportes.exportCsv', array_merge(['tipo' => $tipoReporte], request()->all())) }}" class="figma-btn-primary text-xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Exportar CSV</span>
             </a>
         </div>
     </div>
 
     <!-- DOCUMENTO OFICIAL PARA PANTALLA E IMPRESIÓN -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8 print:p-0 print:border-none print:shadow-none">
+    <div class="figma-panel p-5 lg:p-7 print:p-0 print:border-none print:shadow-none">
         
         <!-- MEMBRETE INSTITUCIONAL OFICIAL (Visible siempre en papel) -->
-        <div class="border-b-2 border-gray-800 pb-4 mb-6 text-center">
-            <h2 class="text-xs font-bold uppercase tracking-widest text-gray-500">
+        <div class="border-b border-figma-border-subtle pb-4 mb-5 text-center">
+            <h2 class="text-[10px] font-bold uppercase tracking-widest text-figma-text-tertiary">
                 UNIVERSIDAD NACIONAL DE SAN JUAN — FACULTAD DE CIENCIAS EXACTAS, FÍSICAS Y NATURALES
             </h2>
-            <h1 class="text-xl font-black text-gray-900 mt-1 uppercase">
+            <h1 class="text-lg font-bold text-figma-text-primary mt-1 uppercase">
                 Laboratorio de Informática Aplicada (LIA) — Nexo LIA
             </h1>
-            <div class="mt-2 text-sm font-bold text-gray-800 bg-gray-50 py-1.5 px-4 rounded border border-gray-200 inline-block">
+            <div class="mt-2 text-xs font-bold text-figma-text-primary bg-figma-bg-deep py-1 px-3 rounded border border-figma-border-subtle inline-block">
                 {{ $titulo }}
             </div>
             @if(isset($subtitulo))
-                <p class="text-xs text-gray-600 mt-1">{{ $subtitulo }}</p>
+                <p class="text-xs text-figma-text-secondary mt-1">{{ $subtitulo }}</p>
             @endif
-            <div class="flex justify-between items-center text-[11px] text-gray-500 mt-3 px-2">
-                <span>Emitido por: <strong>{{ Auth::user()->nombre ?? 'Sistema LIA' }}</strong> ({{ Auth::user()->roles->pluck('rol')->implode(', ') }})</span>
-                <span>Fecha y hora de generación: <strong>{{ date('d/m/Y H:i:s') }}</strong></span>
-                <span>Total de Registros: <strong>{{ count($filas) }}</strong></span>
+            <div class="flex flex-wrap justify-between items-center text-[10px] font-mono text-figma-text-tertiary mt-3 px-1 gap-2">
+                <span>Emitido por: <strong class="text-figma-text-primary">{{ Auth::user()->nombre ?? 'Sistema LIA' }}</strong> ({{ Auth::user()->roles->pluck('rol')->implode(', ') }})</span>
+                <span>Fecha: <strong class="text-figma-text-primary">{{ date('d/m/Y H:i:s') }}</strong></span>
+                <span>Total: <strong class="text-figma-text-primary">{{ count($filas) }}</strong></span>
             </div>
         </div>
 
-        <!-- RESALTE DE UBICACIÓN ACTUAL (Para reporte de Ubicación y Trazabilidad) -->
+        <!-- RESALTE DE UBICACIÓN ACTUAL -->
         @if(isset($ubicacionActual))
-            <div class="mb-6 bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-400 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-xs">
-                <div class="flex items-center gap-3.5">
-                    <div class="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-sm">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <div class="mb-5 figma-card p-3.5 flex flex-wrap items-center justify-between gap-3 border-emerald-500/40">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     </div>
                     <div>
-                        <span class="text-[11px] uppercase font-black text-emerald-800 tracking-wider block">📍 Ubicación Física Actual en el LIA</span>
-                        <div class="text-lg font-black text-gray-900">{{ $ubicacionActual }}</div>
+                        <span class="text-[10px] uppercase font-bold text-emerald-400 tracking-wider block">📍 Ubicación Física Actual</span>
+                        <div class="text-sm font-bold text-figma-text-primary">{{ $ubicacionActual }}</div>
                     </div>
                 </div>
                 @if(isset($situacionBadge))
-                    <div class="flex items-center gap-2 bg-white/80 py-1.5 px-3 rounded-lg border border-emerald-200">
-                        <span class="text-xs font-bold text-gray-600">Situación Patrimonial:</span>
+                    <div class="flex items-center gap-2 bg-figma-bg-deep py-1 px-2.5 rounded border border-figma-border-subtle">
+                        <span class="text-[11px] font-semibold text-figma-text-secondary">Situación:</span>
                         {!! $situacionBadge !!}
                     </div>
                 @endif
@@ -87,65 +87,63 @@
         <div class="overflow-x-auto relative">
             
             <!-- MENÚ DESPLEGABLE FLOTANTE PARA GESTIONAR COLUMNAS (Control "...") -->
-            <div id="dropdown-columnas" class="hidden absolute left-12 top-10 z-50 bg-white rounded-xl shadow-xl border border-gray-300 p-3 min-w-[220px] text-xs print:hidden">
-                <div class="flex items-center justify-between pb-2 mb-2 border-b border-gray-100 font-bold text-gray-800">
+            <div id="dropdown-columnas" class="hidden absolute left-12 top-10 z-50 figma-panel p-3 min-w-[220px] text-xs shadow-2xl print:hidden">
+                <div class="flex items-center justify-between pb-2 mb-2 border-b border-figma-border-subtle font-bold text-figma-text-primary text-[11px]">
                     <span>Columnas Visibles</span>
-                    <button type="button" onclick="cerrarDropdownColumnas()" class="text-gray-400 hover:text-black">✕</button>
+                    <button type="button" onclick="cerrarDropdownColumnas()" class="text-figma-text-tertiary hover:text-figma-text-primary leading-none">✕</button>
                 </div>
                 <div class="space-y-1.5 max-h-60 overflow-y-auto">
                     @foreach($columnas as $cIdx => $col)
                         @php
                             $estaOculta = in_array($col, $columnasOcultasIniciales ?? []);
                         @endphp
-                        <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded font-medium text-gray-700">
-                            <input type="checkbox" {{ $estaOculta ? '' : 'checked' }} id="chk-col-{{ $cIdx }}" onchange="toggleVisibilidadColumna({{ $cIdx }}, '{{ addslashes($col) }}', this.checked)" class="rounded text-amber-500 focus:ring-amber-400">
+                        <label class="flex items-center gap-2 cursor-pointer hover:bg-figma-bg-deep p-1 rounded font-medium text-figma-text-secondary text-xs">
+                            <input type="checkbox" {{ $estaOculta ? '' : 'checked' }} id="chk-col-{{ $cIdx }}" onchange="toggleVisibilidadColumna({{ $cIdx }}, '{{ addslashes($col) }}', this.checked)" class="rounded text-figma-brand focus:ring-figma-brand">
                             <span>{{ $col }}</span>
                         </label>
                     @endforeach
                 </div>
-                <div class="mt-2 pt-2 border-t border-gray-100 text-right">
-                    <button type="button" onclick="restaurarTodasLasColumnas()" class="text-[11px] font-bold text-amber-700 hover:underline">
+                <div class="mt-2 pt-2 border-t border-figma-border-subtle text-right">
+                    <button type="button" onclick="restaurarTodasLasColumnas()" class="text-[10px] font-bold text-figma-brand hover:underline">
                         Marcar todas
                     </button>
                 </div>
             </div>
 
-            <table class="w-full text-left border-collapse text-[11px] print:text-[8pt] border border-gray-300" id="tabla-reporte">
+            <table class="w-full text-left border-collapse text-xs print:text-[8pt]" id="tabla-reporte">
                 <thead>
-                    <tr class="bg-gray-100 border-b border-gray-300 text-gray-800 uppercase font-extrabold print:bg-gray-200">
-                        <th class="py-1.5 px-2 print:py-1 print:px-1.5 border border-gray-300 w-8 text-center print:text-[8pt]">#</th>
+                    <tr class="bg-figma-bg-deep border-b border-figma-border-subtle text-figma-text-secondary uppercase font-bold text-[10px] tracking-wider print:bg-gray-200">
+                        <th class="py-2 px-2.5 border border-figma-border-subtle w-8 text-center font-mono">#</th>
                         @foreach($columnas as $cIdx => $col)
                             @php
                                 $esColumnaIdentificadora = (str_contains(mb_strtolower($col), 'lia') || $cIdx === 0);
                                 $estaOculta = in_array($col, $columnasOcultasIniciales ?? []);
                             @endphp
-                            <th data-col-index="{{ $cIdx }}" data-col-name="{{ $col }}" style="{{ $estaOculta ? 'display: none;' : '' }}" class="py-1.5 px-2 print:py-1 print:px-1.5 border border-gray-300 print:text-[8pt] whitespace-nowrap">
+                            <th data-col-index="{{ $cIdx }}" data-col-name="{{ $col }}" style="{{ $estaOculta ? 'display: none;' : '' }}" class="py-2 px-2.5 border border-figma-border-subtle whitespace-nowrap">
                                 <div class="flex items-center justify-between gap-1">
                                     <div class="flex items-center gap-1.5">
                                         @if($esColumnaIdentificadora)
-                                            <!-- Botón "..." en el header de Nro LIA / Identificador para abrir el desplegable de columnas -->
-                                            <button type="button" onclick="abrirDropdownColumnas(event)" class="print:hidden p-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded font-bold text-[10px] leading-none transition-colors" title="Gestionar columnas visibles (...)">
+                                            <button type="button" onclick="abrirDropdownColumnas(event)" class="print:hidden p-0.5 px-1 bg-figma-bg-canvas hover:bg-figma-brand hover:text-white rounded font-mono font-bold text-[9px] transition-colors" title="Gestionar columnas (...)">
                                                 •••
                                             </button>
                                         @endif
                                         <span>{{ $col }}</span>
                                     </div>
-                                    <!-- Botón 'X' a la derecha para ocultar directamente la columna -->
-                                    <button type="button" onclick="ocultarColumna({{ $cIdx }}, '{{ addslashes($col) }}', event)" class="print:hidden p-0.5 text-gray-400 hover:text-red-600 hover:bg-gray-200 rounded transition-colors" title="Ocultar columna '{{ $col }}'">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    <button type="button" onclick="ocultarColumna({{ $cIdx }}, '{{ addslashes($col) }}', event)" class="print:hidden p-0.5 text-figma-text-tertiary hover:text-rose-400 rounded transition-colors" title="Ocultar columna '{{ $col }}'">
+                                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                                     </button>
                                 </div>
                             </th>
                         @endforeach
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 text-gray-800">
+                <tbody class="divide-y divide-figma-border-subtle text-figma-text-primary">
                     @forelse($filas as $idx => $fila)
                         @php
                             $esActual = (isset($ubicacionActual) && $idx === 0);
                         @endphp
-                        <tr class="{{ $esActual ? 'bg-emerald-50/70 font-semibold' : 'odd:bg-white even:bg-gray-50/60' }} print:odd:bg-white print:even:bg-gray-100">
-                            <td class="py-1 px-2 print:py-1 print:px-1.5 border border-gray-300 text-center font-mono text-gray-400 font-semibold print:text-[8pt]">
+                        <tr class="{{ $esActual ? 'bg-emerald-500/10 font-semibold' : 'hover:bg-figma-bg-deep/40' }} transition-colors print:odd:bg-white print:even:bg-gray-100">
+                            <td class="py-1.5 px-2.5 border border-figma-border-subtle text-center font-mono text-figma-text-tertiary text-xs">
                                 {{ $idx + 1 }}
                             </td>
                             @foreach($fila as $cIdx => $celda)
@@ -153,14 +151,14 @@
                                     $colName = $columnas[$cIdx] ?? '';
                                     $estaOculta = in_array($colName, $columnasOcultasIniciales ?? []);
                                 @endphp
-                                <td data-col-index="{{ $cIdx }}" style="{{ $estaOculta ? 'display: none;' : '' }}" class="py-1 px-2 print:py-1 print:px-1.5 border border-gray-300 font-medium print:text-[8pt] break-words">
+                                <td data-col-index="{{ $cIdx }}" style="{{ $estaOculta ? 'display: none;' : '' }}" class="py-1.5 px-2.5 border border-figma-border-subtle text-xs break-words">
                                     {{ $celda }}
                                 </td>
                             @endforeach
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ count($columnas) + 1 }}" class="py-10 text-center text-gray-400 italic">
+                            <td colspan="{{ count($columnas) + 1 }}" class="py-8 text-center text-figma-text-tertiary italic text-xs">
                                 No se encontraron registros para los parámetros seleccionados.
                             </td>
                         </tr>
@@ -170,7 +168,7 @@
         </div>
 
         <!-- RECUADRO INFERIOR DE FIRMAS Y CONFORMIDAD (Para resguardo físico en bibliorato) -->
-        <div class="mt-8 pt-4 border-t border-gray-300 hidden print:grid grid-cols-2 gap-8 text-[9pt] text-gray-700">
+        <div class="mt-8 pt-4 border-t border-figma-border-subtle hidden print:grid grid-cols-2 gap-8 text-[9pt] text-gray-700">
             <div class="border-t border-gray-800 pt-2 text-center mt-10">
                 <span class="block font-bold">Firma del Revisor / Auditor</span>
                 <span class="block text-gray-500 text-[8pt]">Aclaración y DNI</span>
@@ -268,7 +266,6 @@
         }
     }
 
-    // Inicializar estado reactivo inicial en carga
     actualizarEstadoGlobal();
 </script>
 

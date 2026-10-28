@@ -1,57 +1,60 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-[1240px] mx-auto px-2 space-y-6">
-    <!-- Header -->
-    <div class="border-b border-gray-200 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="max-w-[1320px] mx-auto px-2 space-y-5">
+    <!-- Header Toolbar -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-figma-border-subtle">
         <div>
-            <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2.5">
-                <svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <div class="flex items-center gap-2 text-[11px] font-semibold text-figma-text-tertiary uppercase tracking-wider mb-0.5">
+                <a href="{{ route('dashboard.index') }}" class="hover:text-figma-brand transition-colors">Dashboard</a>
+                <span>/</span>
+                <span class="text-figma-text-primary">Auditoría & Análisis</span>
+            </div>
+            <h1 class="text-xl font-bold text-figma-text-primary flex items-center gap-2">
+                <svg class="w-5 h-5 text-figma-brand" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <span>Centro de Reportes y Auditorías — Nexo LIA</span>
+                <span>Centro de Reportes y Auditorías</span>
             </h1>
-            <p class="text-xs text-gray-500 mt-1">
-                Catálogo unificado de reportes patrimoniales, trazabilidad física y auditorías in situ. Disponibles para visualización, impresión formal A4 y exportación CSV (BOM UTF-8).
-            </p>
         </div>
         <div class="flex items-center gap-2">
             @if(auth()->check() && (auth()->user()->isAppAdmin() || auth()->user()->hasRole('app_admin')))
-                <a href="{{ route('app_admin.reportes') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-xs transition-all">
-                    <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    <span>Configurar Catálogo de Reportes</span>
+                <a href="{{ route('app_admin.reportes') }}" class="figma-btn-secondary text-xs">
+                    <svg class="w-3.5 h-3.5 text-figma-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span>Configurar Catálogo</span>
                 </a>
             @endif
         </div>
     </div>
 
-    <!-- Barra de Filtro Rápido por Categoría -->
+    <!-- Barra de Filtro Rápido por Categoría (Figma Pill Ribbon) -->
     <div class="flex items-center justify-between gap-3 flex-wrap">
-        <div class="flex items-center gap-1.5 flex-wrap" id="filtros-categorias">
-            <button type="button" onclick="filtrarCategoria('todos')" class="btn-categoria active px-3 py-1 rounded-full text-xs font-bold transition-all bg-amber-500 text-black shadow-xs">
-                Todos ({{ $reportes->count() }})
+        <div class="figma-pill-ribbon overflow-x-auto" id="filtros-categorias">
+            <button type="button" onclick="filtrarCategoria('todos', this)" class="figma-pill-item btn-categoria active">
+                <span>Todos</span>
+                <span class="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded bg-figma-bg-deep">{{ $reportes->count() }}</span>
             </button>
             @php
                 $categorias = $reportes->pluck('categoria')->unique()->filter()->values();
             @endphp
             @foreach($categorias as $cat)
-                <button type="button" onclick="filtrarCategoria('{{ $cat }}')" class="btn-categoria px-3 py-1 rounded-full text-xs font-bold transition-all bg-gray-100 hover:bg-gray-200 text-gray-700">
-                    {{ ucfirst($cat) }}
+                <button type="button" onclick="filtrarCategoria('{{ $cat }}', this)" class="figma-pill-item btn-categoria">
+                    <span>{{ ucfirst($cat) }}</span>
                 </button>
             @endforeach
         </div>
-        <span class="text-xs text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-            Catálogo Unificado (Reportes Personalizados y Guardados)
+        <span class="font-mono text-[11px] text-figma-text-tertiary">
+            Formatos: Pantalla interactiva • Imprimible A4 • CSV UTF-8
         </span>
     </div>
 
     <!-- Cuadrícula Unificada de Reportes -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="grid-reportes">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="grid-reportes">
         @forelse($reportes as $rep)
-            <div class="tarjeta-reporte bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between hover:border-amber-400 hover:shadow-md transition-all" data-categoria="{{ $rep->categoria ?: 'general' }}">
+            <div class="tarjeta-reporte figma-card p-4 sm:p-5 flex flex-col justify-between" data-categoria="{{ $rep->categoria ?: 'general' }}">
                 <div>
                     <div class="flex items-center justify-between mb-3">
-                        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/60 flex items-center justify-center font-bold text-lg">
+                        <div class="w-9 h-9 rounded-lg bg-figma-bg-deep border border-figma-border-subtle flex items-center justify-center font-bold text-base">
                             @if($rep->icono == 'cubes') 📦
                             @elseif($rep->icono == 'building') 🏢
                             @elseif($rep->icono == 'location') 📍
@@ -66,26 +69,26 @@
                             @else 📊
                             @endif
                         </div>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-700 border border-gray-200">
+                        <span class="font-mono px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-figma-bg-deep text-figma-text-secondary border border-figma-border-subtle">
                             {{ $rep->categoria ?: 'General' }}
                         </span>
                     </div>
 
-                    <h3 class="font-bold text-gray-900 text-base">{{ $rep->titulo }}</h3>
-                    <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                    <h3 class="font-bold text-figma-text-primary text-sm">{{ $rep->titulo }}</h3>
+                    <p class="text-[11px] text-figma-text-tertiary mt-1 leading-relaxed">
                         {{ $rep->subtitulo ?: $rep->descripcion }}
                     </p>
                 </div>
 
-                <div class="mt-5 pt-4 border-t border-gray-100">
+                <div class="mt-4 pt-3 border-t border-figma-border-subtle">
                     @if($rep->requiereUbicacion() || $rep->requierePuesto() || $rep->requiereTipo() || $rep->requiereNroLia() || $rep->requiereRangoFechas())
-                        <form action="{{ route('reportes.show', $rep->slug) }}" method="GET" class="space-y-2">
+                        <form action="{{ route('reportes.show', $rep->slug) }}" method="GET" class="space-y-2 text-xs">
                             @if($rep->requiereUbicacion())
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-600 mb-0.5">Sala / Armario:</label>
-                                    <select name="ubicacion_id" class="w-full text-xs px-2.5 py-1.5 border border-gray-300 rounded-xl bg-gray-50 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" {{ $rep->slug === 'auditoria-sala' ? 'required' : '' }}>
+                                    <label class="block text-[10px] font-bold text-figma-text-secondary mb-0.5 uppercase">Sala / Espacio:</label>
+                                    <select name="ubicacion_id" class="figma-input w-full px-2.5 py-1 text-xs cursor-pointer" {{ $rep->slug === 'auditoria-sala' ? 'required' : '' }}>
                                         @if($rep->slug !== 'auditoria-sala')
-                                            <option value="">-- Todas las salas y armarios --</option>
+                                            <option value="">-- Todas las salas --</option>
                                         @endif
                                         @foreach($ubicaciones as $ub)
                                             <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
@@ -96,15 +99,15 @@
 
                             @if($rep->requierePuesto())
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-600 mb-0.5">Puesto de Trabajo:</label>
-                                    <input type="text" name="puesto" placeholder="Ej. Puesto 04" class="w-full text-xs px-2.5 py-1.5 border border-gray-300 rounded-xl bg-gray-50 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+                                    <label class="block text-[10px] font-bold text-figma-text-secondary mb-0.5 uppercase">Puesto:</label>
+                                    <input type="text" name="puesto" placeholder="Ej. Puesto 04" class="figma-input w-full px-2.5 py-1 text-xs">
                                 </div>
                             @endif
 
                             @if($rep->requiereTipo())
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-600 mb-0.5">Tipo de Activo:</label>
-                                    <select name="tipo_id" class="w-full text-xs px-2.5 py-1.5 border border-gray-300 rounded-xl bg-gray-50 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" required>
+                                    <label class="block text-[10px] font-bold text-figma-text-secondary mb-0.5 uppercase">Tipo de Activo:</label>
+                                    <select name="tipo_id" class="figma-input w-full px-2.5 py-1 text-xs cursor-pointer" required>
                                         @foreach($tipos as $tp)
                                             <option value="{{ $tp->id }}">{{ $tp->tipo }}</option>
                                         @endforeach
@@ -114,26 +117,26 @@
 
                             @if($rep->requiereNroLia())
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-600 mb-0.5">N° LIA / Activo:</label>
-                                    <input type="text" name="nro_lia" placeholder="Ej. LIA-042 o UNSJ" class="w-full text-xs px-2.5 py-1.5 border border-gray-300 rounded-xl bg-gray-50 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" required>
+                                    <label class="block text-[10px] font-bold text-figma-text-secondary mb-0.5 uppercase">N° LIA / Activo:</label>
+                                    <input type="text" name="nro_lia" placeholder="Ej. LIA-042" class="figma-input w-full px-2.5 py-1 text-xs" required>
                                 </div>
                             @endif
 
                             @if($rep->requiereRangoFechas())
                                 <div class="grid grid-cols-2 gap-1.5">
                                     <div>
-                                        <label class="block text-[10px] font-bold text-gray-600 mb-0.5">Desde:</label>
-                                        <input type="date" name="fecha_desde" value="{{ \Carbon\Carbon::now()->subMonths(6)->toDateString() }}" class="w-full text-xs px-2 py-1.5 border border-gray-300 rounded-xl bg-gray-50 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+                                        <label class="block text-[10px] font-bold text-figma-text-secondary mb-0.5 uppercase">Desde:</label>
+                                        <input type="date" name="fecha_desde" value="{{ \Carbon\Carbon::now()->subMonths(6)->toDateString() }}" class="figma-input w-full px-2 py-1 text-xs font-mono">
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-bold text-gray-600 mb-0.5">Hasta:</label>
-                                        <input type="date" name="fecha_hasta" value="{{ \Carbon\Carbon::now()->toDateString() }}" class="w-full text-xs px-2 py-1.5 border border-gray-300 rounded-xl bg-gray-50 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400">
+                                        <label class="block text-[10px] font-bold text-figma-text-secondary mb-0.5 uppercase">Hasta:</label>
+                                        <input type="date" name="fecha_hasta" value="{{ \Carbon\Carbon::now()->toDateString() }}" class="figma-input w-full px-2 py-1 text-xs font-mono">
                                     </div>
                                 </div>
                             @endif
 
-                            <div class="pt-1 flex items-center gap-2">
-                                <button type="submit" class="flex-1 text-center py-2 px-3 bg-[#fbc101] hover:bg-amber-400 font-extrabold text-black rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs">
+                            <div class="pt-1">
+                                <button type="submit" class="figma-btn-primary w-full justify-center py-2 text-xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     <span>Ver Reporte</span>
                                 </button>
@@ -141,20 +144,20 @@
                         </form>
                     @else
                         <div class="flex items-center gap-2">
-                            <a href="{{ route('reportes.show', $rep->slug) }}" class="flex-1 text-center py-2 px-3 bg-[#fbc101] hover:bg-amber-400 font-extrabold text-black rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs">
+                            <a href="{{ route('reportes.show', $rep->slug) }}" class="figma-btn-primary flex-1 justify-center py-2 text-xs">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 <span>Ver Reporte</span>
                             </a>
-                            <a href="{{ route('reportes.exportCsv', $rep->slug) }}" class="p-2 border border-gray-300 hover:bg-gray-50 rounded-xl text-gray-700 text-xs font-bold inline-flex items-center gap-1 shadow-xs" title="Descargar CSV">
-                                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                CSV
+                            <a href="{{ route('reportes.exportCsv', $rep->slug) }}" class="figma-btn-secondary text-xs py-2 px-2.5" title="Descargar CSV">
+                                <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                <span>CSV</span>
                             </a>
                         </div>
                     @endif
                 </div>
             </div>
         @empty
-            <div class="col-span-full py-12 text-center text-gray-400 text-sm bg-white rounded-2xl border border-gray-200">
+            <div class="col-span-full py-12 text-center text-figma-text-tertiary text-xs figma-panel">
                 No hay reportes configurados actualmente en el catálogo.
             </div>
         @endforelse
@@ -162,16 +165,12 @@
 </div>
 
 <script>
-    function filtrarCategoria(categoria) {
-        // Actualizar estilos de botones
+    function filtrarCategoria(categoria, clickedBtn) {
         document.querySelectorAll('.btn-categoria').forEach(btn => {
-            btn.classList.remove('active', 'bg-amber-500', 'text-black', 'shadow-xs');
-            btn.classList.add('bg-gray-100', 'text-gray-700');
+            btn.classList.remove('active');
         });
-        event.target.classList.add('active', 'bg-amber-500', 'text-black', 'shadow-xs');
-        event.target.classList.remove('bg-gray-100', 'text-gray-700');
+        if (clickedBtn) clickedBtn.classList.add('active');
 
-        // Filtrar tarjetas
         const tarjetas = document.querySelectorAll('.tarjeta-reporte');
         tarjetas.forEach(t => {
             if (categoria === 'todos' || t.dataset.categoria === categoria) {

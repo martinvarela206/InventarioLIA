@@ -1,87 +1,100 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-[1240px] mx-auto px-2 space-y-6">
-    <div class="flex items-center justify-between">
+<div class="max-w-[1320px] mx-auto px-2 space-y-5">
+    <!-- Header Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-figma-border-subtle">
         <div>
-            <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
-                <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <div class="flex items-center gap-2 text-[11px] font-semibold text-figma-text-tertiary uppercase tracking-wider mb-0.5">
+                <a href="{{ route('dashboard.index') }}" class="hover:text-figma-brand transition-colors">Dashboard</a>
+                <span>/</span>
+                <span class="text-figma-text-primary">Administración</span>
+            </div>
+            <h1 class="text-xl font-bold text-figma-text-primary flex items-center gap-2">
+                <svg class="w-5 h-5 text-figma-brand" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-                <span>Usuarios</span>
+                <span>Gestión de Usuarios y Permisos</span>
             </h1>
+        </div>
+        <div>
+            <a href="{{ route('dashboard.index') }}" class="figma-btn-secondary text-xs">
+                <svg class="w-3.5 h-3.5 text-figma-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Dashboard</span>
+            </a>
         </div>
     </div>
 
     <!-- WIDGET INFORMATIVO Y ALERTA DE HUELLA DIGITAL (LEY 25.326) -->
     @include('users.widget-huella-alerta')
 
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+    <!-- Tabla de Usuarios (Figma Layers / Canvas Density) -->
+    <div class="figma-panel overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm border-collapse">
+            <table class="w-full text-left text-xs border-collapse">
                 <thead>
-                    <tr class="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                        <th class="py-3 px-4">Usuario / Email</th>
-                        <th class="py-3 px-4">Cargo / Carrera</th>
-                        <th class="py-3 px-4">Estado Cuenta</th>
-                        <th class="py-3 px-4">Roles Asignados</th>
-                        <th class="py-3 px-4 text-right">Acciones</th>
+                    <tr class="bg-figma-card/80 border-b border-figma-border-subtle text-[11px] font-semibold text-figma-text-tertiary uppercase tracking-wider">
+                        <th class="py-2.5 px-3.5">Usuario / Identificador</th>
+                        <th class="py-2.5 px-3.5">Cargo / Carrera</th>
+                        <th class="py-2.5 px-3.5">Estado Cuenta</th>
+                        <th class="py-2.5 px-3.5">Matriz de Roles</th>
+                        <th class="py-2.5 px-3.5 text-right">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 text-gray-800">
+                <tbody class="divide-y divide-figma-border-subtle text-figma-text-secondary">
                     @foreach($users as $user)
-                        <tr class="hover:bg-amber-50/40 transition-colors">
-                            <td class="py-3.5 px-4 whitespace-nowrap">
-                                <div class="font-bold text-gray-900">{{ $user->nombre }}</div>
-                                <div class="text-xs text-gray-500 font-mono">{{ $user->email }}</div>
+                        <tr class="hover:bg-figma-hover/50 transition-colors">
+                            <td class="py-3 px-3.5 whitespace-nowrap">
+                                <div class="font-bold text-figma-text-primary text-xs">{{ $user->nombre }}</div>
+                                <div class="text-[11px] text-figma-brand font-mono">{{ $user->email }}</div>
                                 @if($user->dni)
-                                    <div class="text-[11px] text-gray-400">DNI: {{ $user->dni }}</div>
+                                    <div class="text-[10px] text-figma-text-tertiary font-mono">DNI: {{ $user->dni }}</div>
                                 @endif
                             </td>
-                            <td class="py-3.5 px-4">
-                                <div class="font-medium text-gray-900">{{ $user->cargo_actual ?: 'Sin cargo registrado' }}</div>
-                                <div class="text-xs text-gray-500">{{ $user->carrera ?: 'Sin carrera' }}</div>
+                            <td class="py-3 px-3.5">
+                                <div class="font-medium text-figma-text-primary text-xs">{{ $user->cargo_actual ?: 'Sin cargo registrado' }}</div>
+                                <div class="text-[11px] text-figma-text-tertiary">{{ $user->carrera ?: 'Sin carrera' }}</div>
                             </td>
-                            <td class="py-3.5 px-4 whitespace-nowrap">
+                            <td class="py-3 px-3.5 whitespace-nowrap">
                                 @if($user->esHistorico())
-                                    <div class="space-y-1">
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-900 border border-purple-200">
-                                            <svg class="w-3.5 h-3.5 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                    <div class="space-y-0.5">
+                                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
                                             Usuario Histórico
                                         </span>
-                                        <div class="text-[10px] text-purple-700 font-medium">Huella Anonimizada (Ley 25.326)</div>
+                                        <div class="text-[10px] text-purple-400/80">Huella Anonimizada</div>
                                     </div>
                                 @elseif($user->activo)
                                     <form action="{{ route('users.toggleActivo', $user->id) }}" method="POST" class="inline">
                                         @csrf
-                                        <button type="submit" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300" title="Clic para desactivar cuenta">
-                                            <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                                        <button type="submit" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 cursor-pointer" title="Clic para desactivar cuenta">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                             Activo
                                         </button>
                                     </form>
                                 @elseif($user->isExPersonalMayor6Anios())
-                                    <div class="space-y-1">
+                                    <div class="space-y-0.5">
                                         <form action="{{ route('users.toggleActivo', $user->id) }}" method="POST" class="inline">
                                             @csrf
-                                            <button type="submit" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-rose-100 text-rose-800 hover:bg-rose-200 border border-rose-300" title="Clic para activar cuenta">
-                                                <span class="w-2 h-2 rounded-full bg-rose-600"></span>
+                                            <button type="submit" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 border border-rose-500/30 cursor-pointer" title="Clic para activar cuenta">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                                                 Inactivo &gt; 6 años
                                             </button>
                                         </form>
-                                        <div class="text-[10px] text-rose-700 font-bold">Plazo Legal Cumplido (&gt; 6 años) - Elegible Ley 25.326</div>
+                                        <div class="text-[10px] text-amber-500">Elegible Ley 25.326</div>
                                     </div>
                                 @else
                                     <form action="{{ route('users.toggleActivo', $user->id) }}" method="POST" class="inline">
                                         @csrf
-                                        <button type="submit" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300" title="Clic para activar cuenta">
-                                            <span class="w-2 h-2 rounded-full bg-gray-500"></span>
+                                        <button type="submit" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all bg-figma-bg-deep text-figma-text-tertiary hover:text-figma-text-primary border border-figma-border-subtle cursor-pointer" title="Clic para activar cuenta">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-figma-text-dim"></span>
                                             Inactivo
                                         </button>
                                     </form>
                                 @endif
                             </td>
-                            <td class="py-3.5 px-4">
-                                <div class="flex flex-wrap gap-1.5">
+                            <td class="py-3 px-3.5">
+                                <div class="flex flex-wrap gap-1">
                                     @php
                                         $rolesOficiales = ['user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev', 'registered'];
                                     @endphp
@@ -91,43 +104,38 @@
                                         @endphp
                                         <button type="button" 
                                             onclick="solicitarConfirmacionRol({{ $user->id }}, '{{ addslashes($user->nombre) }}', '{{ $rName }}', {{ $hasRole ? 'true' : 'false' }})"
-                                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all border {{ $hasRole ? 'bg-amber-400 border-amber-500 text-black shadow-2xs' : 'bg-gray-100 border-gray-200 text-gray-400 hover:bg-gray-200' }}"
+                                            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition-all border cursor-pointer {{ $hasRole ? 'bg-figma-brand text-white border-figma-brand shadow-2xs' : 'bg-figma-bg-deep border-figma-border-subtle text-figma-text-dim hover:text-figma-text-secondary hover:border-figma-border-strong' }}"
                                             title="{{ $hasRole ? 'Clic para remover este rol' : 'Clic para asignar este rol' }}">
                                             <span>{{ $rName }}</span>
                                             @if($hasRole)
-                                                <svg class="w-3 h-3 text-black stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                                </svg>
-                                            @else
-                                                <svg class="w-3 h-3 text-gray-400 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                                                 </svg>
                                             @endif
                                         </button>
                                     @endforeach
                                 </div>
                             </td>
-                            <td class="py-3.5 px-4 text-right whitespace-nowrap">
-                                <div class="flex items-center justify-end gap-2">
+                            <td class="py-3 px-3.5 text-right whitespace-nowrap">
+                                <div class="flex items-center justify-end gap-1.5">
                                     @if($user->isExPersonalMayor6Anios() && !$user->esHistorico())
                                         <button type="button" 
                                             onclick="abrirModalHuella({{ $user->id }}, '{{ addslashes($user->nombre) }}', '{{ $user->dni ?: 'Sin DNI' }}', '{{ $user->fecha_egreso ? $user->fecha_egreso->format('d/m/Y') : 'Mayor a 6 años' }}')"
-                                            class="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 font-bold px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition-all" 
-                                            title="Borrado de Huella Digital y disociación según Ley 25.326">
-                                            <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            <span>Borrar Huella</span>
+                                            class="inline-flex items-center gap-1 bg-rose-600 hover:bg-rose-500 text-white font-semibold px-2 py-1 rounded text-[11px] shadow-xs transition-colors cursor-pointer" 
+                                            title="Borrado de Huella Digital según Ley 25.326">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <span>Huella</span>
                                         </button>
                                     @endif
-                                    <a href="{{ route('users.reporte', $user->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs transition-all" title="Ver informe integral de auditoría y trazabilidad (Tickets, Reportes y Movimientos)">
-                                        <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <a href="{{ route('users.reporte', $user->id) }}" class="figma-btn-secondary text-[11px] py-1 px-2" title="Ver informe integral de auditoría">
+                                        <svg class="w-3 h-3 text-figma-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                         <span>Informe</span>
                                     </a>
-                                    <a href="{{ route('users.trayectoria', $user->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs transition-all" title="Ver y gestionar periodos de trayectoria">
-                                        <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        <span>Trayectoria ({{ $user->trayectorias->count() }})</span>
+                                    <a href="{{ route('users.trayectoria', $user->id) }}" class="figma-btn-secondary text-[11px] py-1 px-2" title="Ver trayectoria">
+                                        <span>Trayectoria</span>
                                     </a>
-                                    <a href="{{ route('users.edit', $user->id) }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50 border border-gray-300 text-gray-800 hover:text-black font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs transition-all" title="Editar perfil y permisos">
-                                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    <a href="{{ route('users.edit', $user->id) }}" class="figma-btn-secondary text-[11px] py-1 px-2" title="Editar cuenta">
+                                        <svg class="w-3 h-3 text-figma-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         <span>Editar</span>
                                     </a>
                                 </div>
@@ -139,37 +147,37 @@
         </div>
 
         @if($users->hasPages())
-            <div class="p-4 border-t border-gray-200 bg-gray-50">
+            <div class="p-3 border-t border-figma-border-subtle bg-figma-card/50">
                 {{ $users->links() }}
             </div>
         @endif
     </div>
 </div>
 
-<!-- MODAL DE CONFIRMACIÓN PREVIA PARA CAMBIOS DE ROL -->
-<div id="modal-confirmacion-rol" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-gray-200">
+<!-- MODAL DE CONFIRMACIÓN PREVIA PARA CAMBIOS DE ROL (Figma Studio Dialog) -->
+<div id="modal-confirmacion-rol" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+    <div class="figma-panel max-w-md w-full p-5 space-y-4 shadow-2xl">
         <div class="flex items-center gap-3">
-            <div id="modal-icono" class="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <div id="modal-icono" class="w-9 h-9 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
             </div>
             <div>
-                <h3 class="text-base font-bold text-gray-900" id="modal-titulo">Confirmar Cambio Crítico de Rol</h3>
-                <p class="text-xs text-gray-500" id="modal-subtitulo">Esta acción afectará los privilegios del usuario en el sistema.</p>
+                <h3 class="text-sm font-bold text-figma-text-primary" id="modal-titulo">Confirmar Cambio Crítico de Rol</h3>
+                <p class="text-[11px] text-figma-text-tertiary" id="modal-subtitulo">Esta acción modificará los privilegios del usuario.</p>
             </div>
         </div>
 
-        <p class="text-sm text-gray-700" id="modal-mensaje">
+        <p class="text-xs text-figma-text-secondary leading-relaxed" id="modal-mensaje">
             ¿Está seguro de modificar el rol del usuario?
         </p>
 
-        <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
-            <button type="button" onclick="cerrarModalRol()" class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs shadow-sm transition-all">
+        <div class="flex justify-end gap-2 pt-2 border-t border-figma-border-subtle">
+            <button type="button" onclick="cerrarModalRol()" class="figma-btn-secondary">
                 Cancelar
             </button>
-            <button type="button" id="btn-confirmar-rol" class="px-5 py-2 bg-[#fbc101] hover:bg-amber-400 font-extrabold text-black rounded-xl text-xs shadow-sm transition-all">
+            <button type="button" id="btn-confirmar-rol" class="figma-btn-primary">
                 Sí, Confirmar Cambio
             </button>
         </div>
@@ -186,12 +194,12 @@
         const btn = document.getElementById('btn-confirmar-rol');
 
         if (actualmenteTiene) {
-            mensaje.innerHTML = `¿Está seguro de que desea <strong>REMOVER</strong> el rol <span class="font-mono bg-red-100 text-red-900 px-1 py-0.5 rounded font-bold">${roleName}</span> al usuario <strong>${userName}</strong>?`;
-            btn.className = 'px-5 py-2 bg-rose-600 hover:bg-rose-700 font-extrabold text-white rounded-xl text-xs shadow-sm transition-all';
+            mensaje.innerHTML = `¿Está seguro de que desea <strong>REMOVER</strong> el rol <span class="font-mono bg-figma-bg-deep text-rose-400 px-1.5 py-0.5 rounded border border-rose-500/30 font-bold">${roleName}</span> al usuario <strong>${userName}</strong>?`;
+            btn.className = 'inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-lg text-xs shadow-xs transition-colors cursor-pointer';
             btn.innerText = 'Sí, Remover Rol';
         } else {
-            mensaje.innerHTML = `¿Está seguro de que desea <strong>ASIGNAR</strong> el rol <span class="font-mono bg-amber-100 text-amber-900 px-1 py-0.5 rounded font-bold">${roleName}</span> al usuario <strong>${userName}</strong>?`;
-            btn.className = 'px-5 py-2 bg-[#fbc101] hover:bg-amber-400 font-extrabold text-black rounded-xl text-xs shadow-sm transition-all';
+            mensaje.innerHTML = `¿Está seguro de que desea <strong>ASIGNAR</strong> el rol <span class="font-mono bg-figma-bg-deep text-figma-brand px-1.5 py-0.5 rounded border border-figma-brand/30 font-bold">${roleName}</span> al usuario <strong>${userName}</strong>?`;
+            btn.className = 'figma-btn-primary cursor-pointer';
             btn.innerText = 'Sí, Asignar Rol';
         }
 

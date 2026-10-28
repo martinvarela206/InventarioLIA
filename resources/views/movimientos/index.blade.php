@@ -1,64 +1,67 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-[1240px] mx-auto px-2 space-y-6">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="max-w-[1240px] mx-auto py-4 space-y-4">
+    <!-- Header Toolbar -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-figma-border-subtle">
         <div>
-            <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
-                <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                </svg>
-                <span>Movimientos</span>
-                <span class="text-xs bg-amber-100 text-amber-900 font-bold px-2.5 py-0.5 rounded-full border border-amber-300">
+            <div class="flex items-center gap-2 text-[11px] font-semibold text-figma-text-tertiary uppercase tracking-wider mb-0.5">
+                <span>Trazabilidad</span>
+                <span>/</span>
+                <span class="text-figma-text-primary">Movimientos</span>
+            </div>
+            <h1 class="text-xl font-bold text-figma-text-primary flex items-center gap-2">
+                <span>Historial de Movimientos de Activos</span>
+                <span class="text-[10px] bg-figma-bg-deep text-figma-brand font-mono font-bold px-2 py-0.5 rounded border border-figma-border-subtle">
                     {{ $movimientos->total() }} registros
                 </span>
             </h1>
         </div>
-        <div class="flex items-center gap-3">
-            <a href="{{ route('movimientos.rapido') }}" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                Nuevo Movimiento
+        <div class="flex items-center gap-2">
+            <a href="{{ route('movimientos.rapido') }}" class="figma-btn-primary text-xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>Movimiento Rápido</span>
             </a>
-            <a href="{{ route('reportes.show', 'movimientos-fechas') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2.5 rounded-xl shadow-sm transition-all text-sm">
-                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <a href="{{ route('reportes.show', 'movimientos-fechas') }}" class="figma-btn-secondary text-xs">
+                <svg class="w-3.5 h-3.5 text-figma-text-tertiary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                Auditoría entre Fechas
+                <span>Auditoría Fechas</span>
             </a>
         </div>
     </div>
 
     <!-- Filters & Search Form -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <form action="{{ route('movimientos.index') }}" method="GET" class="space-y-3">
+    <div class="figma-panel p-3">
+        <form action="{{ route('movimientos.index') }}" method="GET" class="space-y-2.5">
             <div class="flex gap-2">
                 <div class="relative flex-1">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar por LIA, UNSJ, marca, solicitante, o comentarios..." 
-                        class="w-full rounded-xl border border-gray-300 pl-10 pr-4 py-2 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
-                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar por LIA, UNSJ, marca, solicitante..." 
+                        class="figma-input w-full pl-9 pr-3 py-1.5 text-xs">
+                    <svg class="w-4 h-4 text-figma-text-tertiary absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
-                <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl shadow-xs text-sm transition-all active:scale-[0.98]">
-                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    Buscar
+                <button type="submit" class="figma-btn-primary text-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <span>Buscar</span>
                 </button>
                 @if(request()->hasAny(['search', 'tipo_movimiento', 'ubicacion_id']))
-                    <a href="{{ route('movimientos.index') }}" class="inline-flex items-center gap-1 px-3 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs shadow-xs transition-colors">
-                        <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        Limpiar
+                    <a href="{{ route('movimientos.index') }}" class="figma-btn-secondary text-xs">
+                        <svg class="w-3.5 h-3.5 text-figma-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <span>Limpiar</span>
                     </a>
                 @endif
             </div>
 
-            <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100 text-xs">
-                <span class="font-bold text-gray-400 uppercase tracking-wider mr-1">Filtrar por:</span>
+            <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-figma-border-subtle text-xs">
+                <span class="font-bold text-figma-text-tertiary uppercase text-[10px] tracking-wider mr-1">Filtrar por:</span>
 
-                <select name="tipo_movimiento" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700">
+                <select name="tipo_movimiento" onchange="this.form.submit()" class="figma-input px-2.5 py-1 text-xs">
                     <option value="">Todos los Tipos</option>
                     <option value="interno" {{ request('tipo_movimiento') === 'interno' ? 'selected' : '' }}>Traslados Internos</option>
                     <option value="externo_prestamo" {{ request('tipo_movimiento') === 'externo_prestamo' ? 'selected' : '' }}>Préstamos Externos</option>
                 </select>
 
-                <select name="ubicacion_id" onchange="this.form.submit()" class="bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700">
+                <select name="ubicacion_id" onchange="this.form.submit()" class="figma-input px-2.5 py-1 text-xs">
                     <option value="">Todas las Salas</option>
                     @foreach($ubicaciones as $ub)
                         <option value="{{ $ub->id }}" {{ request('ubicacion_id') == $ub->id ? 'selected' : '' }}>{{ $ub->nombre }}</option>
@@ -69,66 +72,66 @@
     </div>
 
     <!-- Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="figma-panel overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm border-collapse">
+            <table class="w-full text-left text-xs border-collapse">
                 <thead>
-                    <tr class="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                        <th class="py-3 px-4">Fecha / Hora</th>
-                        <th class="py-3 px-4">Tipo Evento</th>
-                        <th class="py-3 px-4">Activo Involucrado</th>
-                        <th class="py-3 px-4">Destino / Puesto</th>
-                        <th class="py-3 px-4">Situación</th>
-                        <th class="py-3 px-4">Solicitante / Detalle</th>
-                        <th class="py-3 px-4 text-right">Responsable</th>
+                    <tr class="bg-figma-bg-deep border-b border-figma-border-subtle text-[10px] font-bold text-figma-text-secondary uppercase tracking-wider">
+                        <th class="py-2.5 px-3">Fecha / Hora</th>
+                        <th class="py-2.5 px-3">Tipo Evento</th>
+                        <th class="py-2.5 px-3">Activo Involucrado</th>
+                        <th class="py-2.5 px-3">Destino / Puesto</th>
+                        <th class="py-2.5 px-3">Situación</th>
+                        <th class="py-2.5 px-3">Solicitante / Detalle</th>
+                        <th class="py-2.5 px-3 text-right">Responsable</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 text-gray-800 text-xs">
+                <tbody class="divide-y divide-figma-border-subtle text-figma-text-primary text-xs">
                     @forelse($movimientos as $m)
-                        <tr class="hover:bg-amber-50/40 transition-colors">
-                            <td class="py-3 px-4 whitespace-nowrap font-mono">
+                        <tr class="hover:bg-figma-bg-deep/50 transition-colors">
+                            <td class="py-2.5 px-3 whitespace-nowrap font-mono text-figma-text-secondary text-[11px]">
                                 {{ $m->fecha ? $m->fecha->format('d/m/Y H:i') : '-' }}
                             </td>
-                            <td class="py-3 px-4 whitespace-nowrap">
+                            <td class="py-2.5 px-3 whitespace-nowrap">
                                 {!! $m->presenter()->tipoBadge() !!}
                             </td>
-                            <td class="py-3 px-4 whitespace-nowrap">
-                                <a href="{{ route('elementos.show', $m->elemento_id) }}" class="font-bold text-gray-900 hover:text-amber-700 font-mono">
+                            <td class="py-2.5 px-3 whitespace-nowrap">
+                                <a href="{{ route('elementos.show', $m->elemento_id) }}" class="font-bold text-figma-brand hover:underline font-mono">
                                     {{ $m->elemento?->nro_lia ?: 'LIA: -' }}
                                 </a>
-                                <span class="text-[11px] text-gray-500 block">
+                                <span class="text-[10px] text-figma-text-tertiary block font-mono">
                                     {{ strtoupper($m->elemento?->tipo?->nombre ?? '') }} {{ $m->elemento?->marca }}
                                 </span>
                             </td>
-                            <td class="py-3 px-4">
-                                <strong class="text-gray-900">{{ $m->presenter()->destinoTexto() }}</strong>
+                            <td class="py-2.5 px-3">
+                                <strong class="text-figma-text-primary">{{ $m->presenter()->destinoTexto() }}</strong>
                             </td>
-                            <td class="py-3 px-4 whitespace-nowrap">
+                            <td class="py-2.5 px-3 whitespace-nowrap">
                                 {!! $m->presenter()->estadoBadge() !!}
                             </td>
-                            <td class="py-3 px-4">
+                            <td class="py-2.5 px-3">
                                 @if($m->esPrestamo())
-                                    <div class="font-bold text-amber-900">{{ $m->solicitante }}</div>
-                                    <div class="text-[10px] text-gray-500">
+                                    <div class="font-bold text-figma-text-primary">{{ $m->solicitante }}</div>
+                                    <div class="text-[10px] text-figma-text-tertiary font-mono">
                                         Salida: {{ $m->fecha_prestamo ? $m->fecha_prestamo->format('d/m/Y') : '-' }}
                                         @if($m->fecha_devolucion)
-                                            <span class="text-emerald-700 font-bold ml-1">| Devuelto {{ Carbon\Carbon::parse($m->fecha_devolucion)->format('d/m/Y') }}</span>
+                                            <span class="text-emerald-400 font-bold ml-1">| Devuelto {{ Carbon\Carbon::parse($m->fecha_devolucion)->format('d/m/Y') }}</span>
                                         @else
-                                            <span class="text-amber-800 font-bold ml-1">| Activo ({{ $m->diasPrestado() }}d)</span>
+                                            <span class="text-amber-400 font-bold ml-1">| Activo ({{ $m->diasPrestado() }}d)</span>
                                         @endif
                                     </div>
                                 @endif
                                 @if($m->comentario)
-                                    <div class="text-gray-600 italic mt-0.5 line-clamp-1">"{{ $m->comentario }}"</div>
+                                    <div class="text-figma-text-secondary italic mt-0.5 line-clamp-1 text-[11px]">"{{ $m->comentario }}"</div>
                                 @endif
                             </td>
-                            <td class="py-3 px-4 text-right whitespace-nowrap text-gray-500 font-medium">
+                            <td class="py-2.5 px-3 text-right whitespace-nowrap text-figma-text-secondary font-mono text-[11px]">
                                 {{ $m->usuario?->nombre ?? 'Sistema' }}
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-12 text-center text-gray-400">
+                            <td colspan="7" class="py-10 text-center text-figma-text-tertiary italic text-xs">
                                 No se encontraron movimientos con los filtros aplicados.
                             </td>
                         </tr>
@@ -138,7 +141,7 @@
         </div>
 
         @if($movimientos->hasPages())
-            <div class="p-4 border-t border-gray-200 bg-gray-50">
+            <div class="p-3 border-t border-figma-border-subtle bg-figma-bg-deep">
                 {{ $movimientos->links() }}
             </div>
         @endif

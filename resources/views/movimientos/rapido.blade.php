@@ -1,50 +1,64 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-[800px] mx-auto">
-    <!-- Header -->
-    <div class="mb-6 text-center">
-        <h1 class="text-2xl lg:text-3xl font-black text-gray-900">
-            Movimiento Rápido
-        </h1>
+<div class="max-w-[800px] mx-auto py-4 space-y-4">
+    <!-- Header Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-figma-border-subtle">
+        <div>
+            <div class="flex items-center gap-2 text-[11px] font-semibold text-figma-text-tertiary uppercase tracking-wider mb-0.5">
+                <a href="{{ route('dashboard.index') }}" class="hover:text-figma-brand transition-colors">Dashboard</a>
+                <span>/</span>
+                <span class="text-figma-text-primary">Operaciones</span>
+            </div>
+            <h1 class="text-xl font-bold text-figma-text-primary flex items-center gap-2">
+                <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>Movimiento Rápido de Activo</span>
+            </h1>
+        </div>
+        <div>
+            <a href="{{ route('dashboard.index') }}" class="figma-btn-secondary text-xs">
+                <svg class="w-3.5 h-3.5 text-figma-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver al Dashboard</span>
+            </a>
+        </div>
     </div>
 
-    <!-- Main Wizard Card -->
-    <div class="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
+    <!-- Main Wizard Panel (Figma Studio Inspector) -->
+    <div class="figma-panel p-5 sm:p-6 space-y-5 shadow-sm">
         
         <!-- PASO 1: Búsqueda en vivo de Activo -->
-        <div class="p-6 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100">
-            <label for="buscar-input" class="block text-sm font-bold text-gray-900 mb-2">
+        <div class="space-y-3">
+            <label for="buscar-input" class="block text-xs font-bold text-figma-text-primary uppercase tracking-wider">
                 1. Escanear o Tipear Código LIA o UNSJ
             </label>
             <div class="relative">
                 <input type="text" id="buscar-input" autocomplete="off"
                     value="{{ $elementoPreseleccionado ? ($elementoPreseleccionado->nro_lia ?: $elementoPreseleccionado->nro_unsj) : '' }}"
                     placeholder="Ej. LIA-FS-01, 02-05950, Bangho..."
-                    class="w-full text-lg font-mono font-bold px-4 py-3.5 bg-white border-2 border-amber-400 rounded-xl focus:ring-4 focus:ring-amber-200 focus:border-amber-500 outline-none transition-all shadow-inner">
-                <div id="buscar-spinner" class="hidden absolute right-4 top-4">
-                    <svg class="animate-spin h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                    class="figma-input w-full text-base font-mono font-bold px-4 py-3">
+                <div id="buscar-spinner" class="hidden absolute right-3.5 top-3.5">
+                    <svg class="animate-spin h-5 w-5 text-figma-brand" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                 </div>
-                <!-- Resultados en Vivo Flotante Estandarizado -->
-                <div id="resultados-dropdown" class="hidden absolute left-0 right-0 mt-1 bg-white rounded-2xl shadow-2xl border border-gray-200 max-h-64 overflow-y-auto divide-y divide-gray-100 z-50">
+                <!-- Resultados en Vivo Flotante -->
+                <div id="resultados-dropdown" class="hidden absolute left-0 right-0 mt-1 figma-panel bg-figma-card shadow-2xl border-figma-border-strong max-h-64 overflow-y-auto divide-y divide-figma-border-subtle z-50">
                 </div>
             </div>
 
             <!-- Ficha del Activo Seleccionado -->
-            <div id="activo-seleccionado-card" class="{{ $elementoPreseleccionado ? '' : 'hidden' }} mt-4 p-4 rounded-xl border {{ $elementoPreseleccionado && $elementoPreseleccionado->ultimoMovimiento?->esPrestamo() && !$elementoPreseleccionado->ultimoMovimiento?->fecha_devolucion ? 'bg-amber-50 border-amber-300' : 'bg-emerald-50 border-emerald-300' }}">
+            <div id="activo-seleccionado-card" class="{{ $elementoPreseleccionado ? '' : 'hidden' }} figma-card p-4 border-figma-border-strong">
                 <div class="flex items-start justify-between gap-3">
                     <div>
-                        <span id="card-tipo" class="text-xs font-extrabold uppercase px-2 py-0.5 rounded bg-white text-gray-800 border border-gray-200">
+                        <span id="card-tipo" class="font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-figma-bg-deep text-figma-brand border border-figma-border-subtle">
                             {{ strtoupper($elementoPreseleccionado?->tipo?->nombre ?? 'ACTIVO') }}
                         </span>
-                        <h3 id="card-titulo" class="text-base font-bold text-gray-900 mt-1">
+                        <h3 id="card-titulo" class="text-sm font-bold text-figma-text-primary mt-1.5">
                             {{ $elementoPreseleccionado?->marca }} {{ $elementoPreseleccionado?->modelo }}
                         </h3>
-                        <p id="card-identificadores" class="text-xs font-mono font-semibold text-gray-700">
+                        <p id="card-identificadores" class="text-xs font-mono font-semibold text-figma-text-secondary mt-0.5">
                             LIA: {{ $elementoPreseleccionado?->nro_lia ?: '-' }} | UNSJ: {{ $elementoPreseleccionado?->nro_unsj ?: '-' }}
                         </p>
-                        <p id="card-ubicacion" class="text-xs text-gray-600 mt-1">
-                            Ubicación actual: <strong>{{ $elementoPreseleccionado?->presenter()->puestoUbicacion() }}</strong>
+                        <p id="card-ubicacion" class="text-[11px] text-figma-text-tertiary mt-1">
+                            Ubicación actual: <strong class="text-figma-text-secondary">{{ $elementoPreseleccionado?->presenter()->puestoUbicacion() }}</strong>
                         </p>
                     </div>
                     <div id="card-badge-estado" class="text-right">
@@ -56,95 +70,95 @@
             </div>
         </div>
 
-        <!-- MODO DEVOLUCIÓN AUTOMÁTICA (Si el activo tiene préstamo activo) -->
-        <div id="seccion-devolucion" class="{{ $elementoPreseleccionado && $elementoPreseleccionado->ultimoMovimiento?->esPrestamo() && !$elementoPreseleccionado->ultimoMovimiento?->fecha_devolucion ? '' : 'hidden' }} p-6 bg-amber-50 border-b border-amber-200">
-            <div class="flex items-center gap-2 text-amber-900 font-bold mb-3">
-                <span class="w-3 h-3 rounded-full bg-amber-600 animate-pulse"></span>
-                <span>Flujo de Devolución Rápida (Equipo actualmente prestado)</span>
+        <!-- MODO DEVOLUCIÓN AUTOMÁTICA -->
+        <div id="seccion-devolucion" class="{{ $elementoPreseleccionado && $elementoPreseleccionado->ultimoMovimiento?->esPrestamo() && !$elementoPreseleccionado->ultimoMovimiento?->fecha_devolucion ? '' : 'hidden' }} figma-card p-4 space-y-3.5 border-amber-500/40">
+            <div class="flex items-center gap-2 text-amber-500 font-bold text-xs">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                <span>Flujo de Devolución Rápida (Equipo actualmente en préstamo externo)</span>
             </div>
-            <form id="form-devolucion" method="POST" action="{{ $elementoPreseleccionado && $elementoPreseleccionado->ultimoMovimiento ? route('movimientos.devolucion', $elementoPreseleccionado->ultimoMovimiento->id) : '#' }}">
+            <form id="form-devolucion" method="POST" action="{{ $elementoPreseleccionado && $elementoPreseleccionado->ultimoMovimiento ? route('movimientos.devolucion', $elementoPreseleccionado->ultimoMovimiento->id) : '#' }}" class="space-y-3">
                 @csrf
-                <div class="space-y-4">
+                <div>
+                    <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Fecha de Devolución</label>
+                    <input type="date" name="fecha_devolucion" value="{{ date('Y-m-d') }}" class="figma-input w-full px-3 py-1.5 text-xs font-mono">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fecha de Devolución</label>
-                        <input type="date" name="fecha_devolucion" value="{{ date('Y-m-d') }}" class="w-full px-3 py-2 border rounded-lg bg-white font-medium">
+                        <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Sala de Reingreso <span class="text-rose-400">*</span></label>
+                        <select name="ubicacion_id" class="figma-input w-full px-3 py-1.5 text-xs cursor-pointer" required>
+                            @foreach($ubicaciones as $ub)
+                                <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
+                            @endforeach
+                        </select>
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Sala / Laboratorio Reingreso</label>
-                            <select name="ubicacion_id" class="w-full px-3 py-2 border rounded-lg bg-white font-semibold" required>
-                                @foreach($ubicaciones as $ub)
-                                    <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Puesto / Mesa (Opcional)</label>
-                            <input type="text" name="puesto" placeholder="Ej. Puesto 04" class="w-full px-3 py-2 border rounded-lg bg-white">
-                        </div>
-                    </div>
-
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Observaciones de Entrega</label>
-                        <input type="text" name="comentario" placeholder="Equipo recibido en conformidad con sus cables..." class="w-full px-3 py-2 border rounded-lg bg-white">
+                        <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Puesto / Mesa (Opcional)</label>
+                        <input type="text" name="puesto" placeholder="Ej. Puesto 04" class="figma-input w-full px-3 py-1.5 text-xs">
                     </div>
+                </div>
 
-                    <button type="submit" class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition-all text-base flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        Registrar Devolución y Reingreso
+                <div>
+                    <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Observaciones de Entrega</label>
+                    <input type="text" name="comentario" placeholder="Equipo recibido en conformidad con sus accesorios..." class="figma-input w-full px-3 py-1.5 text-xs">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="figma-btn-primary w-full justify-center py-2.5 text-xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>Registrar Devolución y Reingreso</span>
                     </button>
                 </div>
             </form>
         </div>
 
         <!-- FORMULARIO ESTÁNDAR: TRASLADO INTERNO vs PRÉSTAMO EXTERNO -->
-        <div id="seccion-formulario-normal" class="{{ $elementoPreseleccionado && $elementoPreseleccionado->ultimoMovimiento?->esPrestamo() && !$elementoPreseleccionado->ultimoMovimiento?->fecha_devolucion ? 'hidden' : '' }} p-6 space-y-6">
+        <div id="seccion-formulario-normal" class="{{ $elementoPreseleccionado && $elementoPreseleccionado->ultimoMovimiento?->esPrestamo() && !$elementoPreseleccionado->ultimoMovimiento?->fecha_devolucion ? 'hidden' : '' }} space-y-4">
             
-            <form id="form-movimiento" method="POST" action="{{ route('movimientos.store') }}">
+            <form id="form-movimiento" method="POST" action="{{ route('movimientos.store') }}" class="space-y-4">
                 @csrf
                 <input type="hidden" name="elemento_id" id="form-elemento-id" value="{{ $elementoPreseleccionado?->id }}">
 
-                <!-- Selector de Tipo de Movimiento -->
-                <div class="mb-6">
-                    <label class="block text-sm font-bold text-gray-900 mb-2">2. Tipo de Acción a Realizar</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <label class="tipo-btn flex items-center justify-center gap-2 p-3.5 border-2 rounded-xl cursor-pointer font-bold text-sm transition-all border-amber-500 bg-amber-50 text-amber-900" id="btn-tipo-interno">
+                <!-- Selector de Acción: Figma Pill Segment Ribbon -->
+                <div>
+                    <label class="block text-xs font-bold text-figma-text-primary uppercase tracking-wider mb-2">2. Acción a Realizar</label>
+                    <div class="figma-pill-ribbon w-full flex">
+                        <label class="figma-pill-item flex-1 justify-center cursor-pointer active" id="btn-tipo-interno">
                             <input type="radio" name="tipo_movimiento" value="interno" class="hidden" checked onchange="toggleTipoAccion('interno')">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                            Traslado Interno
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                            <span>Traslado Interno (Dentro de Salas)</span>
                         </label>
-                        <label class="tipo-btn flex items-center justify-center gap-2 p-3.5 border-2 rounded-xl cursor-pointer font-bold text-sm transition-all border-gray-200 bg-white text-gray-700" id="btn-tipo-prestamo">
+                        <label class="figma-pill-item flex-1 justify-center cursor-pointer" id="btn-tipo-prestamo">
                             <input type="radio" name="tipo_movimiento" value="externo_prestamo" class="hidden" onchange="toggleTipoAccion('externo_prestamo')">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                            Préstamo Externo
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            <span>Préstamo a Cátedra / Externo</span>
                         </label>
                     </div>
                 </div>
 
                 <!-- Campos de Traslado Interno -->
-                <div id="campos-interno" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div id="campos-interno" class="figma-card p-4 space-y-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Sala / Laboratorio Destino <span class="text-red-500 font-bold">*</span></label>
-                            <select name="ubicacion_id" class="w-full px-3.5 py-2.5 border rounded-xl bg-white font-semibold">
+                            <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Sala Destino <span class="text-rose-400">*</span></label>
+                            <select name="ubicacion_id" class="figma-input w-full px-3 py-1.5 text-xs cursor-pointer">
                                 @foreach($ubicaciones as $ub)
                                     <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Puesto / Mesa de destino</label>
-                            <input type="text" name="puesto" placeholder="Ej. Puesto 03, Mesa 12" class="w-full px-3.5 py-2.5 border rounded-xl bg-white">
+                            <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Puesto / Mesa de Destino</label>
+                            <input type="text" name="puesto" placeholder="Ej. Puesto 03, Mesa 12" class="figma-input w-full px-3 py-1.5 text-xs">
                         </div>
                     </div>
                 </div>
 
                 <!-- Campos de Préstamo Externo -->
-                <div id="campos-prestamo" class="space-y-4 hidden">
+                <div id="campos-prestamo" class="figma-card p-4 space-y-3 hidden">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Docente / Investigador / Cátedra Solicitante <span class="text-red-500 font-bold">*</span></label>
-                        <input type="text" name="solicitante" id="input-solicitante" list="lista-solicitantes-rapido" placeholder="Ej. Dr. Juan Pérez (Cátedra Algoritmos)" class="w-full px-3.5 py-2.5 border rounded-xl bg-white font-semibold">
+                        <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Docente / Investigador / Cátedra <span class="text-rose-400">*</span></label>
+                        <input type="text" name="solicitante" id="input-solicitante" list="lista-solicitantes-rapido" placeholder="Ej. Dr. Juan Pérez (Cátedra Algoritmos)" class="figma-input w-full px-3 py-1.5 text-xs font-medium">
                         <datalist id="lista-solicitantes-rapido">
                             @foreach($solicitantesFrecuentes ?? [] as $sol)
                                 <option value="{{ $sol }}"></option>
@@ -152,21 +166,21 @@
                         </datalist>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Fecha de Salida</label>
-                        <input type="date" name="fecha_prestamo" value="{{ date('Y-m-d') }}" class="w-full px-3.5 py-2.5 border rounded-xl bg-white font-medium">
+                        <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Fecha de Salida</label>
+                        <input type="date" name="fecha_prestamo" value="{{ date('Y-m-d') }}" class="figma-input w-full px-3 py-1.5 text-xs font-mono">
                     </div>
                 </div>
 
                 <!-- Comentario Común -->
-                <div class="mt-4">
-                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Observaciones / Motivo</label>
-                    <textarea name="comentario" rows="2" placeholder="Notas sobre el traslado o préstamo..." class="w-full px-3.5 py-2 border rounded-xl bg-white text-sm"></textarea>
+                <div>
+                    <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Observaciones / Motivo</label>
+                    <textarea name="comentario" rows="2" placeholder="Notas adicionales sobre el movimiento..." class="figma-input w-full px-3 py-1.5 text-xs"></textarea>
                 </div>
 
-                <div class="mt-6">
-                    <button type="submit" id="btn-submit-movimiento" class="w-full py-4 px-6 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl shadow-md transition-all text-base flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        Confirmar y Guardar Movimiento
+                <div class="pt-2">
+                    <button type="submit" id="btn-submit-movimiento" class="figma-btn-primary w-full justify-center py-2.5 text-xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>Confirmar y Guardar Movimiento</span>
                     </button>
                 </div>
             </form>
@@ -215,26 +229,26 @@
                     window.itemsBusqueda = items;
 
                     if (!items || items.length === 0) {
-                        dropdown.innerHTML = '<div class="p-4 text-center text-gray-400 text-xs">No se encontraron activos con ese identificador (código LIA, UNSJ o modelo).</div>';
+                        dropdown.innerHTML = '<div class="p-3 text-center text-figma-text-tertiary text-xs">No se encontraron activos con ese identificador.</div>';
                         dropdown.classList.remove('hidden');
                         return;
                     }
 
                     let html = '';
                     items.forEach((item, index) => {
-                        const badgeClase = item.es_prestamo_activo ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+                        const badgeClase = item.es_prestamo_activo ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
                         const badgeTexto = item.es_prestamo_activo ? 'Prestado' : 'En Sala';
                         html += `
-                            <div onclick="seleccionarActivoIndex(${index})" class="p-3 hover:bg-amber-50 cursor-pointer flex items-center justify-between text-sm transition-colors">
+                            <div onclick="seleccionarActivoIndex(${index})" class="p-2.5 hover:bg-figma-hover cursor-pointer flex items-center justify-between text-xs transition-colors">
                                 <div>
-                                    <span class="font-mono font-bold text-gray-900">LIA: ${item.nro_lia} | UNSJ: ${item.nro_unsj}</span>
-                                    <div class="text-xs text-gray-600">${item.tipo.toUpperCase()} - ${item.marca || ''} ${item.modelo || ''}</div>
+                                    <span class="font-mono font-bold text-figma-brand">LIA: ${item.nro_lia} | UNSJ: ${item.nro_unsj}</span>
+                                    <div class="text-[11px] text-figma-text-tertiary">${item.tipo.toUpperCase()} - ${item.marca || ''} ${item.modelo || ''}</div>
                                 </div>
                                 <div class="text-right">
-                                    <span class="text-xs font-semibold px-2 py-0.5 rounded ${badgeClase}">
+                                    <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded font-mono ${badgeClase}">
                                         ${badgeTexto}
                                     </span>
-                                    <div class="text-[11px] text-gray-400">${item.ubicacion_actual}</div>
+                                    <div class="text-[10px] text-figma-text-tertiary mt-0.5">${item.ubicacion_actual}</div>
                                 </div>
                             </div>
                         `;
@@ -244,7 +258,7 @@
                 })
                 .catch(err => {
                     spinner.classList.add('hidden');
-                    dropdown.innerHTML = '<div class="p-4 text-center text-red-400 text-xs">Error al consultar el servidor. Intenta nuevamente.</div>';
+                    dropdown.innerHTML = '<div class="p-3 text-center text-rose-400 text-xs">Error de conexión al servidor.</div>';
                     dropdown.classList.remove('hidden');
                 });
         }, 250);
@@ -269,7 +283,6 @@
         const card = document.getElementById('activo-seleccionado-card');
         card.classList.remove('hidden');
 
-        // Si tiene préstamo activo, mostrar modo de devolución
         if (item.es_prestamo_activo) {
             document.getElementById('seccion-devolucion').classList.remove('hidden');
             document.getElementById('seccion-formulario-normal').classList.add('hidden');
@@ -287,32 +300,23 @@
         const camposPrestamo = document.getElementById('campos-prestamo');
 
         if (tipo === 'interno') {
-            btnInterno.classList.add('border-amber-500', 'bg-amber-50', 'text-amber-900');
-            btnInterno.classList.remove('border-gray-200', 'bg-white', 'text-gray-700');
-
-            btnPrestamo.classList.remove('border-amber-500', 'bg-amber-50', 'text-amber-900');
-            btnPrestamo.classList.add('border-gray-200', 'bg-white', 'text-gray-700');
-
+            btnInterno.classList.add('active');
+            btnPrestamo.classList.remove('active');
             camposInterno.classList.remove('hidden');
             camposPrestamo.classList.add('hidden');
         } else {
-            btnPrestamo.classList.add('border-amber-500', 'bg-amber-50', 'text-amber-900');
-            btnPrestamo.classList.remove('border-gray-200', 'bg-white', 'text-gray-700');
-
-            btnInterno.classList.remove('border-amber-500', 'bg-amber-50', 'text-amber-900');
-            btnInterno.classList.add('border-gray-200', 'bg-white', 'text-gray-700');
-
+            btnPrestamo.classList.add('active');
+            btnInterno.classList.remove('active');
             camposInterno.classList.add('hidden');
             camposPrestamo.classList.remove('hidden');
         }
     }
 
-    // Interceptar submit para verificar elemento seleccionado
     document.getElementById('form-movimiento')?.addEventListener('submit', function(e) {
         const elementoId = document.getElementById('form-elemento-id').value;
         if (!elementoId) {
             e.preventDefault();
-            alert('Por favor busca y selecciona un elemento antes de guardar el movimiento.');
+            alert('Por favor busca y selecciona un activo antes de guardar el movimiento.');
             document.getElementById('buscar-input').focus();
             return;
         }

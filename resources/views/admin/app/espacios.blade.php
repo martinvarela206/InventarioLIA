@@ -1,125 +1,117 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-[1240px] mx-auto px-2 space-y-6">
-    <!-- Breadcrumb & Header -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="max-w-[1320px] mx-auto px-2 space-y-5">
+    <!-- Header Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-figma-border-subtle">
         <div>
-            <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                <a href="{{ route('app_admin.index') }}" class="hover:underline">Gestión App</a>
+            <div class="flex items-center gap-2 text-[11px] font-semibold text-figma-text-tertiary uppercase tracking-wider mb-0.5">
+                <a href="{{ route('app_admin.index') }}" class="hover:text-figma-brand transition-colors">Gestión App</a>
                 <span>/</span>
-                <span class="text-gray-900 font-bold">Espacios del LIA</span>
+                <span class="text-figma-text-primary">Espacios & Galerías</span>
             </div>
-            <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
-                <svg class="w-6 h-6 text-sky-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            <h1 class="text-xl font-bold text-figma-text-primary flex items-center gap-2">
+                <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                 <span>Espacios y Fotos de Laboratorios</span>
-                <span class="text-xs bg-amber-100 text-amber-900 font-extrabold px-2.5 py-0.5 rounded-full border border-amber-300">
+                <span class="font-mono text-xs font-bold bg-figma-bg-deep text-sky-400 px-2 py-0.5 rounded border border-figma-border-subtle">
                     {{ $espacios->count() }} salas
                 </span>
             </h1>
-            <p class="text-sm text-gray-600 mt-0.5">
-                Publica fotografías, nombres y descripciones de las salas y laboratorios para la sección pública de la landing page.
-            </p>
         </div>
         <div>
-            <a href="{{ url('/#espacios-lia') }}" target="_blank" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
-                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                <span>Ver en Landing Page</span>
+            <a href="{{ url('/#espacios-lia') }}" target="_blank" class="figma-btn-secondary text-xs">
+                <svg class="w-3.5 h-3.5 text-figma-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                <span>Ver Portada</span>
             </a>
         </div>
     </div>
 
-    <!-- Mensajes -->
     @if(session('success'))
-        <div class="bg-emerald-50 border border-emerald-300 text-emerald-900 text-sm font-semibold px-4 py-3 rounded-xl shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if($errors->any())
-        <div class="bg-red-50 border border-red-300 text-red-900 text-sm font-semibold px-4 py-3 rounded-xl shadow-sm">
-            <ul>
-                @foreach($errors->all() as $err)
-                    <li>{{ $err }}</li>
-                @endforeach
-            </ul>
+        <div class="figma-card p-3 border-emerald-500/40 text-emerald-400 flex items-center gap-2 text-xs font-semibold">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+            <span>{{ session('success') }}</span>
         </div>
     @endif
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <!-- Formulario Alta de Espacio -->
         <div class="lg:col-span-1">
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-20">
-                <h2 class="font-bold text-gray-900 text-base mb-1">Nuevo Espacio / Foto</h2>
-                <p class="text-xs text-gray-500 mb-4">Añadir una sala con fotografía a la portada.</p>
+            <div class="figma-panel p-4 sm:p-5 space-y-3 sticky top-16">
+                <div>
+                    <h2 class="font-bold text-figma-text-primary text-xs uppercase tracking-wider">Nueva Sala / Fotografía</h2>
+                    <p class="text-[11px] text-figma-text-tertiary mt-0.5">Añadir una sala para la vitrina de la portada.</p>
+                </div>
 
-                <form action="{{ route('app_admin.espacios.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <form action="{{ route('app_admin.espacios.store') }}" method="POST" enctype="multipart/form-data" class="space-y-3 text-xs">
                     @csrf
                     <div>
-                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1">Nombre / Título de la Sala *</label>
-                        <input type="text" name="titulo" required placeholder="Ej. Laboratorio Federico Sánchez" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium">
+                        <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Nombre / Título <span class="text-rose-400">*</span></label>
+                        <input type="text" name="titulo" required placeholder="Ej. Laboratorio Federico Sánchez" class="figma-input w-full px-3 py-1.5 text-xs font-medium">
                     </div>
 
                     <div>
-                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1">Descripción del Espacio</label>
-                        <textarea name="descripcion" rows="3" placeholder="Capacidad, puestos equipados, proyectores, finalidad académica..." class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400"></textarea>
+                        <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Descripción del Espacio</label>
+                        <textarea name="descripcion" rows="3" placeholder="Puestos equipados, finalidad..." class="figma-input w-full px-3 py-1.5 text-xs"></textarea>
                     </div>
 
                     <div>
-                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1">Subir Fotografía (JPG, PNG)</label>
-                        <input type="file" name="foto" accept="image/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-900 hover:file:bg-amber-200 cursor-pointer">
+                        <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Subir Fotografía</label>
+                        <input type="file" name="foto" accept="image/*" class="figma-input w-full px-2 py-1 text-xs">
                     </div>
 
                     <div>
-                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1">O Ruta / URL de Imagen</label>
-                        <input type="text" name="imagen_url" placeholder="/assets/notebook-wide.png" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-xs font-mono text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                        <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">O Ruta / URL de Imagen</label>
+                        <input type="text" name="imagen_url" placeholder="/assets/notebook-wide.png" class="figma-input w-full px-3 py-1.5 text-xs font-mono">
                     </div>
 
                     <div>
-                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1">Orden de Visualización</label>
-                        <input type="number" name="orden" value="{{ $espacios->count() + 1 }}" class="w-24 border border-gray-300 rounded-xl px-3 py-1.5 text-sm font-mono text-gray-800">
+                        <label class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">Orden de Visualización</label>
+                        <input type="number" name="orden" value="{{ $espacios->count() + 1 }}" class="figma-input w-24 px-3 py-1.5 text-xs font-mono">
                     </div>
 
-                    <button type="submit" class="w-full bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow text-sm transition-colors mt-2 flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        <span>Publicar Espacio</span>
-                    </button>
+                    <div class="pt-1">
+                        <button type="submit" class="figma-btn-primary w-full justify-center py-2 text-xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span>Publicar Sala</span>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
 
         <!-- Listado de Espacios -->
         <div class="lg:col-span-2">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 @forelse($espacios as $espacio)
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col justify-between">
-                        <div class="h-40 bg-gray-100 relative overflow-hidden">
+                    <div class="figma-card overflow-hidden flex flex-col justify-between">
+                        <div class="h-36 bg-figma-bg-deep relative overflow-hidden">
                             <img src="{{ $espacio->imagen_path ?: '/assets/notebook-wide.png' }}" alt="{{ $espacio->titulo }}" class="w-full h-full object-cover" onerror="this.src='/assets/notebook-wide.png'">
-                            <span class="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                            <span class="absolute top-2 left-2 bg-black/75 font-mono text-white text-[10px] font-bold px-2 py-0.5 rounded">
                                 Orden: {{ $espacio->orden }}
                             </span>
                             @if($espacio->activo)
-                                <span class="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                                <span class="absolute top-2 right-2 bg-emerald-500 font-mono text-white text-[10px] font-bold px-2 py-0.5 rounded">
                                     Visible
                                 </span>
                             @else
-                                <span class="absolute top-2 right-2 bg-gray-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                                <span class="absolute top-2 right-2 bg-figma-text-dim font-mono text-white text-[10px] font-bold px-2 py-0.5 rounded">
                                     Oculto
                                 </span>
                             @endif
                         </div>
 
-                        <div class="p-4 flex-1 flex flex-col justify-between">
+                        <div class="p-3.5 flex-1 flex flex-col justify-between space-y-2">
                             <div>
-                                <h3 class="font-bold text-gray-900 text-base mb-1">{{ $espacio->titulo }}</h3>
-                                <p class="text-xs text-gray-600 line-clamp-3">{{ $espacio->descripcion ?: 'Sin descripción cargada.' }}</p>
+                                <h3 class="font-bold text-figma-text-primary text-xs mb-0.5">{{ $espacio->titulo }}</h3>
+                                <p class="text-[11px] text-figma-text-tertiary line-clamp-2">{{ $espacio->descripcion ?: 'Sin descripción cargada.' }}</p>
                             </div>
 
-                            <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-                                <span class="text-[11px] text-gray-400 font-mono truncate max-w-[150px]">{{ $espacio->imagen_path }}</span>
+                            <div class="pt-2 border-t border-figma-border-subtle flex items-center justify-between text-xs">
+                                <span class="text-[10px] text-figma-text-dim font-mono truncate max-w-[130px]">{{ $espacio->imagen_path }}</span>
                                 <form action="{{ route('app_admin.espacios.destroy', $espacio->id) }}" method="POST" onsubmit="return confirm('¿Eliminar este espacio del catálogo?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-bold rounded-xl px-3 py-1 text-xs transition-colors">
+                                    <button type="submit" class="text-xs text-rose-400 hover:text-rose-300 font-semibold py-1 px-2 rounded hover:bg-rose-500/10 transition-colors">
                                         Eliminar
                                     </button>
                                 </form>
@@ -127,7 +119,7 @@
                         </div>
                     </div>
                 @empty
-                    <div class="col-span-2 bg-white rounded-2xl p-10 text-center text-gray-400 text-xs italic">
+                    <div class="col-span-2 figma-panel p-8 text-center text-figma-text-tertiary text-xs italic">
                         No hay espacios cargados aún.
                     </div>
                 @endforelse

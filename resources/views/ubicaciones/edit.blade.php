@@ -1,26 +1,32 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-[700px] mx-auto px-2 space-y-6">
+<div class="max-w-[700px] mx-auto py-4 space-y-4">
 
-    <!-- Header -->
-    <div class="border-b border-gray-200 pb-4">
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2.5 py-1 rounded-md">
-                Editar Espacio
-            </span>
-            <span class="text-xs text-gray-500 font-semibold">item_admin</span>
+    <!-- Header Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-figma-border-subtle">
+        <div>
+            <div class="flex items-center gap-2 text-[11px] font-semibold text-figma-text-tertiary uppercase tracking-wider mb-0.5">
+                <a href="{{ route('ubicaciones.index') }}" class="hover:text-figma-brand transition-colors">Espacios Físicos</a>
+                <span>/</span>
+                <span class="text-figma-text-primary">{{ $ubicacion->nombre }}</span>
+            </div>
+            <h1 class="text-xl font-bold text-figma-text-primary flex items-center gap-2">
+                <span>Editar Espacio: {{ $ubicacion->nombre }}</span>
+            </h1>
         </div>
-        <h1 class="text-2xl font-black text-gray-900 mt-1">Editar Espacio: {{ $ubicacion->nombre }}</h1>
-        <p class="text-xs text-gray-500 mt-0.5">
-            Modifica el nombre o la descripción de esta sala o laboratorio. Los movimientos históricos conservarán la referencia.
-        </p>
+        <div>
+            <a href="{{ route('ubicaciones.index') }}" class="figma-btn-secondary text-xs">
+                <svg class="w-3.5 h-3.5 text-figma-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver a Espacios</span>
+            </a>
+        </div>
     </div>
 
     <!-- Error Alerts -->
     @if($errors->any())
-        <div class="p-4 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl font-medium">
-            <ul class="list-disc pl-5 space-y-1">
+        <div class="figma-card p-3 border-rose-500/40 text-rose-400 text-xs">
+            <ul class="list-disc pl-4 space-y-0.5">
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
@@ -29,38 +35,38 @@
     @endif
 
     <!-- Formulario -->
-    <form action="{{ route('ubicaciones.update', $ubicacion->id) }}" method="POST" class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
+    <form action="{{ route('ubicaciones.update', $ubicacion->id) }}" method="POST" class="figma-panel p-5 sm:p-6 space-y-4">
         @csrf
         @method('PUT')
 
         <div>
-            <label for="nombre" class="block text-xs font-bold text-gray-700 uppercase mb-1">
-                Nombre de la Sala / Espacio <span class="text-red-500">*</span>
+            <label for="nombre" class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">
+                Nombre de la Sala / Espacio <span class="text-rose-400">*</span>
             </label>
-            <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $ubicacion->nombre) }}" required class="w-full px-3.5 py-2.5 border rounded-xl bg-white text-sm font-semibold focus:ring-2 focus:ring-amber-400 focus:outline-none @error('nombre') border-red-500 @enderror">
-            <p class="text-[11px] text-gray-400 mt-1">Debe ser único en el sistema.</p>
+            <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $ubicacion->nombre) }}" required class="figma-input w-full px-3 py-1.5 text-xs font-semibold">
+            <p class="text-[10px] text-figma-text-tertiary mt-1">Debe ser único en el sistema.</p>
         </div>
 
         <div>
-            <label for="descripcion" class="block text-xs font-bold text-gray-700 uppercase mb-1">
+            <label for="descripcion" class="block text-[11px] font-bold text-figma-text-secondary uppercase mb-1">
                 Descripción / Detalle de Ubicación (Opcional)
             </label>
-            <textarea name="descripcion" id="descripcion" rows="3" class="w-full px-3.5 py-2.5 border rounded-xl bg-white text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none @error('descripcion') border-red-500 @enderror">{{ old('descripcion', $ubicacion->descripcion) }}</textarea>
-            <p class="text-[11px] text-gray-400 mt-1">Información de referencia sobre la sala, capacidad o sector.</p>
+            <textarea name="descripcion" id="descripcion" rows="3" class="figma-input w-full px-3 py-1.5 text-xs">{{ old('descripcion', $ubicacion->descripcion) }}</textarea>
+            <p class="text-[10px] text-figma-text-tertiary mt-1">Información de referencia sobre la sala, capacidad o sector.</p>
         </div>
 
-        <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
-            <span class="text-xs text-gray-500">
-                Total activos actuales: <strong>{{ $ubicacion->movimientos()->count() }} registros históricos</strong>
+        <div class="pt-3 border-t border-figma-border-subtle flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <span class="text-xs text-figma-text-tertiary font-mono">
+                Activos registrados: <span class="text-figma-text-primary font-bold">{{ $ubicacion->movimientos()->count() }} movimientos</span>
             </span>
 
-            <div class="flex items-center gap-3">
-                <a href="{{ route('ubicaciones.index') }}" class="px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold rounded-xl text-xs shadow-sm transition-all inline-flex items-center gap-1.5">
+            <div class="flex items-center gap-2 self-end sm:self-auto">
+                <a href="{{ route('ubicaciones.index') }}" class="figma-btn-secondary text-xs">
                     Cancelar
                 </a>
-                <button type="submit" class="px-5 py-2.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl text-xs shadow-sm transition-all inline-flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    <span>Actualizar Espacio Físico</span>
+                <button type="submit" class="figma-btn-primary text-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>Guardar Cambios</span>
                 </button>
             </div>
         </div>
