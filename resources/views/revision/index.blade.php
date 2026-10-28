@@ -1,75 +1,90 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+<div class="max-w-[1240px] mx-auto px-2 space-y-6">
+    <!-- Header Quiet Chrome -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-figma-border-subtle pb-4">
         <div>
-            <h1 class="text-2xl font-bold">Revisión de Inventario</h1>
-            <p class="text-sm text-gray-600">Explora y verifica la ubicación de los elementos</p>
+            <div class="flex items-center gap-2 text-xs font-medium text-figma-text-tertiary uppercase tracking-wider mb-1">
+                <a href="{{ route('dashboard.index') }}" class="hover:text-figma-text-primary transition-colors">Dashboard</a>
+                <span>/</span>
+                <span class="text-figma-text-primary font-bold">Revisión de Inventario</span>
+            </div>
+            <h1 class="text-xl font-bold text-figma-text-primary tracking-tight flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-lg bg-figma-brand/15 text-figma-brand flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                </span>
+                <span>Revisión Rápida de Inventario</span>
+            </h1>
+            <p class="text-xs text-figma-text-tertiary mt-0.5">Explora y verifica la ubicación de los elementos</p>
         </div>
     </div>
 
-    <form action="{{ route('revision.index') }}" method="GET" class="mb-6">
-        <div class="flex gap-3 items-center">
-            <input type="text" name="search" placeholder="Buscar por Nro LIA, Descripción o Ubicación..." value="{{ request('search') }}" class="w-full rounded-xl border border-gray-300 px-4 py-2.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium text-sm" />
-            <button type="submit" class="bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm text-sm inline-flex items-center gap-1.5 transition-all">
-                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <span>Buscar</span>
-            </button>
-            @if(request('search'))
-                <a href="{{ route('revision.index', request()->except('search')) }}" class="bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold py-2.5 px-3.5 rounded-xl shadow-sm text-sm inline-flex items-center gap-1.5 transition-all">
-                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    <span>Limpiar</span>
-                </a>
-            @endif
-        </div>
-        @if(request('tipo'))
-            <input type="hidden" name="tipo" value="{{ request('tipo') }}">
-        @endif
-        @if(request('gb'))
-            <input type="hidden" name="gb" value="{{ request('gb') }}">
-        @endif
-    </form>
-
-    <div class="flex justify-end gap-4 mb-6 items-center">
-        <form action="{{ route('revision.index') }}" method="GET" class="flex items-center">
-            @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
-            @if(request('tipo')) <input type="hidden" name="tipo" value="{{ request('tipo') }}"> @endif
-            
-            <div class="flex items-center rounded-full border {{ request('gb') ? 'bg-amber-700 border-amber-700 text-white' : 'border-amber-700 text-amber-700 hover:bg-amber-50' }} overflow-hidden transition-colors">
-                @if(request('gb'))
-                    <a href="{{ route('revision.index', array_merge(request()->except('gb'))) }}" class="pl-4 pr-1 text-sm font-semibold hover:text-amber-200 cursor-pointer leading-none" title="Quitar filtro">GB</a>
-                @else
-                    <span class="pl-4 pr-1 text-sm font-semibold cursor-pointer leading-none" onclick="this.parentElement.querySelector('input[name=\'gb\']').focus()">GB</span>
+    <!-- Filtros y Búsqueda -->
+    <div class="figma-panel p-4 space-y-3">
+        <form action="{{ route('revision.index') }}" method="GET">
+            <div class="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+                <div class="relative flex-1">
+                    <input type="text" name="search" placeholder="Buscar por Nro LIA, Descripción o Ubicación..." value="{{ request('search') }}" 
+                           class="figma-input w-full px-3.5 py-2 text-xs font-medium" />
+                </div>
+                <button type="submit" class="figma-btn-primary py-2 px-4 text-xs font-semibold">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <span>Buscar</span>
+                </button>
+                @if(request('search'))
+                    <a href="{{ route('revision.index', request()->except('search')) }}" class="figma-btn-secondary py-2 px-3 text-xs">
+                        Limpiar
+                    </a>
                 @endif
-                <input 
-                    type="number" 
-                    name="gb" 
-                    value="{{ request('gb') }}" 
-                    class="w-16 py-1 px-1 bg-transparent border-none focus:ring-0 text-sm font-semibold placeholder-amber-700/50 {{ request('gb') ? 'text-white placeholder-white/70' : 'text-amber-700' }} focus:outline-none"
-                    placeholder="#"
-                    onchange="this.form.submit()"
-                >
-
             </div>
+            @if(request('tipo'))
+                <input type="hidden" name="tipo" value="{{ request('tipo') }}">
+            @endif
+            @if(request('gb'))
+                <input type="hidden" name="gb" value="{{ request('gb') }}">
+            @endif
         </form>
 
-        <div class="flex items-center rounded-full border {{ request('tipo') ? 'bg-amber-700 border-amber-700 text-white' : 'border-amber-700 text-amber-700 hover:bg-amber-50' }} overflow-hidden transition-colors">
-            @if(request('tipo'))
-                <a href="{{ route('revision.index', array_merge(request()->except('tipo'))) }}" class="pl-4 pr-1 text-sm font-semibold hover:text-amber-200 cursor-pointer leading-none" title="Quitar filtro">Tipo</a>
-            @else
-                <span class="pl-4 pr-1 text-sm font-semibold cursor-pointer leading-none" onclick="this.parentElement.querySelector('select').focus()">Tipo</span>
-            @endif
-            <select 
-                name="tipo" 
-                onchange="filterByTipo(this.value)" 
-                class="w-32 py-1 px-1 bg-transparent border-none focus:ring-0 text-sm font-semibold {{ request('tipo') ? 'text-white' : 'text-amber-700' }} focus:outline-none [&>option]:text-gray-900 [&>option]:bg-white [&>option:hover]:bg-amber-100 [&>option:checked]:bg-amber-200">
-                <option value="">Todos</option>
-                @foreach($tipos as $tipo)
-                    <option value="{{ $tipo->nombre }}" {{ request('tipo') === $tipo->nombre ? 'selected' : '' }}>
-                        {{ ucfirst($tipo->nombre) }}
-                    </option>
-                @endforeach
-            </select>
+        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-figma-border-subtle">
+            <span class="text-[10px] font-bold text-figma-text-tertiary uppercase tracking-wider mr-1">Filtros:</span>
+
+            <!-- Filtro GB -->
+            <form action="{{ route('revision.index') }}" method="GET" class="flex items-center">
+                @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
+                @if(request('tipo')) <input type="hidden" name="tipo" value="{{ request('tipo') }}"> @endif
+                
+                <div class="inline-flex items-center rounded-lg border border-figma-border-subtle bg-figma-bg-deep px-2 py-1 text-xs">
+                    <span class="font-bold text-figma-text-tertiary mr-1 text-[11px]">GB:</span>
+                    <input 
+                        type="number" 
+                        name="gb" 
+                        value="{{ request('gb') }}" 
+                        class="w-12 bg-transparent border-none p-0 text-xs font-mono font-bold text-figma-text-primary focus:ring-0 focus:outline-none"
+                        placeholder="ej. 8"
+                        onchange="this.form.submit()"
+                    >
+                    @if(request('gb'))
+                        <a href="{{ route('revision.index', array_merge(request()->except('gb'))) }}" class="text-figma-text-tertiary hover:text-rose-400 ml-1 text-xs">✕</a>
+                    @endif
+                </div>
+            </form>
+
+            <!-- Filtro Tipo -->
+            <div class="inline-flex items-center rounded-lg border border-figma-border-subtle bg-figma-bg-deep px-2 py-1 text-xs">
+                <span class="font-bold text-figma-text-tertiary mr-1 text-[11px]">Tipo:</span>
+                <select 
+                    name="tipo" 
+                    onchange="filterByTipo(this.value)" 
+                    class="bg-transparent border-none p-0 text-xs font-medium text-figma-text-primary focus:ring-0 focus:outline-none">
+                    <option value="" class="bg-figma-panel text-figma-text-primary">Todos</option>
+                    @foreach($tipos as $tipo)
+                        <option value="{{ $tipo->nombre }}" {{ request('tipo') === $tipo->nombre ? 'selected' : '' }} class="bg-figma-panel text-figma-text-primary">
+                            {{ ucfirst($tipo->nombre) }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
         </div>
     </div>
 
@@ -84,78 +99,68 @@
             url.searchParams.delete('page');
             window.location.href = url.toString();
         }
-    </script>
 
-    <script>
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.querySelector('input[name="search"]');
+            if (!searchInput) return;
             const searchForm = searchInput.closest('form');
             let timeout = null;
 
             searchInput.addEventListener('input', function() {
                 clearTimeout(timeout);
-                // Trigger search from 1 character or when empty (to clear)
-                if (this.value.length >= 1 || this.value.length === 0) {
+                if (this.value.length >= 2 || this.value.length === 0) {
                     timeout = setTimeout(() => {
                         searchForm.submit();
-                    }, 600);
+                    }, 500);
                 }
             });
-            
-            // Focus back on input if it has value (simple UX improvement)
-            if (searchInput.value) {
-                searchInput.focus();
-                // Move cursor to end
-                const val = searchInput.value;
-                searchInput.value = '';
-                searchInput.value = val;
-            }
         });
     </script>
 
-    <div class="bg-white shadow-sm border border-gray-200 rounded-2xl my-6 overflow-hidden">
+    <!-- Tabla de Elementos -->
+    <div class="figma-panel overflow-hidden">
         <table class="min-w-full table-auto block md:table">
             <thead class="hidden md:table-header-group">
-                <tr class="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                    <th class="py-3 px-6 text-left">Nro LIA</th>
-                    <th class="py-3 px-6 text-left">Descripción</th>
-                    <th class="py-3 px-6 text-left">Situación</th>
-                    <th class="py-3 px-6 text-left">Vencimiento</th>
-                    <th class="py-3 px-6 text-left">Ubicación Actual</th>
+                <tr class="bg-figma-bg-deep border-b border-figma-border-subtle text-[10px] font-bold text-figma-text-secondary uppercase tracking-wider">
+                    <th class="py-3 px-4 text-left">Nro LIA</th>
+                    <th class="py-3 px-4 text-left">Descripción</th>
+                    <th class="py-3 px-4 text-left">Situación</th>
+                    <th class="py-3 px-4 text-left">Garantía</th>
+                    <th class="py-3 px-4 text-left">Ubicación Actual</th>
                 </tr>
             </thead>
-            <tbody class="text-gray-900 text-sm font-medium block md:table-row-group">
+            <tbody class="divide-y divide-figma-border-subtle text-xs font-medium block md:table-row-group">
                 @foreach($elementos as $elemento)
-                    <tr class="block md:table-row odd:bg-amber-50 even:bg-amber-100 border-b border-gray-300 hover:bg-amber-200 cursor-pointer mb-4 md:mb-0 rounded-lg shadow-sm md:shadow-none p-4 md:p-0" onclick="window.location='{{ route('elementos.show', $elemento->id) }}?from=revision'">
-                        <td class="py-2 px-4 md:py-3 md:px-6 text-left whitespace-nowrap block md:table-cell flex justify-between md:block">
-                             <span class="font-bold md:hidden text-amber-900">Identificador:</span>
-                            {{ $elemento->presenter()->identificadorCompleto() }}
+                    <tr class="block md:table-row hover:bg-figma-bg-deep/50 cursor-pointer p-3 md:p-0 transition-colors" onclick="window.location='{{ route('elementos.show', $elemento->id) }}?from=revision'">
+                        <td class="py-2 px-3 md:py-3 md:px-4 text-left whitespace-nowrap block md:table-cell flex justify-between md:block">
+                            <span class="font-bold md:hidden text-figma-text-tertiary">Identificador:</span>
+                            <span class="font-mono font-bold text-figma-brand">{{ $elemento->presenter()->identificadorCompleto() }}</span>
                         </td>
-                        <td class="py-2 px-4 md:py-3 md:px-6 text-left block md:table-cell">
-                             <span class="font-bold md:hidden text-amber-900 block mb-1">Descripción:</span>
+                        <td class="py-2 px-3 md:py-3 md:px-4 text-left block md:table-cell text-figma-text-primary">
+                            <span class="font-bold md:hidden text-figma-text-tertiary block mb-1">Descripción:</span>
                             {{ $elemento->descripcion_texto }}
                         </td>
-                        <td class="py-2 px-4 md:py-3 md:px-6 text-left block md:table-cell flex justify-between md:block items-center">
-                             <span class="font-bold md:hidden text-amber-900">Situación:</span>
+                        <td class="py-2 px-3 md:py-3 md:px-4 text-left block md:table-cell flex justify-between md:block items-center">
+                            <span class="font-bold md:hidden text-figma-text-tertiary">Situación:</span>
                             {!! $elemento->presenter()->statusBadge() !!}
                         </td>
-                        <td class="py-2 px-4 md:py-3 md:px-6 text-left block md:table-cell flex justify-between md:block">
-                             <span class="font-bold md:hidden text-amber-900">Vencimiento:</span>
+                        <td class="py-2 px-3 md:py-3 md:px-4 text-left block md:table-cell flex justify-between md:block font-mono">
+                            <span class="font-bold md:hidden text-figma-text-tertiary">Vencimiento:</span>
                             @if($elemento->fecha_vencimiento_garantia)
-                                <span class="{{ $elemento->fecha_vencimiento_garantia->isPast() ? 'text-red-600 font-semibold' : 'text-green-600' }}">
+                                <span class="{{ $elemento->fecha_vencimiento_garantia->isPast() ? 'text-rose-400 font-semibold' : 'text-emerald-400' }}">
                                     {{ $elemento->fecha_vencimiento_garantia->format('d/m/Y') }}
                                 </span>
                             @else
-                                <span class="text-gray-400">-</span>
+                                <span class="text-figma-text-tertiary">-</span>
                             @endif
                         </td>
-                        <td class="py-2 px-4 md:py-3 md:px-6 text-left block md:table-cell flex justify-between md:block">
-                             <span class="font-bold md:hidden text-amber-900">Ubicación Actual:</span>
+                        <td class="py-2 px-3 md:py-3 md:px-4 text-left block md:table-cell flex justify-between md:block">
+                            <span class="font-bold md:hidden text-figma-text-tertiary">Ubicación Actual:</span>
                             @if($elemento->ultimoMovimiento)
-                                {{ $elemento->ultimoMovimiento->ubicacion?->nombre ?? 'Sin ubicación' }}
-                                <span class="text-xs text-gray-500 block">({{ $elemento->ultimoMovimiento->fecha->format('Y-m-d') }})</span>
+                                <span class="text-figma-text-primary font-semibold">{{ $elemento->ultimoMovimiento->ubicacion?->nombre ?? 'Sin ubicación' }}</span>
+                                <span class="text-[10px] text-figma-text-tertiary font-mono block">({{ $elemento->ultimoMovimiento->fecha->format('d/m/Y') }})</span>
                             @else
-                                <span class="text-gray-400">Sin movimientos</span>
+                                <span class="text-figma-text-tertiary italic">Sin movimientos</span>
                             @endif
                         </td>
                     </tr>
@@ -164,7 +169,8 @@
         </table>
     </div>
 
-    <div class="mt-4">
+    <div class="pt-2">
         {{ $elementos->appends(request()->query())->links('vendor.pagination.responsive-custom') }}
     </div>
+</div>
 @endsection

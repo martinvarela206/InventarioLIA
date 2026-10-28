@@ -1,13 +1,22 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="min-h-[calc(100vh-200px)] flex flex-col items-center justify-center text-center">
-    <h1 class="text-4xl font-bold text-[#dba800] mb-4">Bienvenido al Nexo LIA</h1>
-    <p class="text-xl text-gray-600 max-w-2xl">
-        Has ingresado al sistema. Si necesitas acceso a funciones específicas, por favor contacta al administrador para que te asigne los roles correspondientes.
-    </p>
-    <div class="mt-8">
-        <img src="/assets/logo-lia.svg" alt="Logo LIA" class="w-32 h-32 mx-auto opacity-50">
+<div class="min-h-[calc(100vh-200px)] flex flex-col items-center justify-center text-center px-4">
+    <div class="figma-panel max-w-lg p-8 sm:p-10 space-y-4 shadow-2xl">
+        <div class="w-12 h-12 rounded-2xl bg-figma-brand text-white flex items-center justify-center font-bold text-lg mx-auto shadow-sm">
+            LIA
+        </div>
+        <div class="space-y-1">
+            <h1 class="text-xl font-bold text-figma-text-primary">Bienvenido a Nexo LIA</h1>
+            <p class="text-xs text-figma-text-secondary leading-relaxed">
+                Has ingresado al sistema institucional. Si requieres acceso a funciones operativas o módulos técnicos de inventario, por favor solicita a los administradores la asignación de tus roles correspondientes.
+            </p>
+        </div>
+        <div class="pt-4 border-t border-figma-border-subtle flex justify-center">
+            <a href="{{ route('profile.edit') }}" class="figma-btn-primary">
+                Ver Mi Perfil
+            </a>
+        </div>
     </div>
 </div>
 @endsection
