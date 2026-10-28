@@ -104,11 +104,11 @@
                                         @endphp
                                         <button type="button" 
                                             onclick="solicitarConfirmacionRol({{ $user->id }}, '{{ addslashes($user->nombre) }}', '{{ $rName }}', {{ $hasRole ? 'true' : 'false' }})"
-                                            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition-all border cursor-pointer {{ $hasRole ? 'bg-figma-brand text-white border-figma-brand shadow-2xs' : 'bg-figma-bg-deep border-figma-border-subtle text-figma-text-dim hover:text-figma-text-secondary hover:border-figma-border-strong' }}"
+                                            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all border cursor-pointer {{ $hasRole ? 'bg-figma-brand text-black border-figma-brand shadow-2xs' : 'bg-figma-bg-deep border-figma-border-subtle text-figma-text-dim hover:text-figma-text-secondary hover:border-figma-border-strong' }}"
                                             title="{{ $hasRole ? 'Clic para remover este rol' : 'Clic para asignar este rol' }}">
                                             <span>{{ $rName }}</span>
                                             @if($hasRole)
-                                                <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                <svg class="w-2.5 h-2.5 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                                                 </svg>
                                             @endif

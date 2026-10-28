@@ -123,7 +123,7 @@
                                 <div class="flex items-center justify-between gap-1">
                                     <div class="flex items-center gap-1.5">
                                         @if($esColumnaIdentificadora)
-                                            <button type="button" onclick="abrirDropdownColumnas(event)" class="print:hidden p-0.5 px-1 bg-figma-bg-canvas hover:bg-figma-brand hover:text-white rounded font-mono font-bold text-[9px] transition-colors" title="Gestionar columnas (...)">
+                                            <button type="button" onclick="abrirDropdownColumnas(event)" class="print:hidden p-0.5 px-1 bg-figma-bg-canvas hover:bg-figma-brand hover:text-black rounded font-mono font-bold text-[9px] transition-colors" title="Gestionar columnas (...)">
                                                 •••
                                             </button>
                                         @endif

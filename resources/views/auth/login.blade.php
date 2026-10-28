@@ -7,7 +7,7 @@
             <form action="{{ route('login') }}" method="POST" class="figma-panel p-6 sm:p-7 space-y-4 shadow-2xl">
                 @csrf
                 <div class="flex justify-center mb-2">
-                    <span class="w-10 h-10 rounded-xl bg-figma-brand text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                    <span class="w-10 h-10 rounded-xl bg-figma-brand text-black flex items-center justify-center font-extrabold text-sm shadow-sm">
                         LIA
                     </span>
                 </div>

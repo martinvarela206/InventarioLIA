@@ -49,7 +49,7 @@
     <div class="figma-panel p-6 space-y-4 print:border-none print:shadow-none print:p-0">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-figma-border-subtle pb-4">
             <div class="flex items-start gap-3.5">
-                <div class="w-12 h-12 rounded-xl bg-figma-brand text-white font-mono font-bold text-lg flex items-center justify-center shrink-0 shadow-sm">
+                <div class="w-12 h-12 rounded-xl bg-figma-brand text-black font-mono font-extrabold text-lg flex items-center justify-center shrink-0 shadow-sm">
                     {{ strtoupper(substr($user->nombre, 0, 2)) }}
                 </div>
                 <div>

@@ -3,7 +3,7 @@
 @section('content')
 <div class="min-h-[calc(100vh-200px)] flex flex-col items-center justify-center text-center px-4">
     <div class="figma-panel max-w-lg p-8 sm:p-10 space-y-4 shadow-2xl">
-        <div class="w-12 h-12 rounded-2xl bg-figma-brand text-white flex items-center justify-center font-bold text-lg mx-auto shadow-sm">
+        <div class="w-12 h-12 rounded-2xl bg-figma-brand text-black flex items-center justify-center font-extrabold text-lg mx-auto shadow-sm">
             LIA
         </div>
         <div class="space-y-1">

@@ -56,7 +56,7 @@
 
                     <div>
                         <label class="block text-figma-text-secondary text-[11px] font-bold uppercase mb-1">Subir Foto para el Post (Opcional)</label>
-                        <input type="file" name="foto" accept="image/*" class="w-full text-xs text-figma-text-secondary file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-xs file:font-bold file:bg-figma-bg-deep file:text-figma-text-primary hover:file:bg-figma-brand hover:file:text-white cursor-pointer">
+                        <input type="file" name="foto" accept="image/*" class="w-full text-xs text-figma-text-secondary file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-xs file:font-bold file:bg-figma-bg-deep file:text-figma-text-primary hover:file:bg-figma-brand hover:file:text-black cursor-pointer">
                     </div>
 
                     <div>
@@ -85,7 +85,7 @@
                         <!-- Cabecera estilo post -->
                         <div class="p-3 border-b border-figma-border-subtle flex items-center justify-between bg-figma-bg-deep">
                             <div class="flex items-center gap-2">
-                                <span class="w-5 h-5 rounded bg-figma-brand text-white font-mono font-bold text-[9px] flex items-center justify-center">LIA</span>
+                                <span class="w-5 h-5 rounded bg-figma-brand text-black font-mono font-extrabold text-[9px] flex items-center justify-center">LIA</span>
                                 <div>
                                     <span class="text-xs font-bold text-figma-text-primary block leading-tight">nexo.lia.unsj</span>
                                     <span class="text-[10px] text-figma-text-tertiary font-mono">{{ $act->fecha_publicacion?->format('d/m/Y H:i') }}</span>

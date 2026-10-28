@@ -60,12 +60,12 @@
             --figma-bg-card: #2c2c2c;
             --figma-bg-hover: #333333;
             --figma-bg-input: #1b1b1b;
-            --figma-bg-select: rgba(13, 153, 255, 0.18);
+            --figma-bg-select: rgba(251, 193, 1, 0.16);
 
             /* Bordes & Separadores */
             --figma-border-subtle: rgba(255, 255, 255, 0.08);
             --figma-border-strong: rgba(255, 255, 255, 0.18);
-            --figma-border-focus: #0d99ff;
+            --figma-border-focus: #fbc101;
 
             /* Texto & Luminancia */
             --figma-text-primary: #ffffff;
@@ -73,9 +73,10 @@
             --figma-text-tertiary: #757575;
             --figma-text-dim: #4d4d4d;
 
-            /* Marca & Semántica Figma */
-            --figma-brand: #0d99ff;
-            --figma-brand-hover: #007be5;
+            /* Marca Institucional (Naranja #fbc101) */
+            --figma-brand: #fbc101;
+            --figma-brand-hover: #e0aa00;
+            --figma-brand-text: #000000;
             --figma-success: #10b981;
             --figma-warning: #f59e0b;
             --figma-danger: #ef4444;
@@ -90,12 +91,12 @@
             --figma-bg-card: #f9f9f9;
             --figma-bg-hover: #f0f0f0;
             --figma-bg-input: #f5f5f5;
-            --figma-bg-select: rgba(13, 153, 255, 0.12);
+            --figma-bg-select: rgba(251, 193, 1, 0.18);
 
             /* Bordes & Separadores */
             --figma-border-subtle: rgba(0, 0, 0, 0.08);
             --figma-border-strong: rgba(0, 0, 0, 0.16);
-            --figma-border-focus: #0d99ff;
+            --figma-border-focus: #fbc101;
 
             /* Texto WCAG AAA */
             --figma-text-primary: #111111;
@@ -103,9 +104,10 @@
             --figma-text-tertiary: #545454;
             --figma-text-dim: #767676;
 
-            /* Marca */
-            --figma-brand: #0d99ff;
-            --figma-brand-hover: #007be5;
+            /* Marca Institucional (Naranja #fbc101) */
+            --figma-brand: #fbc101;
+            --figma-brand-hover: #e0aa00;
+            --figma-brand-text: #000000;
             --figma-success: #059669;
             --figma-warning: #d97706;
             --figma-danger: #dc2626;
@@ -161,8 +163,8 @@
             align-items: center;
             gap: 6px;
             background-color: var(--figma-brand);
-            color: #ffffff;
-            font-weight: 600;
+            color: var(--figma-brand-text, #000000);
+            font-weight: 700;
             font-size: 12px;
             padding: 7px 14px;
             border-radius: 8px;
@@ -171,6 +173,7 @@
         }
         .figma-btn-primary:hover {
             background-color: var(--figma-brand-hover);
+            color: #000000;
         }
         .figma-btn-secondary {
             display: inline-flex;
@@ -256,7 +259,7 @@
         }
     </script>
 </head>
-<body class="min-h-screen flex flex-col antialiased selection:bg-[#0d99ff] selection:text-white transition-colors duration-150">
+<body class="min-h-screen flex flex-col antialiased selection:bg-[#fbc101] selection:text-black transition-colors duration-150">
     @include('common.navbar')
 
     @if(Request::is('/') || Request::routeIs('register') || Request::routeIs('login'))
