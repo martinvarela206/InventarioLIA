@@ -18,6 +18,28 @@ services:
       - .env
     volumes:
       - storage_uploads:/var/www/html/storage/app/public
+      - storage_private:/var/www/html/storage/app/private
+      - storage_backups:/var/www/html/storage/app/backups
+    networks:
+      - app_network
+
+  # Contenedor 3: Scheduler / Cron de Laravel (ejecución periódica de tareas y respaldos diarios)
+  scheduler:
+    image: inventario-lia-app:latest
+    container_name: laravel_scheduler
+    restart: always
+    depends_on:
+      app:
+        condition: service_started
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - storage_uploads:/var/www/html/storage/app/public
+      - storage_private:/var/www/html/storage/app/private
+      - storage_backups:/var/www/html/storage/app/backups
+    command: ["php", "artisan", "schedule:work"]
     networks:
       - app_network
 
@@ -61,4 +83,8 @@ volumes:
   mariadb_audit_logs:
     driver: local
   storage_uploads:
+    driver: local
+  storage_private:
+    driver: local
+  storage_backups:
     driver: local

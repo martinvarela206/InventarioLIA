@@ -11,7 +11,7 @@ FROM php:${PHP_VERSION}-apache
 # Instalamos extensiones necesarias para Laravel, MariaDB/MySQL y SQLite, y aplicamos parches del SO
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     libpng-dev libonig-dev libxml2-dev libsqlite3-dev \
-    zip unzip git curl \
+    zip unzip git curl mariadb-client \
     && docker-php-ext-install pdo_mysql pdo_sqlite mbstring exif pcntl bcmath gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
