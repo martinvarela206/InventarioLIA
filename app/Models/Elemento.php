@@ -99,7 +99,7 @@ class Elemento extends Model
 
     public function movimientos(): HasMany
     {
-        return $this->hasMany(Movimiento::class, 'elemento_id')->orderBy('fecha', 'desc');
+        return $this->hasMany(Movimiento::class, 'elemento_id')->orderBy('id', 'desc');
     }
 
     public function ultimoMovimiento(): HasOne

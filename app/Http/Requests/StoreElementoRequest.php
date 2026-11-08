@@ -28,7 +28,7 @@ class StoreElementoRequest extends FormRequest
             'puesto' => 'nullable|string|max:50',
             'ubicacion_id' => 'nullable|exists:ubicaciones,id',
             'cantidad' => 'required|integer|min:1',
-            'fecha_adquisicion' => 'nullable|date',
+            'fecha_adquisicion' => 'nullable|date|before_or_equal:today',
             'fecha_vencimiento_garantia' => 'nullable|date|after_or_equal:fecha_adquisicion',
             'observaciones' => 'nullable|string',
             'descripcion_keys' => 'nullable|array',

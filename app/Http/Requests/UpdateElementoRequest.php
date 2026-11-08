@@ -27,7 +27,7 @@ class UpdateElementoRequest extends FormRequest
             'anio_compra' => "nullable|integer|min:1980|max:{$maxAnio}",
             'puesto' => 'nullable|string|max:50',
             'cantidad' => 'required|integer|min:1',
-            'fecha_adquisicion' => 'nullable|date',
+            'fecha_adquisicion' => 'nullable|date|before_or_equal:today',
             'fecha_vencimiento_garantia' => 'nullable|date|after_or_equal:fecha_adquisicion',
             'observaciones' => 'nullable|string',
             'descripcion_keys' => 'nullable|array',
