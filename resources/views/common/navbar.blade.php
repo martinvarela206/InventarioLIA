@@ -74,7 +74,7 @@
                                     </a>
                                 @endif
 
-                                @if(Auth::user()->hasRole(['tec', 'subtec', 'item_admin', 'user_admin', 'app_admin']))
+                                @if(Auth::user()->hasRole(['tec', 'subtec', 'asset_admin', 'user_admin', 'app_admin']))
                                     <a href="{{ route('tickets.index') }}" class="{{ $navItemClass(Request::routeIs('tickets.*')) }}">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -93,7 +93,7 @@
                                 @endif
 
                                 @php
-                                    $hasAdminTools = Auth::user()->hasRole('item_admin') || Auth::user()->isAppAdmin() || Auth::user()->isAdmin();
+                                    $hasAdminTools = Auth::user()->hasRole('asset_admin') || Auth::user()->isAppAdmin() || Auth::user()->isAdmin();
                                     $isAdminActive = Request::routeIs('tipos.*') || Request::routeIs('ubicaciones.*') || Request::routeIs('app_admin.*') || Request::routeIs('users.*');
                                 @endphp
 
@@ -118,7 +118,7 @@
 
                                         <div id="admin-dropdown-menu" 
                                              class="hidden absolute left-0 mt-2 w-64 rounded-2xl bg-white shadow-2xl border border-gray-100 ring-1 ring-black/10 divide-y divide-gray-100 focus:outline-none z-50 py-1.5">
-                                            @if(Auth::user()->hasRole('item_admin'))
+                                            @if(Auth::user()->hasRole('asset_admin'))
                                                 <div class="py-1">
                                                     <a href="{{ route('tipos.index') }}" 
                                                        class="flex items-center gap-3 px-4 py-2.5 text-xs xl:text-sm font-semibold transition-colors {{ Request::routeIs('tipos.*') ? 'bg-amber-50 text-amber-900 font-bold' : 'text-gray-700 hover:bg-gray-50 hover:text-black' }}">
@@ -272,7 +272,7 @@
                             </a>
                         @endif
 
-                        @if(Auth::user()->hasRole(['tec', 'subtec', 'item_admin', 'user_admin', 'app_admin']))
+                        @if(Auth::user()->hasRole(['tec', 'subtec', 'asset_admin', 'user_admin', 'app_admin']))
                             <a href="{{ route('tickets.index') }}" class="{{ $navMobileClass(Request::routeIs('tickets.*')) }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -290,7 +290,7 @@
                             </a>
                         @endif
 
-                        @if(Auth::user()->hasRole('item_admin'))
+                        @if(Auth::user()->hasRole('asset_admin'))
                             <a href="{{ route('tipos.index') }}" class="{{ $navMobileClass(Request::routeIs('tipos.*')) }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>

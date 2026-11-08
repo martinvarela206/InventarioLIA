@@ -83,7 +83,7 @@
                             <td class="py-3.5 px-4">
                                 <div class="flex flex-wrap gap-1.5">
                                     @php
-                                        $rolesOficiales = ['user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev', 'registered'];
+                                        $rolesOficiales = ['user_admin', 'app_admin', 'asset_admin', 'tec', 'subtec', 'rev', 'registered'];
                                     @endphp
                                     @foreach($rolesOficiales as $rName)
                                         @php
