@@ -962,15 +962,22 @@ class InventarioDevTest extends TestCase
         $responseUpdate->assertRedirect(route('ubicaciones.index'));
 
         $this->assertDatabaseHas('ubicaciones', [
-            'id' => $nuevaSala->id,
             'nombre' => 'Laboratorio Delta IA - Planta Alta',
+            'activa' => true,
+        ]);
+        $this->assertDatabaseHas('ubicaciones', [
+            'id' => $nuevaSala->id,
+            'nombre' => 'Laboratorio Delta IA',
+            'activa' => false,
         ]);
 
+        $salaRenombrada = Ubicacion::where('nombre', 'Laboratorio Delta IA - Planta Alta')->firstOrFail();
+
         // 4. Eliminar la sala sin activos asociados (debe eliminarse con éxito)
-        $responseDelete = $this->actingAs($itemAdmin)->delete(route('ubicaciones.destroy', $nuevaSala->id));
+        $responseDelete = $this->actingAs($itemAdmin)->delete(route('ubicaciones.destroy', $salaRenombrada->id));
         $responseDelete->assertRedirect(route('ubicaciones.index'));
         $this->assertDatabaseMissing('ubicaciones', [
-            'id' => $nuevaSala->id,
+            'id' => $salaRenombrada->id,
         ]);
 
         // 5. Protección: si una sala tiene activos o movimientos, no se puede eliminar
@@ -990,7 +997,8 @@ class InventarioDevTest extends TestCase
         ]);
 
         $responseDeleteProtegida = $this->actingAs($itemAdmin)->delete(route('ubicaciones.destroy', $salaConMovimientos->id));
-        $responseDeleteProtegida->assertRedirect(route('ubicaciones.index'));
+        $responseDeleteProtegida->assertRedirect(route('ubicaciones.reubicar', ['origen_id' => $salaConMovimientos->id]));
+        $this->assertFalse($salaConMovimientos->fresh()->activa);
         $this->assertDatabaseHas('ubicaciones', [
             'id' => $salaConMovimientos->id,
         ]);

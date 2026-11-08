@@ -78,6 +78,8 @@ Route::middleware('auth')->group(function () {
             Route::delete('/elementos/{elemento}', [ElementoController::class, 'destroy'])->name('elementos.destroy');
             Route::resource('tipos', \App\Http\Controllers\TipoController::class)->except(['show']);
             Route::post('/atributos', [\App\Http\Controllers\TipoController::class, 'storeAtributo'])->name('atributos.store');
+            Route::get('/ubicaciones/reubicar', [\App\Http\Controllers\ReubicacionController::class, 'show'])->name('ubicaciones.reubicar');
+            Route::post('/ubicaciones/reubicar', [\App\Http\Controllers\ReubicacionController::class, 'reubicar'])->name('ubicaciones.reubicar.store');
             Route::resource('ubicaciones', \App\Http\Controllers\UbicacionController::class);
         });
 
