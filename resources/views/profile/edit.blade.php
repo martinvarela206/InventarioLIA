@@ -178,12 +178,19 @@
         <!-- Cambio de Contraseña -->
         <div class="border-t border-gray-100 pt-5">
             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Seguridad y Cambio de Contraseña</h3>
-            <p class="text-xs text-gray-500 mb-3">Deje estos campos en blanco si no desea modificar su clave actual.</p>
+            <p class="text-xs text-gray-500 mb-3">Deje estos campos en blanco si no desea modificar su clave actual. Si ingresa una nueva clave, debe ingresar su contraseña actual por seguridad.</p>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="current_password" class="block text-xs font-bold text-gray-700 uppercase mb-1">Contraseña Actual</label>
+                    <input type="password" name="current_password" id="current_password" autocomplete="current-password" placeholder="Su contraseña actual" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none @error('current_password') border-red-500 @enderror">
+                    @error('current_password')
+                        <p class="text-red-500 text-xs mt-1 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
                 <div>
                     <label for="password" class="block text-xs font-bold text-gray-700 uppercase mb-1">Nueva Contraseña</label>
-                    <input type="password" name="password" id="password" autocomplete="new-password" placeholder="Mínimo 4 caracteres" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    <input type="password" name="password" id="password" autocomplete="new-password" placeholder="Mínimo 4 caracteres" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none @error('password') border-red-500 @enderror">
                     @error('password')
                         <p class="text-red-500 text-xs mt-1 font-semibold">{{ $message }}</p>
                     @enderror

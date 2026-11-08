@@ -3387,6 +3387,7 @@ class InventarioDevTest extends TestCase
         // En producción: actualizar perfil con password débil debe fallar
         $resProfileFail = $this->actingAs($user)->put(route('profile.update'), [
             'nombre' => $user->nombre,
+            'current_password' => 'ClaveRobusta2026',
             'password' => '1234',
             'password_confirmation' => '1234',
         ]);
@@ -3395,6 +3396,7 @@ class InventarioDevTest extends TestCase
         // En producción: actualizar perfil con password robusto debe ser exitoso
         $resProfileOk = $this->actingAs($user)->put(route('profile.update'), [
             'nombre' => $user->nombre,
+            'current_password' => 'ClaveRobusta2026',
             'password' => 'NuevaClaveSegura2026',
             'password_confirmation' => 'NuevaClaveSegura2026',
         ]);

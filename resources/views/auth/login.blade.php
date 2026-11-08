@@ -14,13 +14,13 @@
 
                 <div class="mb-4">
                     <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="login">
-                        Usuario o Correo Institucional
+                        Correo Institucional
                     </label>
-                    <input class="w-full border rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium @error('login') border-red-500 @enderror @error('nombre') border-red-500 @enderror" id="login" type="text" name="login" value="{{ old('login', old('nombre')) }}" required autofocus placeholder="admin@lia.unsj.edu.ar">
+                    <input class="w-full border rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium @error('login') border-red-500 @enderror @error('email') border-red-500 @enderror" id="login" type="email" name="login" value="{{ old('login', old('email')) }}" required autofocus placeholder="admin@lia.unsj.edu.ar">
                     @error('login')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
-                    @error('nombre')
+                    @error('email')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>

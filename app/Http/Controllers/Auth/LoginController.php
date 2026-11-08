@@ -19,16 +19,22 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-        $input = $request->input('login', $request->input('nombre', $request->input('email')));
+        $email = $request->input('email', $request->input('login'));
         $password = $request->input('password');
 
-        if (empty($input) || empty($password)) {
+        if (empty($email) || empty($password)) {
             return back()->withErrors([
-                'login' => 'Por favor ingrese su usuario o correo electrónico y contraseña.',
+                'login' => 'Por favor ingrese su correo electrónico institucional y contraseña.',
             ])->withInput();
         }
 
-        $throttleKey = Str::transliterate(Str::lower($input).'|'.$request->ip());
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return back()->withErrors([
+                'login' => 'El formato del correo electrónico no es válido.',
+            ])->withInput();
+        }
+
+        $throttleKey = Str::transliterate(Str::lower($email).'|'.$request->ip());
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
@@ -37,9 +43,8 @@ class LoginController extends Controller
             ])->withInput();
         }
 
-        $field = filter_var($input, FILTER_VALIDATE_EMAIL) ? 'email' : 'nombre';
         $credentials = [
-            $field => $input,
+            'email' => $email,
             'password' => $password,
             'activo' => true,
         ];
@@ -55,25 +60,8 @@ class LoginController extends Controller
             return redirect()->intended($target);
         }
 
-        // Si intentó con nombre pero falló, intentar con email por si acaso
-        if ($field === 'nombre') {
-            if (Auth::attempt(['email' => $input, 'password' => $password, 'activo' => true], $request->boolean('remember'))) {
-                RateLimiter::clear($throttleKey);
-                $request->session()->regenerate();
-                $target = Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida');
-                $intended = session()->get('url.intended');
-                if ($intended === url('/') || empty($intended)) {
-                    return redirect($target);
-                }
-                return redirect()->intended($target);
-            }
-        }
-
         // Verificar si la cuenta existe pero está inactiva/desactivada
-        $userCheck = Usuario::where($field, $input)->first();
-        if (!$userCheck && $field === 'nombre') {
-            $userCheck = Usuario::where('email', $input)->first();
-        }
+        $userCheck = Usuario::where('email', $email)->first();
         if ($userCheck && Hash::check($password, $userCheck->password) && !$userCheck->activo) {
             return back()->withErrors([
                 'login' => 'Su cuenta se encuentra desactivada o pendiente de activación. Por favor, comuníquese con un administrador.',

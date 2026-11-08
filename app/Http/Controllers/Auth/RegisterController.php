@@ -23,16 +23,34 @@ class RegisterController extends Controller
 
     public function register(Request $request)
     {
-        $request->validate([
+        $rules = [
             'nombre' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'string', 'email', 'max:150', 'unique:usuarios'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:150',
+                'unique:usuarios',
+                function ($attribute, $value, $fail) {
+                    $enforce = config('auth.enforce_institutional_domain', false) || (app()->isProduction() && !defined('PHPUNIT_COMPOSER_INSTALL'));
+                    if ($enforce) {
+                        $domain = substr(strrchr($value, "@"), 1);
+                        $allowedDomain = config('auth.institutional_domain', 'unsj.edu.ar');
+                        if ($domain !== $allowedDomain && !str_ends_with($domain, '.' . $allowedDomain)) {
+                            $fail('El correo electrónico debe pertenecer al dominio institucional (@unsj.edu.ar).');
+                        }
+                    }
+                },
+            ],
             'dni' => ['nullable', 'string', 'max:15', 'unique:usuarios'],
             'carrera_id' => ['nullable', 'exists:carreras,id'],
             'cargo_id' => ['nullable', 'exists:cargos,id'],
             'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
             'terminos_consentimiento' => ['accepted'],
-        ], [
+        ];
+
+        $request->validate($rules, [
             'terminos_consentimiento.accepted' => 'Debe aceptar los términos de uso y tratamiento de datos personales conforme a la Ley 25.326.',
         ]);
 

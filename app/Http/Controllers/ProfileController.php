@@ -56,6 +56,7 @@ class ProfileController extends Controller
             'eliminar_foto' => ['nullable'],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'direccion' => ['nullable', 'string', 'max:255'],
+            'current_password' => ['nullable', 'required_with:password', 'current_password'],
             'password' => ['nullable', 'string', 'confirmed', Password::defaults()],
         ];
 
@@ -108,6 +109,19 @@ class ProfileController extends Controller
 
         if ($request->filled('password')) {
             $user->password = Hash::make($validated['password']);
+
+            // Revocar tokens API
+            if (method_exists($user, 'tokens')) {
+                $user->tokens()->delete();
+            }
+
+            // Invalidar otras sesiones de base de datos
+            if (\Illuminate\Support\Facades\Schema::hasTable('sessions')) {
+                \Illuminate\Support\Facades\DB::table('sessions')
+                    ->where('user_id', $user->id)
+                    ->where('id', '!=', session()->getId())
+                    ->delete();
+            }
         }
 
         $user->save();
