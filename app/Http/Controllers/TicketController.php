@@ -39,8 +39,10 @@ class TicketController extends Controller
         $areas = Area::where('activo', true)->orderBy('nombre')->get();
         $solicitantesFrecuentes = Movimiento::whereNotNull('solicitante')
             ->where('solicitante', '!=', '')
-            ->distinct()
-            ->orderBy('solicitante')
+            ->select('solicitante')
+            ->selectRaw('COUNT(*) as total_solicitudes')
+            ->groupBy('solicitante')
+            ->orderByDesc('total_solicitudes')
             ->limit(25)
             ->pluck('solicitante');
 

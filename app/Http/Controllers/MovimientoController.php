@@ -55,11 +55,13 @@ class MovimientoController extends Controller
         }
 
         if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha', '>=', $request->fecha_desde);
+            $desde = \Carbon\Carbon::parse($request->fecha_desde)->startOfDay();
+            $query->where('fecha', '>=', $desde);
         }
 
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha', '<=', $request->fecha_hasta);
+            $hasta = \Carbon\Carbon::parse($request->fecha_hasta)->endOfDay();
+            $query->where('fecha', '<=', $hasta);
         }
 
         $movimientos = $query->orderBy('fecha', 'desc')->paginate(20)->withQueryString();
@@ -86,8 +88,10 @@ class MovimientoController extends Controller
 
         $solicitantesFrecuentes = Movimiento::whereNotNull('solicitante')
             ->where('solicitante', '!=', '')
-            ->distinct()
-            ->orderBy('solicitante')
+            ->select('solicitante')
+            ->selectRaw('COUNT(*) as total_solicitudes')
+            ->groupBy('solicitante')
+            ->orderByDesc('total_solicitudes')
             ->limit(25)
             ->pluck('solicitante');
 

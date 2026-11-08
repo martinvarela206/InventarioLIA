@@ -123,16 +123,18 @@ class AuditoriaController extends Controller
         }
 
         if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha', '>=', $request->fecha_desde);
+            $desde = \Carbon\Carbon::parse($request->fecha_desde)->startOfDay();
+            $query->where('fecha', '>=', $desde);
         }
 
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha', '<=', $request->fecha_hasta);
+            $hasta = \Carbon\Carbon::parse($request->fecha_hasta)->endOfDay();
+            $query->where('fecha', '<=', $hasta);
         }
 
         $auditorias = $query->paginate(15)->withQueryString();
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
-        $usuarios = Usuario::orderBy('nombre')->get();
+        $usuarios = Usuario::select(['id', 'nombre'])->orderBy('nombre')->get();
 
         return view('auditorias.index', compact('auditorias', 'ubicaciones', 'usuarios'));
     }

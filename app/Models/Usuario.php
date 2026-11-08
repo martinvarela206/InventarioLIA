@@ -138,28 +138,46 @@ class Usuario extends Authenticatable
     }
 
     /**
+     * Scope para consultar ex-colaboradores con más de 6 años de cese laboral
+     * pendientes de borrado de huella digital a nivel de consulta SQL (Ley 25.326).
+     */
+    public function scopeElegiblesBorradoHuella($query)
+    {
+        $seisAniosAtras = now()->subYears(6);
+
+        return $query->where('activo', false)
+            ->where(function ($q) {
+                $q->where('huella_borrada', false)->orWhereNull('huella_borrada');
+            })
+            ->where(function ($q) use ($seisAniosAtras) {
+                // Caso A: fecha_egreso explícita <= 6 años atrás
+                $q->where(function ($q2) use ($seisAniosAtras) {
+                    $q2->whereNotNull('fecha_egreso')
+                       ->where('fecha_egreso', '<=', $seisAniosAtras);
+                })
+                // Caso B: fecha_egreso nula, pero con historial de trayectorias donde la última cerró hace >= 6 años
+                ->orWhere(function ($q2) use ($seisAniosAtras) {
+                    $q2->whereNull('fecha_egreso')
+                       ->whereHas('trayectorias', function ($t) use ($seisAniosAtras) {
+                           $t->whereNotNull('fecha_fin')->where('fecha_fin', '<=', $seisAniosAtras);
+                       })
+                       ->whereDoesntHave('trayectorias', function ($t) use ($seisAniosAtras) {
+                           $t->whereNull('fecha_fin')->orWhere('fecha_fin', '>', $seisAniosAtras);
+                       });
+                });
+            });
+    }
+
+    /**
      * Retorna la colección de ex-colaboradores con más de 6 años de cese laboral
      * pendientes de borrado de huella digital (Ley 25.326).
      */
     public static function elegiblesBorradoHuella()
     {
-        $seisAniosAtras = now()->subYears(6);
-        return static::where('activo', false)
-            ->where(function ($q) {
-                $q->where('huella_borrada', false)->orWhereNull('huella_borrada');
-            })
-            ->where(function ($q) use ($seisAniosAtras) {
-                $q->where('fecha_egreso', '<=', $seisAniosAtras)
-                  ->orWhereHas('trayectorias', function ($t) use ($seisAniosAtras) {
-                      $t->whereNotNull('fecha_fin')->where('fecha_fin', '<=', $seisAniosAtras);
-                  });
-            })
+        return static::query()
+            ->elegiblesBorradoHuella()
             ->with('trayectorias')
-            ->get()
-            ->filter(function ($u) {
-                return $u->isExPersonalMayor6Anios() && !$u->esHistorico();
-            })
-            ->values();
+            ->get();
     }
 
     /**
@@ -200,6 +218,7 @@ class Usuario extends Authenticatable
 
         // Revocar roles de gestión si tuviese asociados
         $this->roles()->detach();
+        $this->flushRolesCache();
 
         // Revocar tokens Sanctum activos
         $this->tokens()->delete();
@@ -230,6 +249,52 @@ class Usuario extends Authenticatable
         return $this->esAnonimizado();
     }
 
+    protected ?array $rolesCache = null;
+
+    /**
+     * Retorna el listado plano de nombres de roles del usuario cacheados en la instancia
+     * para evitar subconsultas repetidas o instanciación redundante de colecciones.
+     *
+     * @return array<string>
+     */
+    public function getCachedRoles(): array
+    {
+        if ($this->rolesCache !== null) {
+            return $this->rolesCache;
+        }
+
+        if ($this->relationLoaded('roles')) {
+            $this->rolesCache = $this->roles->pluck('rol')->all();
+        } else {
+            $this->rolesCache = $this->roles()->pluck('rol')->all();
+        }
+
+        return $this->rolesCache;
+    }
+
+    /**
+     * Invalida la caché en memoria de roles del usuario.
+     */
+    public function flushRolesCache(): void
+    {
+        $this->rolesCache = null;
+        $this->unsetRelation('roles');
+    }
+
+    public function refresh()
+    {
+        $this->flushRolesCache();
+        return parent::refresh();
+    }
+
+    public function setRelation($relation, $value)
+    {
+        if ($relation === 'roles') {
+            $this->rolesCache = null;
+        }
+        return parent::setRelation($relation, $value);
+    }
+
     public function hasRole(string|array $role): bool
     {
         $roleList = is_array($role) ? $role : func_get_args();
@@ -239,7 +304,14 @@ class Usuario extends Authenticatable
         } elseif (in_array('asset_admin', $roleList, true) && !in_array('item_admin', $roleList, true)) {
             $roleList[] = 'item_admin';
         }
-        return $this->roles->pluck('rol')->intersect($roleList)->isNotEmpty();
+
+        $myRoles = $this->getCachedRoles();
+        foreach ($roleList as $r) {
+            if (in_array($r, $myRoles, true)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function isUserAdmin(): bool

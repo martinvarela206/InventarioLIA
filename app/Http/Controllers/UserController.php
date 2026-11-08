@@ -105,6 +105,7 @@ class UserController extends Controller
 
             $rolesAntes = $user->roles()->pluck('rol')->toArray();
             $user->roles()->sync($rolesInput);
+            $user->flushRolesCache();
             $rolesDespues = $user->fresh()->roles()->pluck('rol')->toArray();
 
             if ($rolesAntes != $rolesDespues) {
@@ -156,10 +157,12 @@ class UserController extends Controller
 
         if ($user->hasRole($roleName)) {
             $user->roles()->detach($role->id);
+            $user->flushRolesCache();
             $message = "Rol {$roleName} removido correctamente.";
             $status = 'removed';
         } else {
             $user->roles()->attach($role->id);
+            $user->flushRolesCache();
             $message = "Rol {$roleName} asignado correctamente.";
             $status = 'assigned';
         }
