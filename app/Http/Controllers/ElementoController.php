@@ -297,18 +297,9 @@ class ElementoController extends Controller
                 'fecha_vencimiento_garantia' => $validated['fecha_vencimiento_garantia'] ?? null,
             ]);
 
-            // Guardar atributos específicos dinámicos en la tabla pivot
+            // Sincronizar atributos técnicos dinámicos y tabla pivot
             if ($request->has('atributos') && is_array($request->atributos)) {
-                foreach ($request->atributos as $attrId => $valor) {
-                    $valLimpio = trim((string)$valor);
-                    if ($valLimpio !== '') {
-                        ElementoAtributoValor::create([
-                            'elemento_id' => $elemento->id,
-                            'atributo_id' => $attrId,
-                            'valor' => $valLimpio,
-                        ]);
-                    }
-                }
+                $elemento->sincronizarAtributosTecnicos($request->atributos);
             }
 
             // GARANTIZAR MOVIMIENTO INICIAL AUTOMÁTICO
@@ -397,21 +388,9 @@ class ElementoController extends Controller
             'fecha_vencimiento_garantia' => $validated['fecha_vencimiento_garantia'] ?? null,
         ]);
 
-        // Sincronizar atributos técnicos dinámicos
+        // Sincronizar atributos técnicos dinámicos y tabla pivot
         if ($request->has('atributos') && is_array($request->atributos)) {
-            foreach ($request->atributos as $attrId => $valor) {
-                $valLimpio = trim((string)$valor);
-                if ($valLimpio !== '') {
-                    ElementoAtributoValor::updateOrCreate(
-                        ['elemento_id' => $elemento->id, 'atributo_id' => $attrId],
-                        ['valor' => $valLimpio]
-                    );
-                } else {
-                    ElementoAtributoValor::where('elemento_id', $elemento->id)
-                        ->where('atributo_id', $attrId)
-                        ->delete();
-                }
-            }
+            $elemento->sincronizarAtributosTecnicos($request->atributos);
         }
 
         return redirect()->route('elementos.show', $elemento->id)

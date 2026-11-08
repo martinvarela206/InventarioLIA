@@ -90,6 +90,77 @@ class Elemento extends Model
             $elemento->nro_lia = static::normalizarIdentificador($elemento->nro_lia);
             $elemento->nro_unsj = static::normalizarIdentificador($elemento->nro_unsj);
         });
+
+        static::saved(function ($elemento) {
+            $elemento->sincronizarDescripcionHaciaAtributos();
+        });
+    }
+
+    /**
+     * Sincroniza los atributos técnicos en la tabla normalizada elemento_atributo_valor
+     * y mantiene actualizada la columna de compatibilidad descripcion (JSON).
+     *
+     * @param array<int|string, string|null> $atributos [atributo_id => valor]
+     */
+    public function sincronizarAtributosTecnicos(array $atributos): void
+    {
+        $descripcionActual = is_array($this->descripcion) ? $this->descripcion : [];
+
+        foreach ($atributos as $attrId => $valor) {
+            $valLimpio = trim((string)$valor);
+            $atributo = Atributo::find($attrId);
+
+            if ($valLimpio !== '') {
+                ElementoAtributoValor::updateOrCreate(
+                    ['elemento_id' => $this->id, 'atributo_id' => $attrId],
+                    ['valor' => $valLimpio]
+                );
+                if ($atributo) {
+                    $descripcionActual[$atributo->nombre] = $valLimpio;
+                }
+            } else {
+                ElementoAtributoValor::where('elemento_id', $this->id)
+                    ->where('atributo_id', $attrId)
+                    ->delete();
+                if ($atributo && array_key_exists($atributo->nombre, $descripcionActual)) {
+                    unset($descripcionActual[$atributo->nombre]);
+                }
+            }
+        }
+
+        $this->descripcion = !empty($descripcionActual) ? $descripcionActual : null;
+        $this->saveQuietly();
+        $this->unsetRelation('valoresAtributos');
+    }
+
+    /**
+     * Propaga valores de atributos desde descripcion (JSON) hacia la tabla
+     * normalizada elemento_atributo_valor si el Tipo define atributos correspondientes.
+     */
+    public function sincronizarDescripcionHaciaAtributos(): void
+    {
+        if (!is_array($this->descripcion) || empty($this->descripcion) || !$this->tipo_id) {
+            return;
+        }
+
+        $tipo = Tipo::with('atributos')->find($this->tipo_id);
+        if (!$tipo || $tipo->atributos->isEmpty()) {
+            return;
+        }
+
+        $atributosPorNombre = $tipo->atributos->keyBy(fn($a) => mb_strtolower(trim($a->nombre)));
+
+        foreach ($this->descripcion as $key => $val) {
+            $keyLower = mb_strtolower(trim((string)$key));
+            $valLimpio = trim((string)$val);
+            if ($valLimpio !== '' && $valLimpio !== '-' && isset($atributosPorNombre[$keyLower])) {
+                $attr = $atributosPorNombre[$keyLower];
+                ElementoAtributoValor::updateOrCreate(
+                    ['elemento_id' => $this->id, 'atributo_id' => $attr->id],
+                    ['valor' => $valLimpio]
+                );
+            }
+        }
     }
 
     public function tipo(): BelongsTo
@@ -124,7 +195,13 @@ class Elemento extends Model
                 if ($va->atributo && mb_strtolower(trim($va->atributo->nombre)) === $nomLower) {
                     $val = trim((string)$va->valor);
                     if ($val !== '') {
-                        $unidad = $va->atributo->unidad_medida ? ' ' . $va->atributo->unidad_medida : '';
+                        $unidad = '';
+                        if ($va->atributo->unidad_medida) {
+                            $u = trim($va->atributo->unidad_medida);
+                            if (!str_ends_with(strtoupper($val), strtoupper($u))) {
+                                $unidad = ' ' . $u;
+                            }
+                        }
                         return $val . $unidad;
                     }
                 }
@@ -164,10 +241,17 @@ class Elemento extends Model
             foreach ($this->valoresAtributos as $va) {
                 $nom = $va->atributo?->nombre;
                 if ($nom && trim((string)$va->valor) !== '') {
-                    $unidad = $va->atributo?->unidad_medida ? ' ' . trim($va->atributo->unidad_medida) : '';
+                    $valLimpio = trim((string)$va->valor);
+                    $unidad = '';
+                    if ($va->atributo?->unidad_medida) {
+                        $u = trim($va->atributo->unidad_medida);
+                        if (!str_ends_with(strtoupper($valLimpio), strtoupper($u))) {
+                            $unidad = ' ' . $u;
+                        }
+                    }
                     $datos[mb_strtolower(trim($nom))] = [
                         'label' => trim($nom),
-                        'valor' => trim((string)$va->valor) . $unidad,
+                        'valor' => $valLimpio . $unidad,
                     ];
                 }
             }
