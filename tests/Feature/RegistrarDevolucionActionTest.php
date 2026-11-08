@@ -202,4 +202,35 @@ class RegistrarDevolucionActionTest extends TestCase
             $this->assertArrayHasKey('fecha_devolucion', $e->errors());
         }
     }
+
+    public function test_accion_rechaza_ejecucion_sin_usuario_responsable(): void
+    {
+        $tipo = Tipo::first();
+        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $ubicacion = Ubicacion::where('activa', true)->first();
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'TST-DEV-NOUSER',
+            'tipo_id' => $tipo->id,
+            'modelo' => 'Router Cisco',
+        ]);
+
+        $prestamo = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'externo_prestamo',
+            'user_id' => $tec->id,
+            'fecha' => now()->subDay(),
+            'solicitante' => 'Dra. Maria',
+            'fecha_prestamo' => now()->subDay()->toDateString(),
+            'fecha_devolucion' => null,
+        ]);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Se requiere un usuario responsable identificado');
+
+        // Ejecutar sin usuario autenticado ni suministrado
+        app(RegistrarDevolucionAction::class)->execute($prestamo, [
+            'ubicacion_id' => $ubicacion->id,
+        ], null);
+    }
 }

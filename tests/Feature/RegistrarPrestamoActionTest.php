@@ -255,4 +255,22 @@ class RegistrarPrestamoActionTest extends TestCase
 
         $response->assertSessionHasErrors(['tipo_movimiento']);
     }
+
+    public function test_accion_rechaza_ejecucion_sin_usuario_responsable(): void
+    {
+        $tipo = Tipo::first();
+        $elemento = Elemento::create([
+            'nro_lia' => 'TST-ACT-NOUSER',
+            'tipo_id' => $tipo->id,
+            'modelo' => 'Switch HP',
+        ]);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Se requiere un usuario responsable identificado');
+
+        // Llamar sin autenticación previa ni pasar entidad usuario
+        app(RegistrarPrestamoAction::class)->execute($elemento, [
+            'solicitante' => 'Prof. Perez',
+        ], null);
+    }
 }

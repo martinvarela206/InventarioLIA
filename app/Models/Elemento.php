@@ -374,6 +374,17 @@ class Elemento extends Model
 
     // --- QUERY SCOPES SEMÁNTICOS (SNIPE-IT PATTERN) ---
 
+    /**
+     * Scope para precargar de manera óptima las relaciones requeridas por el accessor de estado canónico.
+     */
+    public function scopeConEstado(Builder $query): Builder
+    {
+        return $query->with([
+            'tipo',
+            'ultimoMovimiento.ubicacion',
+        ]);
+    }
+
     public function scopeDisponibles(Builder $query): Builder
     {
         return $this->scopeOperativos($query);

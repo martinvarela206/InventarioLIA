@@ -956,7 +956,7 @@ class ReporteController extends Controller
     {
         // 1. Si especificó ID numérico directo (retrocompatibilidad)
         if ($request->filled('elemento_id')) {
-            return Elemento::find($request->elemento_id);
+            return Elemento::conEstado()->find($request->elemento_id);
         }
 
         // 2. Si especificó N° LIA y/o N° UNSJ
@@ -964,22 +964,19 @@ class ReporteController extends Controller
         $nroUnsj = trim((string)$request->input('nro_unsj', ''));
 
         if ($nroLia !== '' && $nroUnsj !== '') {
-            $el = Elemento::where('nro_lia', $nroLia)->where('nro_unsj', $nroUnsj)->first();
+            $el = Elemento::conEstado()->where('nro_lia', $nroLia)->where('nro_unsj', $nroUnsj)->first();
             if ($el) return $el;
+            return null; // Si se buscó explícitamente y no coincide, no hacer fallback ciego
         }
 
         if ($nroLia !== '') {
-            $coincidencias = Elemento::where('nro_lia', $nroLia)->get();
-            if ($coincidencias->isNotEmpty()) {
-                return $coincidencias->first();
-            }
+            return Elemento::conEstado()->where('nro_lia', $nroLia)->first();
         }
 
         if ($nroUnsj !== '') {
-            $el = Elemento::where('nro_unsj', $nroUnsj)->first();
-            if ($el) return $el;
+            return Elemento::conEstado()->where('nro_lia', $nroUnsj)->orWhere('nro_unsj', $nroUnsj)->first();
         }
 
-        return Elemento::first();
+        return Elemento::conEstado()->first();
     }
 }

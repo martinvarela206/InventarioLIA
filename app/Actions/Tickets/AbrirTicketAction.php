@@ -20,7 +20,10 @@ class AbrirTicketAction
     public function execute(int|Elemento $elemento, array $datos, ?Usuario $usuario = null, array $fotos = []): Movimiento
     {
         $elementoId = $elemento instanceof Elemento ? $elemento->id : $elemento;
-        $user = $usuario ?? auth()->user() ?? Usuario::first();
+        $user = $usuario ?? auth()->user();
+        if (!$user) {
+            throw new \InvalidArgumentException('Se requiere un usuario responsable identificado para registrar la operación patrimonial.');
+        }
 
         return DB::transaction(function () use ($elementoId, $datos, $user, $fotos) {
             /** @var Elemento $el */

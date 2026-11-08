@@ -165,7 +165,7 @@ class MovimientoController extends Controller
         }
 
         // Movimiento interno
-        $elemento = Elemento::findOrFail($validated['elemento_id']);
+        $elemento = Elemento::conEstado()->findOrFail($validated['elemento_id']);
         if ($elemento->estado === EstadoElemento::BAJA) {
             return redirect()->back()
                 ->withErrors(['elemento_id' => 'No es posible trasladar un activo dado de baja o clasificado como basura tecnológica.'])

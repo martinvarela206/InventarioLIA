@@ -20,8 +20,12 @@ class RegistrarPrestamoAction
     public function execute(int|Elemento $elemento, array $datos, ?Usuario $usuario = null): Movimiento
     {
         $elementoId = $elemento instanceof Elemento ? $elemento->id : $elemento;
+        $actor = $usuario ?? auth()->user();
+        if (!$actor) {
+            throw new \InvalidArgumentException('Se requiere un usuario responsable identificado para registrar la operación patrimonial.');
+        }
 
-        return DB::transaction(function () use ($elementoId, $datos, $usuario) {
+        return DB::transaction(function () use ($elementoId, $datos, $actor) {
             /** @var Elemento $el */
             $el = Elemento::where('id', $elementoId)->lockForUpdate()->firstOrFail();
 
@@ -85,7 +89,7 @@ class RegistrarPrestamoAction
                 ]);
             }
 
-            $userId = $usuario?->id ?? auth()->id() ?? Usuario::first()?->id;
+            $userId = $actor->id;
 
             return Movimiento::create([
                 'elemento_id' => $el->id,

@@ -20,19 +20,31 @@ class RegistrarDevolucionAction
     public function execute(int|Movimiento $movimiento, array $datos, ?Usuario $usuario = null): Movimiento
     {
         $movimientoId = $movimiento instanceof Movimiento ? $movimiento->id : $movimiento;
+        $actor = $usuario ?? auth()->user();
+        if (!$actor) {
+            throw new \InvalidArgumentException('Se requiere un usuario responsable identificado para registrar la operación patrimonial.');
+        }
 
-        return DB::transaction(function () use ($movimientoId, $datos, $usuario) {
+        return DB::transaction(function () use ($movimientoId, $datos, $actor) {
+            // 0. Obtener metadatos del préstamo para adquisición canónica de locks
+            $prestamoMeta = Movimiento::where('id', $movimientoId)->firstOrFail(['id', 'elemento_id']);
+
+            // 1. Bloquear primero el Elemento (orden canónico de adquisición para prevenir deadlocks)
+            /** @var Elemento $el */
+            $el = Elemento::where('id', $prestamoMeta->elemento_id)->lockForUpdate()->firstOrFail();
+
+            // 2. Bloquear luego el Movimiento de préstamo
             /** @var Movimiento $prestamo */
-            $prestamo = Movimiento::where('id', $movimientoId)->lockForUpdate()->firstOrFail();
+            $prestamo = Movimiento::where('id', $prestamoMeta->id)->lockForUpdate()->firstOrFail();
 
-            // 1. Validar que el movimiento sea efectivamente un préstamo externo
+            // 3. Validar que el movimiento sea efectivamente un préstamo externo
             if (!$prestamo->esPrestamo()) {
                 throw ValidationException::withMessages([
                     'movimiento_id' => 'El movimiento especificado no corresponde a un préstamo externo y no puede devolverse.',
                 ]);
             }
 
-            // 2. Validar que no haya sido devuelto previamente (protección contra doble clic / condición de carrera)
+            // 4. Validar que no haya sido devuelto previamente (protección contra doble clic / condición de carrera)
             if ($prestamo->fecha_devolucion !== null) {
                 $fechaStr = Carbon::parse($prestamo->fecha_devolucion)->format('d/m/Y');
                 throw ValidationException::withMessages([
@@ -40,11 +52,7 @@ class RegistrarDevolucionAction
                 ]);
             }
 
-            // 3. Bloquear el Elemento para asegurar consistencia
-            /** @var Elemento $el */
-            $el = Elemento::where('id', $prestamo->elemento_id)->lockForUpdate()->firstOrFail();
-
-            // 4. Validar ubicación de reingreso (debe existir y estar activa)
+            // 5. Validar ubicación de reingreso (debe existir y estar activa)
             $ubicacionId = $datos['ubicacion_id'] ?? null;
             if (!$ubicacionId) {
                 throw ValidationException::withMessages([
@@ -81,7 +89,7 @@ class RegistrarDevolucionAction
                 'fecha_devolucion' => $fechaDev,
             ]);
 
-            $userId = $usuario?->id ?? auth()->id() ?? Usuario::first()?->id;
+            $userId = $actor->id;
 
             // 7. Crear el nuevo movimiento interno de reingreso al laboratorio
             $comentario = 'Reingreso de préstamo externo.';
