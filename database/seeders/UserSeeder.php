@@ -32,7 +32,7 @@ class UserSeeder extends Seeder
                 'carrera' => 'Licenciatura en Ciencias de la Computación',
                 'foto_path' => '/assets/flavia.png',
                 'activo' => true,
-                'roles' => ['registered', 'user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev'],
+                'roles' => ['registered', 'user_admin', 'app_admin', 'asset_admin', 'tec', 'subtec', 'rev'],
             ],
             [
                 'nombre' => 'Marcelo Mondre',
@@ -112,7 +112,7 @@ class UserSeeder extends Seeder
                 'dni' => '30111222',
                 'cargo_actual' => 'Director LIA',
                 'activo' => true,
-                'roles' => ['registered', 'user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev'],
+                'roles' => ['registered', 'user_admin', 'app_admin', 'asset_admin', 'tec', 'subtec', 'rev'],
             ],
             [
                 'nombre' => 'Administrador de Aplicación',
@@ -125,12 +125,12 @@ class UserSeeder extends Seeder
             ],
             [
                 'nombre' => 'Encargado de Inventario',
-                'email' => 'item_admin@lia.unsj.edu.ar',
+                'email' => 'asset_admin@lia.unsj.edu.ar',
                 'password' => Hash::make('1234'),
                 'dni' => '32333444',
                 'cargo_actual' => 'JTP Inventario',
                 'activo' => true,
-                'roles' => ['registered', 'item_admin'],
+                'roles' => ['registered', 'asset_admin'],
             ],
             [
                 'nombre' => 'Técnico de Laboratorio',

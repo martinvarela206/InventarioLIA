@@ -26,7 +26,7 @@ class TicketController extends Controller
     {
         $user = Auth::user();
         $informante = $user->nombre ?: $user->email;
-        $isTec = $user->hasRole('tec') || $user->hasRole('user_admin') || $user->hasRole('item_admin');
+        $isTec = $user->hasRole('tec') || $user->hasRole('user_admin') || $user->hasRole('asset_admin');
 
         $elemento = null;
         if ($request->filled('elemento_id')) {
@@ -369,7 +369,7 @@ class TicketController extends Controller
     /**
      * Resuelve un ticket técnico mediante un nuevo movimiento (Append-Only)
      * o lo declara irreparable pasándolo a baja (Basura Tecnológica).
-     * Exclusivo para Técnico (tec) e item_admin/asset_admin. Rev y SubTec están bloqueados.
+     * Exclusivo para Técnico (tec) y asset_admin. Rev y SubTec están bloqueados.
      */
     public function resolver(Request $request, int $id, ResolverTicketAction $resolverTicketAction): RedirectResponse
     {

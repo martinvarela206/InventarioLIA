@@ -294,7 +294,7 @@ class Usuario extends Authenticatable
 
     public function canManageElementos(): bool
     {
-        return $this->hasRole('item_admin');
+        return $this->hasRole('asset_admin');
     }
 
     public function canManageUsers(): bool
@@ -316,33 +316,33 @@ class Usuario extends Authenticatable
      * Permisos jerárquicos sobre el ciclo de vida del Ticket:
      * - Revisor (rev): inicia y comenta/responde en el hilo de diagnóstico, NUNCA soluciona ni cierra.
      * - SubTécnico (subtec): registra y propone la solución técnica, NUNCA asocia movimientos ni cierra formalmente.
-     * - Técnico (tec/item_admin): cierra formalmente el ticket (resuelto o baja) y asocia movimientos físicos.
+     * - Técnico (tec/asset_admin): cierra formalmente el ticket (resuelto o baja) y asocia movimientos físicos.
      */
     public function canSolveTickets(): bool
     {
-        return $this->hasRole(['subtec', 'tec', 'item_admin', 'user_admin', 'app_admin']);
+        return $this->hasRole(['subtec', 'tec', 'asset_admin', 'user_admin', 'app_admin']);
     }
 
     public function canCloseTickets(): bool
     {
-        return $this->hasRole(['tec', 'item_admin', 'user_admin', 'app_admin']);
+        return $this->hasRole(['tec', 'asset_admin', 'user_admin', 'app_admin']);
     }
 
     public function canAssociateMovementsToTicket(): bool
     {
-        return $this->hasRole(['tec', 'item_admin', 'user_admin', 'app_admin']);
+        return $this->hasRole(['tec', 'asset_admin', 'user_admin', 'app_admin']);
     }
 
     /**
      * Determina si el usuario tiene al menos un rol operativo más allá de registered.
-     * Si posee cualquier rol (rev, subtec, tec, item_admin, user_admin, app_admin), ingresa al panel y nunca ve bienvenida.
+     * Si posee cualquier rol (rev, subtec, tec, asset_admin, user_admin, app_admin), ingresa al panel y nunca ve bienvenida.
      */
     public function hasActivePermissions(): bool
     {
         if (!$this->activo) {
             return false;
         }
-        return $this->hasRole(['rev', 'subtec', 'tec', 'item_admin', 'user_admin', 'app_admin']);
+        return $this->hasRole(['rev', 'subtec', 'tec', 'asset_admin', 'user_admin', 'app_admin']);
     }
 
     /**

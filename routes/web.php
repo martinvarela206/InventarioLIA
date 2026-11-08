@@ -59,7 +59,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/adjuntos/tickets/{id}', [AdjuntoController::class, 'verAdjuntoTicket'])->name('adjuntos.ticket');
     Route::get('/adjuntos/ticket-comentarios/{id}', [AdjuntoController::class, 'verAdjuntoComentario'])->name('adjuntos.ticket-comentario');
 
-    // Módulos Operativos Protegidos (usuarios con permisos: rev, tec, item_admin, user_admin, app_admin)
+    // Módulos Operativos Protegidos (usuarios con permisos: rev, tec, asset_admin, user_admin, app_admin)
     Route::middleware('has_permissions')->group(function () {
         // Dashboard Operativo
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
@@ -69,8 +69,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/elementos/export-csv', [ElementoController::class, 'exportCsv'])->name('elementos.exportCsv');
         Route::get('/elementos/imprimir', [ElementoController::class, 'imprimir'])->name('elementos.imprimir');
 
-        // Mutación de Inventario (Alta, Edición y Baja de Activos - exclusivo item_admin)
-        Route::middleware('role:item_admin')->group(function () {
+        // Mutación de Inventario (Alta, Edición y Baja de Activos - exclusivo asset_admin)
+        Route::middleware('role:asset_admin')->group(function () {
             Route::get('/elementos/create', [ElementoController::class, 'create'])->name('elementos.create');
             Route::post('/elementos', [ElementoController::class, 'store'])->name('elementos.store');
             Route::get('/elementos/{elemento}/edit', [ElementoController::class, 'edit'])->name('elementos.edit');
@@ -92,14 +92,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
 
         // Hilo y Seguimiento de Tickets (apertura, consulta y comentarios: rev, subtec, tec)
-        Route::middleware('role:rev,subtec,tec,item_admin,user_admin,app_admin')->group(function () {
+        Route::middleware('role:rev,subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
             Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
             Route::post('/tickets/{ticket}/comentar', [TicketController::class, 'comentar'])->name('tickets.comentar');
             Route::post('/tickets/{ticket}/area', [TicketController::class, 'agregarArea'])->name('tickets.agregarArea');
         });
 
         // Bandeja y Solución Técnica de Tickets (subtec, tec)
-        Route::middleware('role:subtec,tec,item_admin,user_admin,app_admin')->group(function () {
+        Route::middleware('role:subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
             Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
             Route::post('/tickets/{ticket}/solucionar', [TicketController::class, 'solucionar'])->name('tickets.solucionar');
         });
@@ -122,7 +122,7 @@ Route::middleware('auth')->group(function () {
         });
 
         // Módulo de Auditorías Físicas de Ubicación y Archivo Histórico
-        Route::middleware('role:rev,subtec,tec,item_admin,user_admin,app_admin')->group(function () {
+        Route::middleware('role:rev,subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
             Route::get('/auditorias', [\App\Http\Controllers\AuditoriaController::class, 'index'])->name('auditorias.index');
             Route::get('/auditorias/crear', [\App\Http\Controllers\AuditoriaController::class, 'create'])->name('auditorias.create');
             Route::get('/auditorias/{auditoria}', [\App\Http\Controllers\AuditoriaController::class, 'show'])->name('auditorias.show');

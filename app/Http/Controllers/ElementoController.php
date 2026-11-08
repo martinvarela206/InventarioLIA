@@ -251,7 +251,7 @@ class ElementoController extends Controller
     public function create(): View
     {
         if (!auth()->user()?->canManageElementos()) {
-            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+            abort(403, 'Acceso restringido a administradores de inventario (asset_admin).');
         }
 
         $tipos = Tipo::with('atributos')->orderBy('nombre')->get();
@@ -266,7 +266,7 @@ class ElementoController extends Controller
     public function store(StoreElementoRequest $request): RedirectResponse
     {
         if (!auth()->user()?->canManageElementos()) {
-            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+            abort(403, 'Acceso restringido a administradores de inventario (asset_admin).');
         }
 
         $validated = $request->validated();
@@ -353,7 +353,7 @@ class ElementoController extends Controller
     public function edit(Elemento $elemento): View
     {
         if (!auth()->user()?->canManageElementos()) {
-            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+            abort(403, 'Acceso restringido a administradores de inventario (asset_admin).');
         }
 
         $elemento->load('valoresAtributos');
@@ -367,7 +367,7 @@ class ElementoController extends Controller
     public function update(UpdateElementoRequest $request, Elemento $elemento): RedirectResponse
     {
         if (!auth()->user()?->canManageElementos()) {
-            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+            abort(403, 'Acceso restringido a administradores de inventario (asset_admin).');
         }
 
         $validated = $request->validated();
