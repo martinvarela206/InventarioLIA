@@ -12,6 +12,9 @@ use App\Models\MovimientoAdjunto;
 use App\Models\Elemento;
 use App\Models\Ubicacion;
 use App\Models\Area;
+use App\Actions\Tickets\AbrirTicketAction;
+use App\Actions\Tickets\ResolverTicketAction;
+use Illuminate\Validation\ValidationException;
 
 class TicketController extends Controller
 {
@@ -47,7 +50,7 @@ class TicketController extends Controller
     /**
      * Registra el movimiento inicial de reparación y sus adjuntos fotográficos.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, AbrirTicketAction $abrirTicketAction): RedirectResponse
     {
         $validated = $request->validate([
             'elemento_id' => 'required|exists:elementos,id',
@@ -62,60 +65,23 @@ class TicketController extends Controller
         ]);
 
         $user = Auth::user();
-        $isTec = $user->hasRole('tec') || $user->hasRole('user_admin') || $user->hasRole('item_admin');
+        $isTec = $user->hasRole('tec') || $user->hasRole('user_admin') || $user->hasRole('item_admin') || $user->hasRole('asset_admin');
 
         // Para rol Revisor, el solicitante es estrictamente el usuario logueado
         $solicitante = $isTec
             ? (trim((string)$request->input('solicitante')) ?: ($user->nombre ?: $user->email))
             : ($user->nombre ?: $user->email);
 
-        $elemento = Elemento::with('ultimoMovimiento')->findOrFail($validated['elemento_id']);
+        $validated['solicitante'] = $solicitante;
+        $fotos = $request->file('fotos') ?? [];
 
-        // Ubicación: si permanece in situ o no se selecciona destino, hereda ubicación y puesto original
-        $esInsitu = ($validated['tipo_traslado'] ?? 'insitu') === 'insitu';
-        $ubicacionId = $esInsitu
-            ? $elemento->ultimoMovimiento?->ubicacion_id
-            : ($validated['ubicacion_id'] ?? $elemento->ultimoMovimiento?->ubicacion_id);
-        $puesto = $esInsitu
-            ? $elemento->ultimoMovimiento?->puesto
-            : ($validated['puesto'] ?? ($validated['ubicacion_id'] ? null : $elemento->ultimoMovimiento?->puesto));
+        try {
+            $ticket = $abrirTicketAction->execute($validated['elemento_id'], $validated, $user, $fotos);
+        } catch (ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        }
 
-        $ticket = DB::transaction(function () use ($validated, $elemento, $user, $solicitante, $ubicacionId, $puesto, $request) {
-            $movimiento = Movimiento::create([
-                'elemento_id' => $elemento->id,
-                'tipo_movimiento' => 'reparacion',
-                'estado_ticket' => 'abierto',
-                'ubicacion_id' => $ubicacionId,
-                'puesto' => $puesto,
-                'user_id' => $user->id,
-                'fecha' => now(),
-                'solicitante' => $solicitante,
-                'comentario' => $validated['comentario'],
-            ]);
-
-            if (!empty($validated['area_id'])) {
-                $movimiento->areas()->attach($validated['area_id'], [
-                    'user_id' => $user->id,
-                    'created_at' => now(),
-                ]);
-            }
-
-            if ($request->hasFile('fotos')) {
-                foreach ($request->file('fotos') as $foto) {
-                    if ($foto && $foto->isValid()) {
-                        $path = $foto->store('tickets', 'public');
-                        MovimientoAdjunto::create([
-                            'movimiento_id' => $movimiento->id,
-                            'archivo_path' => $path,
-                            'nombre_original' => $foto->getClientOriginalName(),
-                            'mime_type' => $foto->getMimeType(),
-                        ]);
-                    }
-                }
-            }
-
-            return $movimiento;
-        });
+        $elemento = $ticket->elemento;
 
         if ($user->hasRole('tec')) {
             return redirect()->route('tickets.show', $ticket->id)
@@ -329,56 +295,63 @@ class TicketController extends Controller
             'fotos.*' => 'nullable|image|max:10240',
         ]);
 
-        $ticket = Movimiento::findOrFail($id);
+        try {
+            DB::transaction(function () use ($id, $validated, $user, $request) {
+                $ticket = Movimiento::where('id', $id)->lockForUpdate()->firstOrFail();
 
-        if ($ticket->estado_ticket === 'resuelto' || $ticket->estado_ticket === 'baja') {
-            return redirect()->route('tickets.show', $ticket->id)
-                ->with('error', 'El ticket ya ha sido finalizado previamente.');
-        }
-
-        $ticket->estado_ticket = 'solucionado';
-        $ticket->save();
-
-        if (!empty($validated['nueva_area_id'])) {
-            $ticket->areas()->syncWithoutDetaching([
-                $validated['nueva_area_id'] => [
-                    'user_id' => $user->id,
-                    'created_at' => now(),
-                ]
-            ]);
-        }
-
-        $comentario = \App\Models\TicketComentario::create([
-            'ticket_id' => $ticket->id,
-            'user_id' => $user->id,
-            'mensaje' => 'SOLUCIÓN TÉCNICA PROPUESTA / EJECUTADA: ' . $validated['solucion'],
-            'tipo' => 'solucion_propuesta',
-        ]);
-
-        if ($request->hasFile('fotos')) {
-            foreach ($request->file('fotos') as $foto) {
-                if ($foto && $foto->isValid()) {
-                    $path = $foto->store('ticket_hilos', 'public');
-                    \App\Models\TicketComentarioAdjunto::create([
-                        'ticket_comentario_id' => $comentario->id,
-                        'archivo_path' => $path,
-                        'nombre_original' => $foto->getClientOriginalName(),
-                        'mime_type' => $foto->getMimeType(),
+                if ($ticket->estado_ticket === 'resuelto' || $ticket->estado_ticket === 'baja') {
+                    throw ValidationException::withMessages([
+                        'solucion' => 'El ticket ya ha sido finalizado previamente.',
                     ]);
                 }
-            }
+
+                $ticket->estado_ticket = 'solucionado';
+                $ticket->save();
+
+                if (!empty($validated['nueva_area_id'])) {
+                    $ticket->areas()->syncWithoutDetaching([
+                        $validated['nueva_area_id'] => [
+                            'user_id' => $user->id,
+                            'created_at' => now(),
+                        ]
+                    ]);
+                }
+
+                $comentario = \App\Models\TicketComentario::create([
+                    'ticket_id' => $ticket->id,
+                    'user_id' => $user->id,
+                    'mensaje' => 'SOLUCIÓN TÉCNICA PROPUESTA / EJECUTADA: ' . $validated['solucion'],
+                    'tipo' => 'solucion_propuesta',
+                ]);
+
+                if ($request->hasFile('fotos')) {
+                    foreach ($request->file('fotos') as $foto) {
+                        if ($foto && $foto->isValid()) {
+                            $path = $foto->store('ticket_hilos', 'public');
+                            \App\Models\TicketComentarioAdjunto::create([
+                                'ticket_comentario_id' => $comentario->id,
+                                'archivo_path' => $path,
+                                'nombre_original' => $foto->getClientOriginalName(),
+                                'mime_type' => $foto->getMimeType(),
+                            ]);
+                        }
+                    }
+                }
+            });
+        } catch (ValidationException $e) {
+            return redirect()->route('tickets.show', $id)->with('error', $e->getMessage());
         }
 
-        return redirect()->route('tickets.show', $ticket->id)
+        return redirect()->route('tickets.show', $id)
             ->with('success', 'Solución técnica registrada. Pendiente de cierre formal y reasignación física por un Técnico.');
     }
 
     /**
      * Resuelve un ticket técnico mediante un nuevo movimiento (Append-Only)
      * o lo declara irreparable pasándolo a baja (Basura Tecnológica).
-     * Exclusivo para Técnico (tec) e item_admin. Rev y SubTec están bloqueados.
+     * Exclusivo para Técnico (tec) e item_admin/asset_admin. Rev y SubTec están bloqueados.
      */
-    public function resolver(Request $request, int $id): RedirectResponse
+    public function resolver(Request $request, int $id, ResolverTicketAction $resolverTicketAction): RedirectResponse
     {
         $user = Auth::user();
         if (!$user->canCloseTickets()) {
@@ -392,39 +365,15 @@ class TicketController extends Controller
             'puesto' => 'nullable|string|max:50',
         ]);
 
-        $ticket = Movimiento::with('elemento')->findOrFail($id);
-
-        DB::transaction(function () use ($ticket, $validated, $user) {
-            $esBaja = ($validated['accion'] === 'baja');
-
-            $tipoMov = $esBaja ? 'baja' : 'interno';
-            $estadoTicket = $esBaja ? 'baja' : 'resuelto';
-
-            $comentario = $esBaja
-                ? "BAJA PATRIMONIAL (Irreparable - Ticket #{$ticket->id}): {$validated['solucion']}"
-                : "RESOLUCIÓN TICKET #{$ticket->id}: {$validated['solucion']}";
-
-            Movimiento::create([
-                'elemento_id' => $ticket->elemento_id,
-                'tipo_movimiento' => $tipoMov,
-                'estado_ticket' => $estadoTicket,
-                'ubicacion_id' => $validated['ubicacion_id'] ?? $ticket->ubicacion_id,
-                'puesto' => $validated['puesto'] ?? $ticket->puesto,
-                'user_id' => $user->id,
-                'fecha' => now(),
-                'ticket_id' => $ticket->id,
-                'correccion_de_id' => $ticket->id,
-                'comentario' => $comentario,
-            ]);
-
-            // Actualizar estado del ticket origen
-            $ticket->estado_ticket = $estadoTicket;
-            $ticket->save();
-        });
+        try {
+            $movimientoResolucion = $resolverTicketAction->execute($id, $validated, $user);
+        } catch (ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        }
 
         $msg = ($validated['accion'] === 'baja')
-            ? "El activo {$ticket->elemento->nro_lia} ha sido declarado irreparable y registrado como Basura Tecnológica / De Baja."
-            : "Ticket #{$ticket->id} resuelto con éxito y activo reintegrado a la sala correspondiente.";
+            ? "El activo {$movimientoResolucion->elemento->nro_lia} ha sido declarado irreparable y registrado como Basura Tecnológica / De Baja."
+            : "Ticket #{$id} resuelto con éxito y activo reintegrado a la sala correspondiente.";
 
         return redirect()->route('tickets.index')->with('success', $msg);
     }
