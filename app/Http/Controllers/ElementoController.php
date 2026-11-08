@@ -177,7 +177,7 @@ class ElementoController extends Controller
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($handle, $columnas, ';');
             foreach ($filas as $fila) {
-                fputcsv($handle, $fila, ';');
+                fputcsv($handle, \App\Support\CsvSanitizer::sanitizeRow($fila), ';');
             }
             fclose($handle);
         }, 200, $headers);

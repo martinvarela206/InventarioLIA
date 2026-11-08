@@ -137,7 +137,7 @@ class ReporteController extends Controller
             fputcsv($handle, $columnas, ';');
 
             foreach ($filas as $fila) {
-                fputcsv($handle, $fila, ';');
+                fputcsv($handle, \App\Support\CsvSanitizer::sanitizeRow($fila), ';');
             }
 
             fclose($handle);
