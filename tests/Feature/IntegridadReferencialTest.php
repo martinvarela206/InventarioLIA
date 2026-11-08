@@ -288,4 +288,38 @@ class IntegridadReferencialTest extends TestCase
         $this->assertNotNull($elementoConUltimo->ultimoMovimiento);
         $this->assertEquals($elemento->id, $elementoConUltimo->ultimoMovimiento->elemento_id);
     }
+
+    public function test_unicidad_en_detalles_de_auditoria_por_elemento_y_puesto(): void
+    {
+        [$user, $tipo, $ubicacion] = $this->crearDatosBase();
+
+        $auditoria = \App\Models\Auditoria::create([
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $user->id,
+            'fecha' => now(),
+            'estado' => 'en_progreso',
+        ]);
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'LIA-AUD-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'HP',
+        ]);
+
+        \App\Models\AuditoriaDetalle::create([
+            'auditoria_id' => $auditoria->id,
+            'puesto' => 'Puesto 01',
+            'elemento_id' => $elemento->id,
+            'estado' => 'ok',
+        ]);
+
+        // Intentar registrar el mismo elemento_id en la misma auditoría debe fallar por unicidad
+        $this->expectException(QueryException::class);
+        \App\Models\AuditoriaDetalle::create([
+            'auditoria_id' => $auditoria->id,
+            'puesto' => 'Puesto 02',
+            'elemento_id' => $elemento->id,
+            'estado' => 'inconsistencia',
+        ]);
+    }
 }
