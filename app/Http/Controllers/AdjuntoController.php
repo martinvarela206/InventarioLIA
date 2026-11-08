@@ -14,7 +14,16 @@ class AdjuntoController extends Controller
      */
     public function verAdjuntoTicket(int $id): Response
     {
-        $adjunto = MovimientoAdjunto::findOrFail($id);
+        $adjunto = MovimientoAdjunto::with('movimiento')->findOrFail($id);
+        $user = auth()->user();
+
+        // Blindaje Anti-IDOR: validar que el usuario tenga rol operativo o sea el creador del ticket
+        $puedeVer = $user && (
+            $user->hasActivePermissions() ||
+            ($adjunto->movimiento && $adjunto->movimiento->user_id === $user->id)
+        );
+
+        abort_unless($puedeVer, 403, 'No autorizado para visualizar o descargar este archivo adjunto.');
 
         $disk = Storage::disk('local')->exists($adjunto->archivo_path) ? 'local' : 'public';
 
@@ -30,7 +39,19 @@ class AdjuntoController extends Controller
      */
     public function verAdjuntoComentario(int $id): Response
     {
-        $adjunto = TicketComentarioAdjunto::findOrFail($id);
+        $adjunto = TicketComentarioAdjunto::with(['comentario.ticket'])->findOrFail($id);
+        $user = auth()->user();
+
+        // Blindaje Anti-IDOR: validar que el usuario tenga rol operativo, sea autor del comentario o creador del ticket padre
+        $puedeVer = $user && (
+            $user->hasActivePermissions() ||
+            ($adjunto->comentario && (
+                $adjunto->comentario->user_id === $user->id ||
+                ($adjunto->comentario->ticket && $adjunto->comentario->ticket->user_id === $user->id)
+            ))
+        );
+
+        abort_unless($puedeVer, 403, 'No autorizado para visualizar o descargar este archivo adjunto.');
 
         $disk = Storage::disk('local')->exists($adjunto->archivo_path) ? 'local' : 'public';
 

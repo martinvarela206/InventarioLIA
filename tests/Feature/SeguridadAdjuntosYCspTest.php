@@ -58,6 +58,10 @@ class SeguridadAdjuntosYCspTest extends TestCase
         $csp = $response->headers->get('Content-Security-Policy');
 
         $this->assertStringContainsString("default-src 'self'", $csp);
+        $this->assertStringNotContainsString("'unsafe-eval'", $csp);
+        $this->assertStringContainsString("object-src 'none'", $csp);
+        $this->assertStringContainsString("base-uri 'self'", $csp);
+        $this->assertStringContainsString("form-action 'self'", $csp);
         // Verificar que no contenga comodines abiertos https: en default-src o connect-src
         $this->assertStringNotContainsString("default-src 'self' https:", $csp);
         $this->assertStringNotContainsString("connect-src 'self' https:", $csp);

@@ -30,37 +30,45 @@ class ImageSanitizer
                     default => @imagecreatefromstring((string) file_get_contents($realPath)),
                 };
 
-                if ($image !== false) {
-                    $randomName = Str::random(40) . '.' . $extension;
-                    $tempFile = tempnam(sys_get_temp_dir(), 'lia_img_');
-
-                    if ($mime === 'image/png') {
-                        imagealphablending($image, false);
-                        imagesavealpha($image, true);
-                        imagepng($image, $tempFile, 8);
-                    } elseif ($mime === 'image/webp') {
-                        imagewebp($image, $tempFile, 85);
-                    } else {
-                        imagejpeg($image, $tempFile, 85);
-                    }
-
-                    imagedestroy($image);
-
-                    $path = $directory . '/' . $randomName;
-                    $stream = fopen($tempFile, 'r');
-                    Storage::disk($disk)->put($path, $stream);
-                    if (is_resource($stream)) {
-                        fclose($stream);
-                    }
-                    @unlink($tempFile);
-
-                    return $path;
+                if ($image === false) {
+                    throw new \RuntimeException('No se pudo procesar la imagen para su sanitización. Formato corrupto o no admitido.');
                 }
+
+                $randomName = Str::random(40) . '.' . $extension;
+                $tempFile = tempnam(sys_get_temp_dir(), 'lia_img_');
+
+                if ($mime === 'image/png') {
+                    imagealphablending($image, false);
+                    imagesavealpha($image, true);
+                    imagepng($image, $tempFile, 8);
+                } elseif ($mime === 'image/webp') {
+                    imagewebp($image, $tempFile, 85);
+                } else {
+                    imagejpeg($image, $tempFile, 85);
+                }
+
+                imagedestroy($image);
+
+                $path = $directory . '/' . $randomName;
+                $stream = fopen($tempFile, 'r');
+                Storage::disk($disk)->put($path, $stream);
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+                @unlink($tempFile);
+
+                return $path;
             } catch (\Throwable $e) {
-                // Fallback a almacenamiento estándar en caso de fallo de GD
+                // Principio de seguridad estricto: rechazar explícitamente en lugar de almacenar binarios crudos sin sanitizar
+                throw new \RuntimeException('Fallo al sanitizar la imagen: ' . $e->getMessage(), 0, $e);
             }
         }
 
-        return $file->store($directory, $disk);
+        // Si GD no está disponible en el entorno y no estamos en producción, permitir almacenamiento estándar para pruebas
+        if (!app()->isProduction()) {
+            return $file->store($directory, $disk);
+        }
+
+        throw new \RuntimeException('La extensión GD es obligatoria en producción para garantizar la sanitización de adjuntos multimedia.');
     }
 }

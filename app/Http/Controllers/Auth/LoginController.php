@@ -60,16 +60,10 @@ class LoginController extends Controller
             return redirect()->intended($target);
         }
 
-        // Verificar si la cuenta existe pero está inactiva/desactivada
-        $userCheck = Usuario::where('email', $email)->first();
-        if ($userCheck && Hash::check($password, $userCheck->password) && !$userCheck->activo) {
-            return back()->withErrors([
-                'login' => 'Su cuenta se encuentra desactivada o pendiente de activación. Por favor, comuníquese con un administrador.',
-            ])->withInput();
-        }
-
+        // Registrar intento fallido en el rate limiter preventivo contra fuerza bruta
         RateLimiter::hit($throttleKey, 60);
 
+        // Mensaje unificado anti-enumeración de usuarios
         return back()->withErrors([
             'login' => 'Las credenciales proporcionadas no coinciden con nuestros registros.',
         ])->withInput();

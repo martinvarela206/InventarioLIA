@@ -1203,7 +1203,7 @@ class InventarioDevTest extends TestCase
         $resFormRev->assertSee('Trasladar físicamente a Taller de Hardware / Depósito');
 
         // Registro de Ticket con imagen adjunta
-        $fotoFake = UploadedFile::fake()->create('falla_fuente.jpg', 600, 'image/jpeg');
+        $fotoFake = UploadedFile::fake()->image('falla_fuente.jpg', 600, 600);
         $resStore = $this->actingAs($rev)->post(route('tickets.store'), [
             'elemento_id' => $pcReparar->id,
             'comentario' => 'Capacitor de fuente de poder inflado, produce reinicios intermitentes.',
@@ -2549,7 +2549,7 @@ class InventarioDevTest extends TestCase
         ]);
 
         // 1. Revisor publica mensaje con foto adjunta en el hilo
-        $fotoRev = \Illuminate\Http\UploadedFile::fake()->create('fuente_quemada.jpg', 150, 'image/jpeg');
+        $fotoRev = \Illuminate\Http\UploadedFile::fake()->image('fuente_quemada.jpg', 150, 150);
         $resPostRev = $this->actingAs($rev)->post(route('tickets.comentar', $ticket->id), [
             'mensaje' => 'Adjunto foto del fusible de la fuente de poder chamuscado.',
             'fotos' => [$fotoRev],
@@ -2570,7 +2570,7 @@ class InventarioDevTest extends TestCase
         $this->assertEquals('fuente_quemada.jpg', $comentarioRev->adjuntos->first()->nombre_original);
 
         // 2. Técnico responde en el foro con otra foto
-        $fotoTec = \Illuminate\Http\UploadedFile::fake()->create('reemplazo_fusible.jpg', 150, 'image/jpeg');
+        $fotoTec = \Illuminate\Http\UploadedFile::fake()->image('reemplazo_fusible.jpg', 150, 150);
         $resPostTec = $this->actingAs($tec)->post(route('tickets.comentar', $ticket->id), [
             'mensaje' => 'Recibido en banco de pruebas. Se reemplaza fusible y se testean voltajes de 12V y 5V.',
             'fotos' => [$fotoTec],
@@ -3554,7 +3554,7 @@ class InventarioDevTest extends TestCase
         $this->assertStringContainsString('placeholder-user.png', $usuario->foto_url);
 
         // 2. Subida de foto en profile.update
-        $file = \Illuminate\Http\UploadedFile::fake()->create('mi_foto.jpg', 150, 'image/jpeg');
+        $file = \Illuminate\Http\UploadedFile::fake()->image('mi_foto.jpg', 150, 150);
 
         $resUpdate = $this->actingAs($usuario)->put(route('profile.update'), [
             'nombre' => 'Colaborador Fotogénico',
@@ -3595,7 +3595,7 @@ class InventarioDevTest extends TestCase
         $this->assertStringContainsString('placeholder-user.png', $usuario->foto_url);
 
         // 6. Anonimización por Ley 25.326 purga la foto física si existiese
-        $file2 = \Illuminate\Http\UploadedFile::fake()->create('foto_legajo.png', 120, 'image/png');
+        $file2 = \Illuminate\Http\UploadedFile::fake()->image('foto_legajo.png', 120, 120);
         $usuario->update([
             'foto_path' => $file2->store('avatares', 'public')
         ]);
