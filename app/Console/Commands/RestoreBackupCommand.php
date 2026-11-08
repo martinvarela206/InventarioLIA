@@ -19,7 +19,9 @@ class RestoreBackupCommand extends Command
                             {file? : Ruta o nombre del archivo SQL a restaurar o verificar}
                             {--verify-only : Verifica la integridad estructural del respaldo sin modificar los datos}
                             {--force : Omite la confirmación interactiva antes de sobrescribir}
-                            {--path= : Directorio personalizado donde residen los respaldos}';
+                            {--path= : Directorio personalizado donde residen los respaldos}
+                            {--db-user= : Usuario administrativo opcional para conexión a base de datos}
+                            {--db-password= : Contraseña administrativa opcional de base de datos}';
 
     /**
      * The console command description.
@@ -162,8 +164,8 @@ class RestoreBackupCommand extends Command
             $host = $config['host'] ?? '127.0.0.1';
             $port = $config['port'] ?? '3306';
             $database = $config['database'] ?? 'inventario_lia';
-            $username = $config['username'] ?? 'root';
-            $password = $config['password'] ?? '';
+            $username = $this->option('db-user') ?: ($config['username'] ?? 'root');
+            $password = $this->option('db-password') ?: ($config['password'] ?? '');
 
             $cliCommands = ['mariadb', 'mysql'];
             foreach ($cliCommands as $cmd) {

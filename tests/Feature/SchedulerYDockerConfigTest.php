@@ -34,6 +34,19 @@ class SchedulerYDockerConfigTest extends TestCase
 
         $content = File::get($dockerfilePath);
         $this->assertStringContainsString('mariadb-client', $content);
+        $this->assertStringContainsString('ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]', $content);
+    }
+
+    public function test_entrypoint_sh_implementa_fail_fast_y_carece_de_fallbacks_silenciosos(): void
+    {
+        $entrypointPath = base_path('docker/entrypoint.sh');
+        $this->assertFileExists($entrypointPath);
+
+        $content = File::get($entrypointPath);
+        $this->assertStringContainsString('set -Eeuo pipefail', $content);
+        $this->assertStringNotContainsString('|| true', $content);
+        $this->assertStringContainsString('php artisan migrate --force', $content);
+        $this->assertStringContainsString('exec "$@"', $content);
     }
 
     public function test_scheduler_registra_rutina_diaria_de_backup_con_adjuntos(): void
