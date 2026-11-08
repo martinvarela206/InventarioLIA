@@ -319,7 +319,7 @@ class ElementoController extends Controller
                 'tipo_movimiento' => 'interno',
                 'ubicacion_id' => $ubicacionId,
                 'puesto' => $validated['puesto'] ?? null,
-                'user_id' => auth()->id() ?? Usuario::first()->id,
+                'user_id' => auth()->id() ?? throw new \Illuminate\Auth\AuthenticationException('Usuario no autenticado.'),
                 'fecha' => now(),
                 'comentario' => 'Alta inicial del elemento en el inventario',
             ]);

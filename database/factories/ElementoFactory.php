@@ -33,7 +33,7 @@ class ElementoFactory extends Factory
         return [
             'nro_lia' => fake()->unique()->bothify('LIA-#####'),
             'nro_unsj' => fake()->optional()->bothify('UNSJ-#####'),
-            'tipo' => fake()->randomElement(['cpu', 'monitor', 'switch', 'router', 'impresora', 'teclado', 'mouse', 'proyector', 'disco', 'memoria', 'otro']),
+            'tipo_id' => \App\Models\Tipo::first()?->id ?? 1,
             'descripcion' => fake()->sentence(3),
             'cantidad' => fake()->numberBetween(1, 10),
             'fecha_adquisicion' => $fechaAdquisicion,

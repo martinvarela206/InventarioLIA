@@ -17,7 +17,11 @@ class UsuarioFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'nombre' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'password' => bcrypt('password'),
+            'activo' => true,
+            'huella_borrada' => false,
         ];
     }
 }

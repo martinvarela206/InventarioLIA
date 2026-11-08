@@ -180,7 +180,7 @@ class MovimientoController extends Controller
             'tipo_movimiento' => 'interno',
             'ubicacion_id' => $validated['ubicacion_id'] ?? null,
             'puesto' => $validated['puesto'] ?? null,
-            'user_id' => auth()->id() ?? Usuario::first()->id,
+            'user_id' => auth()->id() ?? throw new \Illuminate\Auth\AuthenticationException('Usuario no autenticado.'),
             'fecha' => $fecha,
             'comentario' => $validated['comentario'] ?? null,
         ]);
@@ -212,7 +212,7 @@ class MovimientoController extends Controller
     public function storeCorreccion(StoreEnmiendaRequest $request, Movimiento $movimiento): RedirectResponse
     {
         $validated = $request->validated();
-        $usuarioId = auth()->id() ?? Usuario::first()->id;
+        $usuarioId = auth()->id() ?? throw new \Illuminate\Auth\AuthenticationException('Usuario no autenticado.');
 
         $nuevoMovimiento = $movimiento->crearEnmienda(
             $validated,

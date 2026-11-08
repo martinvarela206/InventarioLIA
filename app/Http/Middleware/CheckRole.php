@@ -17,6 +17,9 @@ class CheckRole
         $user = $request->user();
 
         if (!$user) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                abort(401, 'No autenticado.');
+            }
             return redirect()->route('login');
         }
 
