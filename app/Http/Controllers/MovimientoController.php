@@ -8,6 +8,7 @@ use App\Models\Usuario;
 use App\Models\Ubicacion;
 use App\Enums\EstadoElemento;
 use App\Actions\Movimientos\RegistrarPrestamoAction;
+use App\Actions\Movimientos\RegistrarDevolucionAction;
 use App\Http\Requests\StoreMovimientoRequest;
 use App\Http\Requests\DevolucionMovimientoRequest;
 use App\Http\Requests\StoreEnmiendaRequest;
@@ -189,32 +190,17 @@ class MovimientoController extends Controller
     }
 
     /**
-     * Check-in / Registro de devolución de préstamo (Transacción atómica).
+     * Check-in / Registro de devolución de préstamo (Transacción atómica con bloqueo pesimista).
      */
-    public function devolucion(DevolucionMovimientoRequest $request, Movimiento $movimiento): RedirectResponse
+    public function devolucion(DevolucionMovimientoRequest $request, Movimiento $movimiento, RegistrarDevolucionAction $registrarDevolucionAction): RedirectResponse
     {
         $validated = $request->validated();
-        $fechaDev = !empty($validated['fecha_devolucion'])
-            ? Carbon::parse($validated['fecha_devolucion'])->toDateString()
-            : now()->toDateString();
 
-        DB::transaction(function () use ($movimiento, $validated, $fechaDev, $request) {
-            // 1. Marcar fecha de devolución en el préstamo original
-            $movimiento->update([
-                'fecha_devolucion' => $fechaDev,
-            ]);
-
-            // 2. Registrar el nuevo movimiento interno de reingreso al laboratorio
-            Movimiento::create([
-                'elemento_id' => $movimiento->elemento_id,
-                'tipo_movimiento' => 'interno',
-                'ubicacion_id' => $validated['ubicacion_id'],
-                'puesto' => $validated['puesto'] ?? null,
-                'user_id' => auth()->id() ?? Usuario::first()->id,
-                'fecha' => now(),
-                'comentario' => 'Reingreso de préstamo externo. ' . ($validated['comentario'] ?? ''),
-            ]);
-        });
+        try {
+            $registrarDevolucionAction->execute($movimiento, $validated, auth()->user());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        }
 
         return redirect()->route('elementos.show', $movimiento->elemento_id)
             ->with('success', 'Devolución registrada exitosamente. El equipo ha reingresado a la sala.');
