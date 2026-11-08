@@ -103,7 +103,7 @@ class AbrirTicketAction
 
             foreach ($fotos as $foto) {
                 if ($foto && $foto->isValid()) {
-                    $path = $foto->store('tickets', 'public');
+                    $path = \App\Services\ImageSanitizer::sanitizeAndStore($foto, 'tickets', 'local');
                     MovimientoAdjunto::create([
                         'movimiento_id' => $movimiento->id,
                         'archivo_path' => $path,

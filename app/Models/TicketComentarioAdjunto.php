@@ -27,6 +27,6 @@ class TicketComentarioAdjunto extends Model
 
     public function getUrlAttribute(): string
     {
-        return Storage::disk('public')->url($this->archivo_path);
+        return route('adjuntos.ticket-comentario', $this->id);
     }
 }

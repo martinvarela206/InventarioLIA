@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AppAdminController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\AdjuntoController;
 use App\Models\EspacioLia;
 use App\Models\PersonalLia;
 use App\Models\ActividadLia;
@@ -53,6 +54,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     });
+
+    // Entrega autenticada y segura de archivos adjuntos
+    Route::get('/adjuntos/tickets/{id}', [AdjuntoController::class, 'verAdjuntoTicket'])->name('adjuntos.ticket');
+    Route::get('/adjuntos/ticket-comentarios/{id}', [AdjuntoController::class, 'verAdjuntoComentario'])->name('adjuntos.ticket-comentario');
 
     // Módulos Operativos Protegidos (usuarios con permisos: rev, tec, item_admin, user_admin, app_admin)
     Route::middleware('has_permissions')->group(function () {

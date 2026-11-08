@@ -54,7 +54,9 @@ class RegisterController extends Controller
             'terminos_consentimiento.accepted' => 'Debe aceptar los términos de uso y tratamiento de datos personales conforme a la Ley 25.326.',
         ]);
 
-        $fotoPath = $request->hasFile('foto') ? $request->file('foto')->store('avatares', 'public') : null;
+        $fotoPath = $request->hasFile('foto')
+            ? \App\Services\ImageSanitizer::sanitizeAndStore($request->file('foto'), 'avatares', 'public')
+            : null;
 
         $user = Usuario::create([
             'nombre' => $request->nombre,

@@ -26,6 +26,6 @@ class MovimientoAdjunto extends Model
 
     public function getUrlAttribute(): string
     {
-        return asset('storage/' . $this->archivo_path);
+        return route('adjuntos.ticket', $this->id);
     }
 }

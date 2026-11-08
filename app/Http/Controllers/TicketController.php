@@ -60,8 +60,8 @@ class TicketController extends Controller
             'tipo_traslado' => 'nullable|in:insitu,taller',
             'ubicacion_id' => 'nullable|exists:ubicaciones,id',
             'puesto' => 'nullable|string|max:50',
-            'fotos' => 'nullable|array',
-            'fotos.*' => 'nullable|image|max:10240', // hasta 10MB por imagen
+            'fotos' => 'nullable|array|max:5',
+            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120', // hasta 5MB por imagen, max 5 fotos
         ]);
 
         $user = Auth::user();
@@ -202,8 +202,8 @@ class TicketController extends Controller
             'generar_movimiento' => 'nullable|boolean',
             'ubicacion_id' => 'nullable|exists:ubicaciones,id',
             'puesto' => 'nullable|string|max:50',
-            'fotos' => 'nullable|array',
-            'fotos.*' => 'nullable|image|max:10240',
+            'fotos' => 'nullable|array|max:5',
+            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
         $ticket = Movimiento::findOrFail($id);
@@ -237,7 +237,7 @@ class TicketController extends Controller
         if ($request->hasFile('fotos')) {
             foreach ($request->file('fotos') as $foto) {
                 if ($foto && $foto->isValid()) {
-                    $path = $foto->store('ticket_hilos', 'public');
+                    $path = \App\Services\ImageSanitizer::sanitizeAndStore($foto, 'ticket_hilos', 'local');
                     \App\Models\TicketComentarioAdjunto::create([
                         'ticket_comentario_id' => $comentario->id,
                         'archivo_path' => $path,
@@ -307,8 +307,8 @@ class TicketController extends Controller
         $validated = $request->validate([
             'solucion' => 'required|string|min:5',
             'nueva_area_id' => 'nullable|exists:areas,id',
-            'fotos' => 'nullable|array',
-            'fotos.*' => 'nullable|image|max:10240',
+            'fotos' => 'nullable|array|max:5',
+            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
         try {
@@ -347,7 +347,7 @@ class TicketController extends Controller
                 if ($request->hasFile('fotos')) {
                     foreach ($request->file('fotos') as $foto) {
                         if ($foto && $foto->isValid()) {
-                            $path = $foto->store('ticket_hilos', 'public');
+                            $path = \App\Services\ImageSanitizer::sanitizeAndStore($foto, 'ticket_hilos', 'local');
                             \App\Models\TicketComentarioAdjunto::create([
                                 'ticket_comentario_id' => $comentario->id,
                                 'archivo_path' => $path,
