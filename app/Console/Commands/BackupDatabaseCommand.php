@@ -147,11 +147,18 @@ class BackupDatabaseCommand extends Command
      */
     protected function dumpUsingEloquentPdo(string $filepath): bool
     {
+        $driver = DB::getDriverName();
         $buffer = "-- ========================================================\n";
         $buffer .= "-- Respaldo Automatizado Sistema LIA (Inventario LIA)\n";
         $buffer .= "-- Generado: " . Carbon::now()->toIso8601String() . "\n";
         $buffer .= "-- Conexión: " . config('database.default') . "\n";
         $buffer .= "-- ========================================================\n\n";
+
+        if ($driver === 'sqlite') {
+            $buffer .= "PRAGMA foreign_keys = OFF;\n\n";
+        } else {
+            $buffer .= "SET FOREIGN_KEY_CHECKS = 0;\n\n";
+        }
 
         try {
             $pdo = DB::getPdo();
@@ -162,6 +169,13 @@ class BackupDatabaseCommand extends Command
                 $buffer .= "-- --------------------------------------------------------\n";
                 $buffer .= "-- Estructura y datos de la tabla `{$table}`\n";
                 $buffer .= "-- --------------------------------------------------------\n";
+                $buffer .= "DROP TABLE IF EXISTS `{$table}`;\n";
+
+                // Estructura (CREATE TABLE)
+                $createSql = $this->getTableCreateSql($table);
+                if ($createSql) {
+                    $buffer .= "{$createSql};\n\n";
+                }
 
                 // Registros
                 $rows = DB::table($table)->get();
@@ -184,6 +198,12 @@ class BackupDatabaseCommand extends Command
                     }
                 }
                 $buffer .= "\n";
+            }
+
+            if ($driver === 'sqlite') {
+                $buffer .= "PRAGMA foreign_keys = ON;\n";
+            } else {
+                $buffer .= "SET FOREIGN_KEY_CHECKS = 1;\n";
             }
 
             File::put($filepath, $buffer);
@@ -243,6 +263,36 @@ class BackupDatabaseCommand extends Command
 
         // Rotación de zips de adjuntos
         $this->rotarArchivosPorPatron($backupDir, 'backup_adjuntos_', 'zip', $keep);
+    }
+
+    /**
+     * Obtiene la sentencia DDL de creación de una tabla.
+     */
+    protected function getTableCreateSql(string $table): ?string
+    {
+        $driver = DB::getDriverName();
+
+        if ($driver === 'sqlite') {
+            $row = DB::selectOne("SELECT sql FROM sqlite_master WHERE type='table' AND name = ?", [$table]);
+            if ($row && !empty($row->sql)) {
+                $sql = trim($row->sql);
+                if (stripos($sql, 'CREATE TABLE IF NOT EXISTS') === false && stripos($sql, 'CREATE TABLE') === 0) {
+                    $sql = 'CREATE TABLE IF NOT EXISTS ' . substr($sql, strlen('CREATE TABLE '));
+                }
+                return $sql;
+            }
+            return null;
+        }
+
+        if (in_array($driver, ['mysql', 'mariadb'])) {
+            $row = DB::selectOne("SHOW CREATE TABLE `{$table}`");
+            if ($row) {
+                $vars = get_object_vars($row);
+                return $vars['Create Table'] ?? null;
+            }
+        }
+
+        return null;
     }
 
     /**
