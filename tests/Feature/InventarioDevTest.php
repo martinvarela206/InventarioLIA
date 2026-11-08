@@ -824,7 +824,7 @@ class InventarioDevTest extends TestCase
             'nombre' => 'Solo Registrado',
             'email' => 'soloregistrado@test.com',
             'password' => bcrypt('password'),
-            'activo' => false,
+            'activo' => true,
         ]);
         $soloRegistrado->roles()->attach(Rol::where('rol', 'registered')->first()->id);
 
@@ -3411,6 +3411,7 @@ class InventarioDevTest extends TestCase
 
         // 3. Verificación en actualización de Perfil de Usuario (ProfileController)
         $user = Usuario::where('email', 'prod_robusta@test.com')->firstOrFail();
+        $user->update(['activo' => true]);
 
         // En producción: actualizar perfil con password débil debe fallar
         $resProfileFail = $this->actingAs($user)->put(route('profile.update'), [

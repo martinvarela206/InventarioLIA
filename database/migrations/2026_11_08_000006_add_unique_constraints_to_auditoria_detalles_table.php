@@ -26,7 +26,7 @@ return new class extends Migration
                 ON auditoria_detalles(auditoria_id, puesto) 
                 WHERE puesto IS NOT NULL;
             ');
-        } elseif ($driver === 'mysql') {
+        } elseif (in_array($driver, ['mysql', 'mariadb'], true)) {
             Schema::table('auditoria_detalles', function (Blueprint $table) {
                 $table->unique(['auditoria_id', 'elemento_id'], 'idx_auditoria_detalles_auditoria_elemento');
                 $table->unique(['auditoria_id', 'puesto'], 'idx_auditoria_detalles_auditoria_puesto');
@@ -44,7 +44,7 @@ return new class extends Migration
         if ($driver === 'sqlite') {
             DB::unprepared('DROP INDEX IF EXISTS idx_auditoria_detalles_auditoria_elemento;');
             DB::unprepared('DROP INDEX IF EXISTS idx_auditoria_detalles_auditoria_puesto;');
-        } elseif ($driver === 'mysql') {
+        } elseif (in_array($driver, ['mysql', 'mariadb'], true)) {
             Schema::table('auditoria_detalles', function (Blueprint $table) {
                 $table->dropUnique('idx_auditoria_detalles_auditoria_elemento');
                 $table->dropUnique('idx_auditoria_detalles_auditoria_puesto');

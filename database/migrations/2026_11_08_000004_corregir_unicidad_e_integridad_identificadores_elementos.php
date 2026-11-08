@@ -58,7 +58,7 @@ return new class extends Migration
                     SELECT RAISE(ABORT, 'El elemento debe poseer al menos un identificador valido (Nro LIA o Nro UNSJ).');
                 END;
             ");
-        } elseif ($driver === 'mysql') {
+        } elseif (in_array($driver, ['mysql', 'mariadb'], true)) {
             // En MySQL / MariaDB los índices únicos individuales permiten múltiples NULLs
             // pero garantizan unicidad estricta para cualquier valor presente
             Schema::table('elementos', function (Blueprint $table) {
@@ -86,7 +86,7 @@ return new class extends Migration
             DB::unprepared('DROP INDEX IF EXISTS idx_elementos_nro_unsj_unique;');
             DB::unprepared('DROP TRIGGER IF EXISTS trigger_elementos_check_identificadores_insert;');
             DB::unprepared('DROP TRIGGER IF EXISTS trigger_elementos_check_identificadores_update;');
-        } elseif ($driver === 'mysql') {
+        } elseif (in_array($driver, ['mysql', 'mariadb'], true)) {
             DB::unprepared('ALTER TABLE elementos DROP CONSTRAINT IF EXISTS chk_elementos_identificador;');
             Schema::table('elementos', function (Blueprint $table) {
                 $table->dropUnique('idx_elementos_nro_lia_unique');

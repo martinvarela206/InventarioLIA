@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -186,10 +187,56 @@ class UserController extends Controller
 
     public function toggleActivo(Request $request, Usuario $user): RedirectResponse
     {
+        $actor = auth()->user();
+
+        // Si se intenta desactivar una cuenta actualmente activa, aplicar guardas de seguridad
+        if ($user->activo) {
+            // 1. Prohibir la autodesactivación para evitar pérdida involuntaria de sesión o acéfalos
+            if ($actor && $actor->id === $user->id) {
+                return redirect()->route('users.index')
+                    ->withErrors(['error' => 'No puedes desactivar tu propia cuenta.']);
+            }
+
+            // 2. Jerarquía de privilegios: solo app_admin puede desactivar a otro app_admin
+            if ($user->isAppAdmin() && (! $actor || ! $actor->isAppAdmin())) {
+                return redirect()->route('users.index')
+                    ->withErrors(['error' => 'Solo un administrador general (app_admin) puede desactivar a otro administrador general.']);
+            }
+
+            // 3. Proteger al último app_admin activo del sistema
+            if ($user->isAppAdmin()) {
+                $activeAppAdminsCount = Usuario::where('activo', true)
+                    ->whereHas('roles', function ($q) {
+                        $q->where('rol', 'app_admin');
+                    })->count();
+
+                if ($activeAppAdminsCount <= 1) {
+                    return redirect()->route('users.index')
+                        ->withErrors(['error' => 'No es posible desactivar al único administrador general (app_admin) activo del sistema.']);
+                }
+            }
+
+            // 4. Proteger al último user_admin activo del sistema
+            if ($user->hasRole('user_admin')) {
+                $activeUserAdminsCount = Usuario::where('activo', true)
+                    ->whereHas('roles', function ($q) {
+                        $q->where('rol', 'user_admin');
+                    })->count();
+
+                if ($activeUserAdminsCount <= 1) {
+                    return redirect()->route('users.index')
+                        ->withErrors(['error' => 'No es posible desactivar al único administrador de usuarios (user_admin) activo del sistema.']);
+                }
+            }
+        }
+
         $user->activo = ! $user->activo;
-        $user->save();
 
         if (! $user->activo) {
+            // Rotar remember_token para invalidar logins persistentes basados en cookies previas
+            $user->remember_token = Str::random(60);
+            $user->save();
+
             // Revocar tokens Sanctum activos
             $user->tokens()->delete();
 
@@ -199,19 +246,20 @@ class UserController extends Controller
                     ->where('user_id', $user->id)
                     ->delete();
             }
-
-            // Si el usuario desactivó su propia cuenta, cerrar sesión inmediatamente
-            if (auth()->id() === $user->id) {
-                auth()->logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
-                return redirect()->route('login')
-                    ->withErrors(['login' => 'Has desactivado tu propia cuenta. Tu sesión ha finalizado.']);
-            }
+        } else {
+            $user->save();
         }
 
         $estado = $user->activo ? 'activada' : 'desactivada';
+
+        Log::info('AUDITORIA_USUARIOS: Estado activo modificado', [
+            'actor_id' => $actor?->id,
+            'actor_email' => $actor?->email,
+            'target_id' => $user->id,
+            'target_email' => $user->email,
+            'nuevo_estado' => $estado,
+            'ip' => $request->ip(),
+        ]);
 
         return redirect()->route('users.index')->with('success', "Cuenta del usuario {$user->nombre} {$estado}.");
     }

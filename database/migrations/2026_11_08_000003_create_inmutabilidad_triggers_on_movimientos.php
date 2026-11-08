@@ -37,13 +37,14 @@ return new class extends Migration
                     OLD.correccion_de_id IS NOT NEW.correccion_de_id OR
                     OLD.ticket_id IS NOT NEW.ticket_id OR
                     OLD.comentario IS NOT NEW.comentario OR
-                    (OLD.solicitante IS NOT NEW.solicitante AND NEW.solicitante NOT LIKE 'Ex-colaborador anonimizado%')
+                    (OLD.fecha_devolucion IS NOT NULL AND OLD.fecha_devolucion IS NOT NEW.fecha_devolucion) OR
+                    (OLD.solicitante IS NOT NEW.solicitante AND (NEW.solicitante IS NULL OR NEW.solicitante NOT LIKE 'Ex-colaborador anonimizado%'))
                 )
                 BEGIN
                     SELECT RAISE(ABORT, 'Los movimientos del inventario son inmutables patrimonialmente.');
                 END;
             ");
-        } elseif ($driver === 'mysql') {
+        } elseif (in_array($driver, ['mysql', 'mariadb'], true)) {
             DB::unprepared("
                 CREATE TRIGGER trigger_movimientos_before_delete
                 BEFORE DELETE ON movimientos
@@ -70,7 +71,8 @@ return new class extends Migration
                         NOT (OLD.correccion_de_id <=> NEW.correccion_de_id) OR
                         NOT (OLD.ticket_id <=> NEW.ticket_id) OR
                         NOT (OLD.comentario <=> NEW.comentario) OR
-                        (NOT (OLD.solicitante <=> NEW.solicitante) AND NOT (NEW.solicitante LIKE 'Ex-colaborador anonimizado%'))
+                        (OLD.fecha_devolucion IS NOT NULL AND NOT (OLD.fecha_devolucion <=> NEW.fecha_devolucion)) OR
+                        (NOT (OLD.solicitante <=> NEW.solicitante) AND NOT (COALESCE(NEW.solicitante, '') LIKE 'Ex-colaborador anonimizado%'))
                     ) THEN
                         SIGNAL SQLSTATE '45000'
                         SET MESSAGE_TEXT = 'Los movimientos del inventario son inmutables patrimonialmente.';
@@ -87,7 +89,7 @@ return new class extends Migration
     {
         $driver = DB::getDriverName();
 
-        if ($driver === 'sqlite' || $driver === 'mysql') {
+        if (in_array($driver, ['sqlite', 'mysql', 'mariadb'], true)) {
             DB::unprepared('DROP TRIGGER IF EXISTS trigger_movimientos_before_delete;');
             DB::unprepared('DROP TRIGGER IF EXISTS trigger_movimientos_before_update;');
         }

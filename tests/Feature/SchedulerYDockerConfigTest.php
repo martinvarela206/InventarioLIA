@@ -35,6 +35,10 @@ class SchedulerYDockerConfigTest extends TestCase
         $content = File::get($dockerfilePath);
         $this->assertStringContainsString('mariadb-client', $content);
         $this->assertStringContainsString('ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]', $content);
+        $this->assertStringContainsString('ARG PHP_VERSION', $content);
+        $this->assertStringContainsString('libjpeg-dev', $content);
+        $this->assertStringContainsString('libwebp-dev', $content);
+        $this->assertStringContainsString('libzip-dev', $content);
     }
 
     public function test_entrypoint_sh_implementa_fail_fast_y_carece_de_fallbacks_silenciosos(): void

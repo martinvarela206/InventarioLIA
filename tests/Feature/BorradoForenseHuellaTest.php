@@ -135,4 +135,38 @@ class BorradoForenseHuellaTest extends TestCase
         ]);
         $responseUpdate->assertStatus(403);
     }
+
+    public function test_ocultamiento_de_pii_sensible_en_serializacion_del_modelo_usuario(): void
+    {
+        $usuario = Usuario::factory()->create([
+            'nombre' => 'Carlos Privado',
+            'email' => 'cprivado@unsj.edu.ar',
+            'dni' => '33444555',
+            'direccion' => 'Calle Falsa 123',
+            'whatsapp' => '2641234567',
+            'fecha_nacimiento' => '1990-05-15',
+        ]);
+
+        $array = $usuario->toArray();
+        $json = $usuario->toJson();
+
+        // 1. Verificamos que las claves sensibles no existan en el array serializado
+        $this->assertArrayNotHasKey('password', $array);
+        $this->assertArrayNotHasKey('remember_token', $array);
+        $this->assertArrayNotHasKey('dni', $array);
+        $this->assertArrayNotHasKey('direccion', $array);
+        $this->assertArrayNotHasKey('whatsapp', $array);
+        $this->assertArrayNotHasKey('fecha_nacimiento', $array);
+
+        // 2. Verificamos que los valores sensibles no aparezcan en la cadena JSON
+        $this->assertStringNotContainsString('33444555', $json);
+        $this->assertStringNotContainsString('Calle Falsa 123', $json);
+        $this->assertStringNotContainsString('2641234567', $json);
+        $this->assertStringNotContainsString('1990-05-15', $json);
+
+        // 3. Verificamos que el acceso como propiedad PHP directa siga funcionando intacto
+        $this->assertEquals('33444555', $usuario->dni);
+        $this->assertEquals('Calle Falsa 123', $usuario->direccion);
+        $this->assertEquals('2641234567', $usuario->whatsapp);
+    }
 }
