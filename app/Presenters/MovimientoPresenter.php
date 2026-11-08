@@ -15,30 +15,13 @@ class MovimientoPresenter
 
     public function tipoBadge(): string
     {
-        $badge = '';
-        if ($this->movimiento->esCorreccion()) {
-            $badge .= '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-900 border border-purple-300 mr-1.5">Enmienda de #' . $this->movimiento->correccion_de_id . '</span> ';
-        }
-
-        if ($this->movimiento->esBaja()) {
-            return $badge . '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">Baja / Basura Tec.</span>';
-        }
-
-        if ($this->movimiento->esReparacion()) {
-            $estadoTxt = $this->movimiento->estado_ticket ? ucfirst($this->movimiento->estado_ticket) : 'Abierto';
-            return $badge . '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">Ticket (' . $estadoTxt . ')</span>';
-        }
-
-        if ($this->movimiento->esPrestamo()) {
-            return $badge . '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">Préstamo Externo</span>';
-        }
-        return $badge . '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">Movimiento Interno</span>';
+        return view('components.movimiento-tipo-badge', ['movimiento' => $this->movimiento])->render();
     }
 
     public function correccionBadge(): string
     {
         if ($this->movimiento->esCorreccion()) {
-            return '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-300">Enmienda de #' . $this->movimiento->correccion_de_id . '</span>';
+            return '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-300">Enmienda de #' . (int)$this->movimiento->correccion_de_id . '</span>';
         }
         return '';
     }
@@ -63,9 +46,6 @@ class MovimientoPresenter
 
     public function estadoBadge(): string
     {
-        if ($this->movimiento->esPrestamo()) {
-            return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Préstamo</span>';
-        }
-        return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Interno</span>';
+        return view('components.movimiento-estado-badge', ['movimiento' => $this->movimiento])->render();
     }
 }

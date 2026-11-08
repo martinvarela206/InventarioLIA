@@ -30,19 +30,7 @@ class ElementoPresenter
      */
     public function statusBadge(): string
     {
-        $estado = $this->elemento->estado;
-        $ultimo = $this->elemento->ultimoMovimiento;
-
-        if (!$ultimo && $estado === EstadoElemento::OPERATIVO) {
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">Sin historial</span>';
-        }
-
-        if ($estado === EstadoElemento::PRESTADO && $ultimo) {
-            $dias = $ultimo->diasPrestado() ?? 0;
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ' . $estado->badgeClasses() . '">Prestado (' . $dias . ' d)</span>';
-        }
-
-        return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ' . $estado->badgeClasses() . '">' . e($estado->label()) . '</span>';
+        return view('components.elemento-status-badge', ['elemento' => $this->elemento])->render();
     }
 
     /**
@@ -50,18 +38,7 @@ class ElementoPresenter
      */
     public function garantiaBadge(): string
     {
-        if (!$this->elemento->fecha_vencimiento_garantia) {
-            return '<span class="text-xs text-gray-500 italic">Sin datos de garantía</span>';
-        }
-
-        $vencimiento = Carbon::parse($this->elemento->fecha_vencimiento_garantia);
-        $hoy = Carbon::today();
-
-        if ($vencimiento->isPast()) {
-            return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Vencida hace ' . $vencimiento->diffForHumans($hoy, ['parts' => 1, 'syntax' => Carbon::DIFF_ABSOLUTE]) . '</span>';
-        }
-
-        return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Vigente (vence en ' . $hoy->diffForHumans($vencimiento, ['parts' => 1, 'syntax' => Carbon::DIFF_ABSOLUTE]) . ')</span>';
+        return view('components.elemento-garantia-badge', ['elemento' => $this->elemento])->render();
     }
 
     /**
