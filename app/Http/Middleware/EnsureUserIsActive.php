@@ -22,9 +22,9 @@ class EnsureUserIsActive
             // Revocar tokens API si existieran
             $user->tokens()->delete();
 
-            // Desconectar sesión web si está activa
-            if (Auth::check()) {
-                Auth::logout();
+            // Desconectar sesión web si está activa en el guard web
+            if (Auth::guard('web')->check()) {
+                Auth::guard('web')->logout();
                 if ($request->hasSession()) {
                     $request->session()->invalidate();
                     $request->session()->regenerateToken();

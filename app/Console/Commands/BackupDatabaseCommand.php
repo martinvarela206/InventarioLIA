@@ -85,7 +85,10 @@ class BackupDatabaseCommand extends Command
 
         // Respaldo de adjuntos multimedia si se solicita la opción
         if ($this->option('with-attachments')) {
-            $this->respaldarAdjuntos($backupDir, $timestamp, $keep);
+            $adjuntosOk = $this->respaldarAdjuntos($backupDir, $timestamp, $keep);
+            if (!$adjuntosOk) {
+                return Command::FAILURE;
+            }
         }
 
         // Rotación de dumps SQL
@@ -218,11 +221,12 @@ class BackupDatabaseCommand extends Command
     /**
      * Respalda los adjuntos multimedia en un archivo ZIP con rotación.
      */
-    protected function respaldarAdjuntos(string $backupDir, string $timestamp, int $keep): void
+    protected function respaldarAdjuntos(string $backupDir, string $timestamp, int $keep): bool
     {
         if (!class_exists(\ZipArchive::class)) {
-            $this->warn('Extensión ZipArchive no disponible; se omite el respaldo de adjuntos multimedia.');
-            return;
+            $this->error('ERROR CRÍTICO: La extensión PHP ZipArchive no está disponible. No es posible generar el respaldo de adjuntos solicitado.');
+            Log::error('BACKUP_ATTACHMENTS_ERROR: ZipArchive extension is not available.');
+            return false;
         }
 
         $zipFilename = "backup_adjuntos_{$timestamp}.zip";
@@ -230,8 +234,9 @@ class BackupDatabaseCommand extends Command
 
         $zip = new \ZipArchive();
         if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            $this->warn('No se pudo crear el archivo ZIP de adjuntos.');
-            return;
+            $this->error("ERROR CRÍTICO: No se pudo crear o escribir el archivo ZIP de adjuntos en: {$zipPath}");
+            Log::error("BACKUP_ATTACHMENTS_ERROR: Cannot open zip archive at {$zipPath}");
+            return false;
         }
 
         $dirsToBackup = [
@@ -263,6 +268,8 @@ class BackupDatabaseCommand extends Command
 
         // Rotación de zips de adjuntos
         $this->rotarArchivosPorPatron($backupDir, 'backup_adjuntos_', 'zip', $keep);
+
+        return true;
     }
 
     /**

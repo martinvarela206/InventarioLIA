@@ -21,11 +21,22 @@ class ResolverTicketAction
     public function execute(int|Movimiento $ticket, array $datos, ?Usuario $usuario = null): Movimiento
     {
         $ticketId = $ticket instanceof Movimiento ? $ticket->id : $ticket;
-        $user = $usuario ?? auth()->user() ?? Usuario::first();
+        $user = $usuario ?? auth()->user();
+        if (!$user) {
+            throw new \InvalidArgumentException('Se requiere un usuario responsable identificado para registrar la operación patrimonial.');
+        }
 
         return DB::transaction(function () use ($ticketId, $datos, $user) {
+            // 0. Obtener metadatos del ticket para adquisición canónica de locks
+            $ticketMeta = Movimiento::where('id', $ticketId)->firstOrFail(['id', 'elemento_id']);
+
+            // 1. Bloquear primero el Elemento (orden canónico de adquisición para prevenir deadlocks)
+            /** @var Elemento $el */
+            $el = Elemento::where('id', $ticketMeta->elemento_id)->lockForUpdate()->firstOrFail();
+
+            // 2. Bloquear luego el Ticket (Movimiento)
             /** @var Movimiento $tkt */
-            $tkt = Movimiento::where('id', $ticketId)->lockForUpdate()->firstOrFail();
+            $tkt = Movimiento::where('id', $ticketMeta->id)->lockForUpdate()->firstOrFail();
 
             if ($tkt->tipo_movimiento !== 'reparacion') {
                 throw ValidationException::withMessages([
@@ -44,9 +55,6 @@ class ResolverTicketAction
                     'ticket_id' => 'El activo asociado a este ticket ya fue declarado baja patrimonial irreparable y no puede ser reactivado.',
                 ]);
             }
-
-            /** @var Elemento $el */
-            $el = Elemento::where('id', $tkt->elemento_id)->lockForUpdate()->firstOrFail();
 
             $accion = $datos['accion'] ?? 'resolver';
             if (!in_array($accion, ['resolver', 'baja'])) {

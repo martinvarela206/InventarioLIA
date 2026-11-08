@@ -1,91 +1,40 @@
-#!/bin/sh
-set -e
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-echo "=== [LIA PROD] Iniciando contenedor de aplicación Laravel ==="
+echo "==> [Nexo LIA Entrypoint] Inicializando contenedor de aplicación..."
 
-# 1. Esperar a que la base de datos MariaDB esté accesible si la conexión es mysql/mariadb
-if [ "$DB_CONNECTION" = "mysql" ] || [ "$DB_CONNECTION" = "mariadb" ]; then
-    echo "=== [LIA PROD] Verificando conexión a MariaDB en ${DB_HOST}:${DB_PORT:-3306}... ==="
-    max_retries=30
-    counter=0
-    until php -r '
-        $host = getenv("DB_HOST") ?: "127.0.0.1";
-        $port = getenv("DB_PORT") ?: "3306";
-        $database = getenv("DB_DATABASE") ?: "inventario_lia";
-        $user = getenv("DB_USERNAME") ?: "root";
-        $pass = getenv("DB_PASSWORD") ?: "";
-        try {
-            $pdo = new PDO("mysql:host={$host};port={$port};dbname={$database}", $user, $pass, [
-                PDO::ATTR_TIMEOUT => 2,
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-            ]);
-            exit(0);
-        } catch (Exception $e) {
-            exit(1);
-        }
-    ' >/dev/null 2>&1; do
-        counter=$((counter + 1))
-        if [ $counter -gt $max_retries ]; then
-            echo "=== [LIA PROD] AVISO: No se pudo verificar MariaDB tras $max_retries intentos. Continuando arranque... ==="
-            break
+# Esperar disponibilidad de base de datos si DB_CONNECTION es mysql/mariadb
+if [ "${DB_CONNECTION:-}" = "mysql" ] || [ "${DB_CONNECTION:-}" = "mariadb" ]; then
+    echo "==> [Nexo LIA Entrypoint] Verificando conectividad con servidor de base de datos (${DB_HOST:-db}:${DB_PORT:-3306})..."
+    MAX_RETRIES=30
+    COUNT=0
+    until mariadb-admin ping -h"${DB_HOST:-db}" -P"${DB_PORT:-3306}" -u"${DB_USERNAME:-inventario_user}" -p"${DB_PASSWORD:-secret_password}" --silent; do
+        COUNT=$((COUNT + 1))
+        if [ "$COUNT" -ge "$MAX_RETRIES" ]; then
+            echo "ERROR CRÍTICO: [Nexo LIA Entrypoint] MariaDB no respondió tras ${MAX_RETRIES} intentos. Abortando inicio con Fail-Fast." >&2
+            exit 1
         fi
-        echo "=== [LIA PROD] MariaDB aún no responde (intento $counter/$max_retries). Esperando 2s... ==="
+        echo "--> Esperando a MariaDB (${COUNT}/${MAX_RETRIES})..."
         sleep 2
     done
-
-    if [ $counter -le $max_retries ]; then
-        echo "=== [LIA PROD] Conexión a MariaDB confirmada exitosamente. ==="
-    fi
+    echo "==> [Nexo LIA Entrypoint] Conexión con base de datos establecida y autenticada."
 fi
 
-# 2. Generar Application Key si no está configurada
-if [ -z "$APP_KEY" ]; then
-    echo "=== [LIA PROD] APP_KEY no detectada. Generando clave de aplicación... ==="
-    php artisan key:generate --force || true
+# Generar APP_KEY si no está definida en el entorno
+if [ -z "${APP_KEY:-}" ]; then
+    echo "==> [Nexo LIA Entrypoint] Generando APP_KEY para producción..."
+    php artisan key:generate --force
 fi
 
-# 3. Ejecutar migraciones en modo producción
-echo "=== [LIA PROD] Ejecutando migraciones de base de datos... ==="
-php artisan migrate --force --no-interaction || true
+# Ejecutar migraciones obligatorias sin omitir fallos (Fail-Fast estricto: prohibido ignorar errores)
+echo "==> [Nexo LIA Entrypoint] Ejecutando migraciones de base de datos..."
+php artisan migrate --force
 
-# 4. Sembrado de datos automático si la base de datos está vacía o si SEED_ON_INIT=true
-if [ "$SEED_ON_INIT" = "true" ] || [ "$SEED_ON_INIT" = "1" ]; then
-    echo "=== [LIA PROD] Forzando ejecución de seeders (SEED_ON_INIT activado)... ==="
-    php artisan db:seed --force --no-interaction || true
-else
-    roles_count=$(php -r '
-        require __DIR__ . "/vendor/autoload.php";
-        $app = require_once __DIR__ . "/bootstrap/app.php";
-        $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
-        $kernel->bootstrap();
-        try {
-            echo \App\Models\Rol::count();
-        } catch (\Throwable $e) {
-            echo 0;
-        }
-    ' 2>/dev/null || echo 0)
+# Optimizar cachés de producción
+echo "==> [Nexo LIA Entrypoint] Optimizando cachés de Laravel..."
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
 
-    if [ "$roles_count" -eq "0" ]; then
-        echo "=== [LIA PROD] Base de datos vacía detectada. Sembrando catálogo oficial, roles y usuarios iniciales... ==="
-        php artisan db:seed --force --no-interaction || true
-    fi
-fi
-
-# 5. Enlace simbólico de almacenamiento público
-echo "=== [LIA PROD] Verificando symlink de storage... ==="
-php artisan storage:link || true
-
-# 6. Optimizaciones de caché en producción
-if [ "$APP_ENV" = "production" ] || [ "$APP_ENV" = "prod" ]; then
-    echo "=== [LIA PROD] Optimizando cachés de configuración, rutas y vistas... ==="
-    php artisan config:cache || true
-    php artisan route:cache || true
-    php artisan view:cache || true
-fi
-
-# 7. Asegurar permisos finales sobre storage y cache
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache || true
-chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache || true
-
-echo "=== [LIA PROD] Preparación completada. Arrancando servidor Apache en primer plano... ==="
+echo "==> [Nexo LIA Entrypoint] Inicialización completada exitosamente. Ejecutando proceso principal: $@"
 exec "$@"

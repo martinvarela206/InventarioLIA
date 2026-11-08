@@ -117,4 +117,31 @@ class ConsistenciaTemporalMovimientosTest extends TestCase
         ]);
         $responseDev->assertSessionHasErrors(['fecha_devolucion']);
     }
+
+    public function test_movimientos_registran_timestamp_fisico_inmutable_created_at(): void
+    {
+        $tipo = Tipo::first();
+        $ubicacion = Ubicacion::first();
+        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'TST-PHYS-TS',
+            'tipo_id' => $tipo->id,
+            'modelo' => 'Laptop ThinkPad',
+        ]);
+
+        $mov = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $tec->id,
+            'fecha' => now()->subDays(30), // Fecha de negocio en el pasado
+            'comentario' => 'Ingreso histórico documentado',
+        ]);
+
+        $this->assertNotNull($mov->created_at);
+        $this->assertInstanceOf(Carbon::class, $mov->created_at);
+        // El timestamp físico created_at debe reflejar el día de hoy, no la fecha de negocio
+        $this->assertEquals(now()->toDateString(), $mov->created_at->toDateString());
+    }
 }

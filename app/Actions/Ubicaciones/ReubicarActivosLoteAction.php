@@ -31,7 +31,11 @@ class ReubicarActivosLoteAction
             ]);
         }
 
-        $userId = $usuario?->id ?? auth()->id() ?? Usuario::first()?->id;
+        $actor = $usuario ?? auth()->user();
+        if (!$actor) {
+            throw new \InvalidArgumentException('Se requiere un usuario responsable identificado para registrar la operación patrimonial.');
+        }
+        $userId = $actor->id;
 
         return DB::transaction(function () use ($items, $ubicacionComunId, $userId, $comentario) {
             $destinosCache = [];

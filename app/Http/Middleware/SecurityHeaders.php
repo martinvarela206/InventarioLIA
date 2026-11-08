@@ -36,11 +36,14 @@ class SecurityHeaders
 
         // Directiva de Content-Security-Policy endurecida sin comodines inseguros
         $csp = "default-src 'self'; "
-            . "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            . "script-src 'self' 'unsafe-inline'; "
             . "style-src 'self' 'unsafe-inline' fonts.googleapis.com; "
             . "font-src 'self' data: fonts.gstatic.com; "
             . "img-src 'self' data: blob:; "
-            . "connect-src 'self';";
+            . "connect-src 'self'; "
+            . "object-src 'none'; "
+            . "base-uri 'self'; "
+            . "form-action 'self';";
 
         if (!$response->headers->has('Content-Security-Policy')) {
             $response->headers->set('Content-Security-Policy', $csp);

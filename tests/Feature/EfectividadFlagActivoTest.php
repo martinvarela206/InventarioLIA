@@ -40,7 +40,8 @@ class EfectividadFlagActivoTest extends TestCase
 
         $this->assertGuest();
         $response->assertSessionHasErrors('login');
-        $this->assertStringContainsString('desactivada o pendiente de activación', session('errors')->first('login'));
+        // Mensaje unificado anti-enumeración de usuarios
+        $this->assertStringContainsString('no coinciden con nuestros registros', session('errors')->first('login'));
     }
 
     public function test_login_permite_acceso_a_usuario_activo(): void

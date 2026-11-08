@@ -53,7 +53,7 @@ class MariaDBProteccionesDockerTest extends TestCase
 
         $script = File::get($initScriptPath);
         $this->assertStringContainsString('REVOKE FILE, SUPER, PROCESS, SHUTDOWN', $script);
-        $this->assertStringContainsString('GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES, TRIGGER', $script);
+        $this->assertStringContainsString('GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, INDEX, REFERENCES, TRIGGER', $script);
     }
 
     public function test_trigger_impide_hard_delete_de_elementos_por_sql_directo(): void

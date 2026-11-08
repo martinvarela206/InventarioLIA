@@ -34,10 +34,17 @@ class Movimiento extends Model
         'correccion_de_id',
         'ticket_id',
         'comentario',
+        'created_at',
     ];
 
     protected static function booted(): void
     {
+        static::creating(function ($movimiento) {
+            if (empty($movimiento->created_at)) {
+                $movimiento->created_at = now();
+            }
+        });
+
         static::updating(function ($movimiento) {
             $dirtyKeys = array_keys($movimiento->getDirty());
             // Únicamente se tolera actualizar fecha_devolucion y estado_ticket al registrar check-in o cierre de ticket
@@ -55,6 +62,7 @@ class Movimiento extends Model
         'fecha' => 'datetime',
         'fecha_prestamo' => 'date',
         'fecha_devolucion' => 'date',
+        'created_at' => 'datetime',
     ];
 
     /**

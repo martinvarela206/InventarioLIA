@@ -97,4 +97,17 @@ class SeguridadRutasApiTest extends TestCase
         $this->assertNotEquals(401, $response->status());
         $this->assertNotEquals(403, $response->status());
     }
+
+    public function test_usuario_inactivo_con_token_sanctum_recibe_401_en_api(): void
+    {
+        $usuarioInactivo = Usuario::factory()->create([
+            'email' => 'inactivo_api@unsj.edu.ar',
+            'activo' => false,
+        ]);
+        $usuarioInactivo->roles()->attach(Rol::where('rol', 'asset_admin')->first());
+        Sanctum::actingAs($usuarioInactivo);
+
+        $response = $this->getJson('/api/elementos');
+        $response->assertStatus(401);
+    }
 }
