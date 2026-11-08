@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use App\Models\Movimiento;
-use App\Models\MovimientoAdjunto;
-use App\Models\Elemento;
-use App\Models\Ubicacion;
-use App\Models\Area;
 use App\Actions\Tickets\AbrirTicketAction;
 use App\Actions\Tickets\ResolverTicketAction;
+use App\Models\Area;
+use App\Models\Elemento;
+use App\Models\Movimiento;
+use App\Models\TicketComentario;
+use App\Models\TicketComentarioAdjunto;
+use App\Models\Ubicacion;
+use App\Services\ImageSanitizer;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class TicketController extends Controller
 {
@@ -70,14 +72,14 @@ class TicketController extends Controller
         $isTec = $user->hasRole(['tec', 'subtec', 'user_admin', 'item_admin', 'asset_admin']);
 
         // Para rol Revisor (solo lectura), se bloquea cualquier alteración física de ubicación
-        if (!$isTec) {
+        if (! $isTec) {
             $validated['tipo_traslado'] = 'insitu';
             unset($validated['ubicacion_id'], $validated['puesto']);
         }
 
         // Para rol Revisor, el solicitante es estrictamente el usuario logueado
         $solicitante = $isTec
-            ? (trim((string)$request->input('solicitante')) ?: ($user->nombre ?: $user->email))
+            ? (trim((string) $request->input('solicitante')) ?: ($user->nombre ?: $user->email))
             : ($user->nombre ?: $user->email);
 
         $validated['solicitante'] = $solicitante;
@@ -129,13 +131,13 @@ class TicketController extends Controller
             $term = trim($request->search);
             $query->where(function ($q) use ($term) {
                 $q->where('comentario', 'like', "%{$term}%")
-                  ->orWhere('solicitante', 'like', "%{$term}%")
-                  ->orWhereHas('elemento', function ($eq) use ($term) {
-                      $eq->where('nro_lia', 'like', "%{$term}%")
-                         ->orWhere('nro_unsj', 'like', "%{$term}%")
-                         ->orWhere('marca', 'like', "%{$term}%")
-                         ->orWhere('modelo', 'like', "%{$term}%");
-                  });
+                    ->orWhere('solicitante', 'like', "%{$term}%")
+                    ->orWhereHas('elemento', function ($eq) use ($term) {
+                        $eq->where('nro_lia', 'like', "%{$term}%")
+                            ->orWhere('nro_unsj', 'like', "%{$term}%")
+                            ->orWhere('marca', 'like', "%{$term}%")
+                            ->orWhere('modelo', 'like', "%{$term}%");
+                    });
             });
         }
 
@@ -169,7 +171,7 @@ class TicketController extends Controller
             'areas',
         ])->findOrFail($id);
 
-        if (!$ticket->esTicket()) {
+        if (! $ticket->esTicket()) {
             abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
         }
 
@@ -209,13 +211,13 @@ class TicketController extends Controller
         ]);
 
         $ticket = Movimiento::findOrFail($id);
-        if (!$ticket->esTicket()) {
+        if (! $ticket->esTicket()) {
             abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
         }
         $user = Auth::user();
 
         $movimientoGenerado = null;
-        if ($user->hasRole('tec') && $request->boolean('generar_movimiento') && !empty($validated['ubicacion_id'])) {
+        if ($user->hasRole('tec') && $request->boolean('generar_movimiento') && ! empty($validated['ubicacion_id'])) {
             $movimientoGenerado = Movimiento::create([
                 'elemento_id' => $ticket->elemento_id,
                 'tipo_movimiento' => 'interno',
@@ -228,7 +230,7 @@ class TicketController extends Controller
             ]);
         }
 
-        $comentario = \App\Models\TicketComentario::create([
+        $comentario = TicketComentario::create([
             'ticket_id' => $ticket->id,
             'user_id' => $user->id,
             'movimiento_id' => $movimientoGenerado?->id,
@@ -239,8 +241,8 @@ class TicketController extends Controller
         if ($request->hasFile('fotos')) {
             foreach ($request->file('fotos') as $foto) {
                 if ($foto && $foto->isValid()) {
-                    $path = \App\Services\ImageSanitizer::sanitizeAndStore($foto, 'ticket_hilos', 'local');
-                    \App\Models\TicketComentarioAdjunto::create([
+                    $path = ImageSanitizer::sanitizeAndStore($foto, 'ticket_hilos', 'local');
+                    TicketComentarioAdjunto::create([
                         'ticket_comentario_id' => $comentario->id,
                         'archivo_path' => $path,
                         'nombre_original' => $foto->getClientOriginalName(),
@@ -250,18 +252,18 @@ class TicketController extends Controller
             }
         }
 
-        if (!empty($validated['nueva_area_id'])) {
+        if (! empty($validated['nueva_area_id'])) {
             $ticket->areas()->syncWithoutDetaching([
                 $validated['nueva_area_id'] => [
                     'user_id' => $user->id,
                     'created_at' => now(),
-                ]
+                ],
             ]);
         }
 
         $msg = $movimientoGenerado
-            ? "Mensaje publicado y movimiento de inventario registrado con éxito."
-            : "Mensaje registrado en la bitácora del ticket.";
+            ? 'Mensaje publicado y movimiento de inventario registrado con éxito.'
+            : 'Mensaje registrado en la bitácora del ticket.';
 
         return redirect()->route('tickets.show', $ticket->id)->with('success', $msg);
     }
@@ -276,7 +278,7 @@ class TicketController extends Controller
         ]);
 
         $ticket = Movimiento::findOrFail($id);
-        if (!$ticket->esTicket()) {
+        if (! $ticket->esTicket()) {
             abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
         }
         $user = Auth::user();
@@ -285,7 +287,7 @@ class TicketController extends Controller
             $validated['area_id'] => [
                 'user_id' => $user->id,
                 'created_at' => now(),
-            ]
+            ],
         ]);
 
         $area = Area::find($validated['area_id']);
@@ -302,7 +304,7 @@ class TicketController extends Controller
     public function solucionar(Request $request, int $id): RedirectResponse
     {
         $user = Auth::user();
-        if (!$user->canSolveTickets()) {
+        if (! $user->canSolveTickets()) {
             abort(403, 'El rol Revisor no posee privilegios para solucionar técnicamente un ticket.');
         }
 
@@ -317,7 +319,7 @@ class TicketController extends Controller
             DB::transaction(function () use ($id, $validated, $user, $request) {
                 $ticket = Movimiento::where('id', $id)->lockForUpdate()->firstOrFail();
 
-                if (!$ticket->esTicket()) {
+                if (! $ticket->esTicket()) {
                     abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
                 }
 
@@ -330,27 +332,27 @@ class TicketController extends Controller
                 $ticket->estado_ticket = 'solucionado';
                 $ticket->save();
 
-                if (!empty($validated['nueva_area_id'])) {
+                if (! empty($validated['nueva_area_id'])) {
                     $ticket->areas()->syncWithoutDetaching([
                         $validated['nueva_area_id'] => [
                             'user_id' => $user->id,
                             'created_at' => now(),
-                        ]
+                        ],
                     ]);
                 }
 
-                $comentario = \App\Models\TicketComentario::create([
+                $comentario = TicketComentario::create([
                     'ticket_id' => $ticket->id,
                     'user_id' => $user->id,
-                    'mensaje' => 'SOLUCIÓN TÉCNICA PROPUESTA / EJECUTADA: ' . $validated['solucion'],
+                    'mensaje' => 'SOLUCIÓN TÉCNICA PROPUESTA / EJECUTADA: '.$validated['solucion'],
                     'tipo' => 'solucion_propuesta',
                 ]);
 
                 if ($request->hasFile('fotos')) {
                     foreach ($request->file('fotos') as $foto) {
                         if ($foto && $foto->isValid()) {
-                            $path = \App\Services\ImageSanitizer::sanitizeAndStore($foto, 'ticket_hilos', 'local');
-                            \App\Models\TicketComentarioAdjunto::create([
+                            $path = ImageSanitizer::sanitizeAndStore($foto, 'ticket_hilos', 'local');
+                            TicketComentarioAdjunto::create([
                                 'ticket_comentario_id' => $comentario->id,
                                 'archivo_path' => $path,
                                 'nombre_original' => $foto->getClientOriginalName(),
@@ -376,7 +378,7 @@ class TicketController extends Controller
     public function resolver(Request $request, int $id, ResolverTicketAction $resolverTicketAction): RedirectResponse
     {
         $user = Auth::user();
-        if (!$user->canCloseTickets()) {
+        if (! $user->canCloseTickets()) {
             abort(403, 'Únicamente el personal Técnico o Administrador de Ítems puede cerrar formalmente un ticket y asociar movimientos de inventario.');
         }
 
@@ -388,7 +390,7 @@ class TicketController extends Controller
         ]);
 
         $ticket = Movimiento::findOrFail($id);
-        if (!$ticket->esTicket()) {
+        if (! $ticket->esTicket()) {
             abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
         }
 

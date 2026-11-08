@@ -2,12 +2,12 @@
 
 namespace App\Console\Commands;
 
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
-use Carbon\Carbon;
 
 class BackupDatabaseCommand extends Command
 {
@@ -35,13 +35,13 @@ class BackupDatabaseCommand extends Command
     {
         $this->info('Iniciando proceso de respaldo de base de datos y contingencia...');
 
-        $keep = (int)$this->option('keep');
+        $keep = (int) $this->option('keep');
         if ($keep < 1) {
             $keep = 10;
         }
 
         $backupDir = $this->option('path') ?: storage_path('app/backups');
-        if (!File::isDirectory($backupDir)) {
+        if (! File::isDirectory($backupDir)) {
             File::makeDirectory($backupDir, 0755, true);
         }
 
@@ -53,7 +53,7 @@ class BackupDatabaseCommand extends Command
             $cleanDbName = 'inventario_lia';
         }
         $filename = "backup_{$cleanDbName}_{$timestamp}.sql";
-        $filepath = $backupDir . DIRECTORY_SEPARATOR . $filename;
+        $filepath = $backupDir.DIRECTORY_SEPARATOR.$filename;
 
         $success = false;
 
@@ -61,20 +61,22 @@ class BackupDatabaseCommand extends Command
         if (in_array($connectionName, ['mysql', 'mariadb'])) {
             $success = $this->dumpUsingCli($connectionName, $filepath);
             // En producción, si el volcado nativo falla no se permite volcado silencioso corrupto
-            if (!$success && app()->isProduction()) {
+            if (! $success && app()->isProduction()) {
                 $this->error('Error crítico: El volcado nativo de MariaDB/MySQL falló en producción. Operación abortada.');
                 Log::critical("BACKUP_ABORTADO_PRODUCCION: mariadb-dump/mysqldump falló para {$connectionName}.");
+
                 return Command::FAILURE;
             }
         }
 
         // Si no se usó CLI o falló en entorno local/testing (ej. SQLite o sin binario CLI instalado), volcar vía PDO seguro
-        if (!$success) {
+        if (! $success) {
             $success = $this->dumpUsingEloquentPdo($filepath);
         }
 
-        if (!$success || !File::exists($filepath)) {
+        if (! $success || ! File::exists($filepath)) {
             $this->error('No se pudo generar el archivo de respaldo.');
+
             return Command::FAILURE;
         }
 
@@ -86,7 +88,7 @@ class BackupDatabaseCommand extends Command
         // Respaldo de adjuntos multimedia si se solicita la opción
         if ($this->option('with-attachments')) {
             $adjuntosOk = $this->respaldarAdjuntos($backupDir, $timestamp, $keep);
-            if (!$adjuntosOk) {
+            if (! $adjuntosOk) {
                 return Command::FAILURE;
             }
         }
@@ -116,18 +118,18 @@ class BackupDatabaseCommand extends Command
                 if ($check->successful()) {
                     // Aislar credenciales mediante MYSQL_PWD para prevenir exposición en ps aux
                     $env = [];
-                    if (!empty($password)) {
-                        $env['MYSQL_PWD'] = (string)$password;
+                    if (! empty($password)) {
+                        $env['MYSQL_PWD'] = (string) $password;
                     }
 
-                    $dumpCmd = "{$cmd} -h " . escapeshellarg($host) .
-                               " -P " . escapeshellarg((string)$port) .
-                               " -u " . escapeshellarg($username) .
-                               " --single-transaction --quick --skip-lock-tables " .
-                               escapeshellarg($database) .
-                               " > " . escapeshellarg($filepath);
+                    $dumpCmd = "{$cmd} -h ".escapeshellarg($host).
+                               ' -P '.escapeshellarg((string) $port).
+                               ' -u '.escapeshellarg($username).
+                               ' --single-transaction --quick --skip-lock-tables '.
+                               escapeshellarg($database).
+                               ' > '.escapeshellarg($filepath);
 
-                    $res = Process::withEnvironment($env)->run($dumpCmd);
+                    $res = Process::env($env)->run($dumpCmd);
                     if ($res->successful() && File::exists($filepath) && File::size($filepath) > 0) {
                         return true;
                     }
@@ -153,8 +155,8 @@ class BackupDatabaseCommand extends Command
         $driver = DB::getDriverName();
         $buffer = "-- ========================================================\n";
         $buffer .= "-- Respaldo Automatizado Sistema LIA (Inventario LIA)\n";
-        $buffer .= "-- Generado: " . Carbon::now()->toIso8601String() . "\n";
-        $buffer .= "-- Conexión: " . config('database.default') . "\n";
+        $buffer .= '-- Generado: '.Carbon::now()->toIso8601String()."\n";
+        $buffer .= '-- Conexión: '.config('database.default')."\n";
         $buffer .= "-- ========================================================\n\n";
 
         if ($driver === 'sqlite') {
@@ -166,7 +168,7 @@ class BackupDatabaseCommand extends Command
         try {
             $pdo = DB::getPdo();
             $tables = $this->getAllTables();
-            $buffer .= "-- Tablas encontradas: " . count($tables) . "\n\n";
+            $buffer .= '-- Tablas encontradas: '.count($tables)."\n\n";
 
             foreach ($tables as $table) {
                 $buffer .= "-- --------------------------------------------------------\n";
@@ -182,21 +184,26 @@ class BackupDatabaseCommand extends Command
 
                 // Registros
                 $rows = DB::table($table)->get();
-                $buffer .= "-- Registros: " . $rows->count() . "\n";
+                $buffer .= '-- Registros: '.$rows->count()."\n";
 
                 if ($rows->count() > 0) {
                     foreach ($rows->chunk(50) as $chunk) {
                         foreach ($chunk as $row) {
-                            $rowArray = (array)$row;
+                            $rowArray = (array) $row;
                             $columns = array_keys($rowArray);
-                            $escapedColumns = array_map(fn($col) => "`{$col}`", $columns);
+                            $escapedColumns = array_map(fn ($col) => "`{$col}`", $columns);
                             $escapedValues = array_map(function ($val) use ($pdo) {
-                                if (is_null($val)) return 'NULL';
-                                if (is_int($val) || is_float($val)) return (string)$val;
-                                return $pdo->quote((string)$val);
+                                if (is_null($val)) {
+                                    return 'NULL';
+                                }
+                                if (is_int($val) || is_float($val)) {
+                                    return (string) $val;
+                                }
+
+                                return $pdo->quote((string) $val);
                             }, array_values($rowArray));
 
-                            $buffer .= "INSERT INTO `{$table}` (" . implode(', ', $escapedColumns) . ") VALUES (" . implode(', ', $escapedValues) . ");\n";
+                            $buffer .= "INSERT INTO `{$table}` (".implode(', ', $escapedColumns).') VALUES ('.implode(', ', $escapedValues).");\n";
                         }
                     }
                 }
@@ -210,10 +217,12 @@ class BackupDatabaseCommand extends Command
             }
 
             File::put($filepath, $buffer);
+
             return true;
         } catch (\Throwable $e) {
-            $this->warn('Error durante el volcado portable: ' . $e->getMessage());
+            $this->warn('Error durante el volcado portable: '.$e->getMessage());
             Log::error("BACKUP_PDO_ERROR: {$e->getMessage()}");
+
             return false;
         }
     }
@@ -223,19 +232,21 @@ class BackupDatabaseCommand extends Command
      */
     protected function respaldarAdjuntos(string $backupDir, string $timestamp, int $keep): bool
     {
-        if (!class_exists(\ZipArchive::class)) {
+        if (! class_exists(\ZipArchive::class)) {
             $this->error('ERROR CRÍTICO: La extensión PHP ZipArchive no está disponible. No es posible generar el respaldo de adjuntos solicitado.');
             Log::error('BACKUP_ATTACHMENTS_ERROR: ZipArchive extension is not available.');
+
             return false;
         }
 
         $zipFilename = "backup_adjuntos_{$timestamp}.zip";
-        $zipPath = $backupDir . DIRECTORY_SEPARATOR . $zipFilename;
+        $zipPath = $backupDir.DIRECTORY_SEPARATOR.$zipFilename;
 
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             $this->error("ERROR CRÍTICO: No se pudo crear o escribir el archivo ZIP de adjuntos en: {$zipPath}");
             Log::error("BACKUP_ATTACHMENTS_ERROR: Cannot open zip archive at {$zipPath}");
+
             return false;
         }
 
@@ -249,7 +260,7 @@ class BackupDatabaseCommand extends Command
             if (File::isDirectory($dir)) {
                 $files = File::allFiles($dir);
                 foreach ($files as $file) {
-                    $relative = $prefix . '/' . $file->getRelativePathname();
+                    $relative = $prefix.'/'.$file->getRelativePathname();
                     $zip->addFile($file->getRealPath(), $relative);
                     $totalArchivos++;
                 }
@@ -281,13 +292,15 @@ class BackupDatabaseCommand extends Command
 
         if ($driver === 'sqlite') {
             $row = DB::selectOne("SELECT sql FROM sqlite_master WHERE type='table' AND name = ?", [$table]);
-            if ($row && !empty($row->sql)) {
+            if ($row && ! empty($row->sql)) {
                 $sql = trim($row->sql);
                 if (stripos($sql, 'CREATE TABLE IF NOT EXISTS') === false && stripos($sql, 'CREATE TABLE') === 0) {
-                    $sql = 'CREATE TABLE IF NOT EXISTS ' . substr($sql, strlen('CREATE TABLE '));
+                    $sql = 'CREATE TABLE IF NOT EXISTS '.substr($sql, strlen('CREATE TABLE '));
                 }
+
                 return $sql;
             }
+
             return null;
         }
 
@@ -295,6 +308,7 @@ class BackupDatabaseCommand extends Command
             $row = DB::selectOne("SHOW CREATE TABLE `{$table}`");
             if ($row) {
                 $vars = get_object_vars($row);
+
                 return $vars['Create Table'] ?? null;
             }
         }
@@ -311,13 +325,16 @@ class BackupDatabaseCommand extends Command
 
         if ($driver === 'sqlite') {
             $results = DB::select("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';");
-            return array_map(fn($r) => $r->name, $results);
+
+            return array_map(fn ($r) => $r->name, $results);
         }
 
         if (in_array($driver, ['mysql', 'mariadb'])) {
             $results = DB::select('SHOW TABLES');
+
             return array_map(function ($r) {
                 $vars = get_object_vars($r);
+
                 return reset($vars);
             }, $results);
         }
@@ -345,7 +362,7 @@ class BackupDatabaseCommand extends Command
         }
 
         // Ordenar del más reciente al más antiguo
-        usort($backups, fn($a, $b) => $b['mtime'] <=> $a['mtime']);
+        usort($backups, fn ($a, $b) => $b['mtime'] <=> $a['mtime']);
 
         $totalBackups = count($backups);
         if ($totalBackups > $keep) {
@@ -354,7 +371,7 @@ class BackupDatabaseCommand extends Command
                 File::delete($item['path']);
                 $this->line("  ↳ Rotación: archivo antiguo depurado: {$item['filename']}");
             }
-            $this->info("✓ Rotación completada ({$prefix}*.{$extension}): " . count($aEliminar) . " archivo(s) depurado(s).");
+            $this->info("✓ Rotación completada ({$prefix}*.{$extension}): ".count($aEliminar).' archivo(s) depurado(s).');
         }
     }
 }

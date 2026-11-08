@@ -2,24 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Elemento;
 use App\Enums\EstadoElemento;
+use App\Http\Requests\StoreElementoRequest;
+use App\Http\Requests\UpdateElementoRequest;
+use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
-use App\Models\Usuario;
-use App\Http\Requests\StoreElementoRequest;
-use App\Http\Requests\UpdateElementoRequest;
-use Illuminate\Http\Request;
-use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
+use App\Support\CsvSanitizer;
 use Carbon\Carbon;
-
-use App\Models\Atributo;
-use App\Models\ElementoAtributoValor;
-
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ElementoController extends Controller
@@ -57,8 +54,8 @@ class ElementoController extends Controller
         if ($request->filled('puesto')) {
             $puesto = trim($request->input('puesto'));
             $query->where(function ($q) use ($puesto) {
-                $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
-                  ->orWhere('puesto', $puesto);
+                $q->whereHas('ultimoMovimiento', fn ($mq) => $mq->where('puesto', $puesto))
+                    ->orWhere('puesto', $puesto);
             });
         }
 
@@ -84,9 +81,9 @@ class ElementoController extends Controller
             $gb = $request->input('gb');
             $query->where(function ($q) use ($gb) {
                 $q->where('descripcion', 'like', "%{$gb}%")
-                  ->orWhereHas('valoresAtributos', function ($vaq) use ($gb) {
-                      $vaq->where('valor', 'like', "%{$gb}%");
-                  });
+                    ->orWhereHas('valoresAtributos', function ($vaq) use ($gb) {
+                        $vaq->where('valor', 'like', "%{$gb}%");
+                    });
             });
         }
 
@@ -131,7 +128,7 @@ class ElementoController extends Controller
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="Inventario_Completo_' . date('Ymd_His') . '.csv"',
+            'Content-Disposition' => 'attachment; filename="Inventario_Completo_'.date('Ymd_His').'.csv"',
             'Pragma' => 'no-cache',
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Expires' => '0',
@@ -143,10 +140,12 @@ class ElementoController extends Controller
             fputcsv($handle, $columnas, ';');
 
             foreach ($query->with(['tipo', 'ultimoMovimiento.ubicacion'])->orderBy('id', 'asc')->lazy(250) as $el) {
+                /** @var Elemento $el */
+                /** @var Movimiento|null $u */
                 $u = $el->ultimoMovimiento;
                 $situacion = match ($el->estado) {
                     EstadoElemento::OPERATIVO => 'En Sala / Operativo',
-                    EstadoElemento::PRESTADO => 'Prestado (' . ($u?->diasPrestado() ?? 0) . ' d)',
+                    EstadoElemento::PRESTADO => 'Prestado ('.($u?->diasPrestado() ?? 0).' d)',
                     EstadoElemento::EN_REPARACION => 'En Reparación',
                     EstadoElemento::EN_LIMBO_REUBICACION => 'En Limbo (Pendiente Reubicación)',
                     EstadoElemento::BAJA => 'Basura Tecnológica / De Baja',
@@ -155,7 +154,7 @@ class ElementoController extends Controller
                 $garantia = 'Sin datos';
                 if ($el->fecha_vencimiento_garantia) {
                     $venc = Carbon::parse($el->fecha_vencimiento_garantia);
-                    $garantia = $venc->isPast() ? 'Vencida (' . $venc->format('d/m/Y') . ')' : 'Vigente (' . $venc->format('d/m/Y') . ')';
+                    $garantia = $venc->isPast() ? 'Vencida ('.$venc->format('d/m/Y').')' : 'Vigente ('.$venc->format('d/m/Y').')';
                 }
 
                 $fila = [
@@ -171,11 +170,11 @@ class ElementoController extends Controller
                     $situacion,
                     $u?->solicitante ?? '-',
                     $garantia,
-                    $el->anio_compra ? (string)$el->anio_compra : '-',
+                    $el->anio_compra ? (string) $el->anio_compra : '-',
                     $el->observaciones ?: ($el->descripcion_texto ?? '-'),
                 ];
 
-                fputcsv($handle, \App\Support\CsvSanitizer::sanitizeRow($fila), ';');
+                fputcsv($handle, CsvSanitizer::sanitizeRow($fila), ';');
             }
 
             fclose($handle);
@@ -201,37 +200,39 @@ class ElementoController extends Controller
             ->orderBy('id', 'asc')
             ->lazy(250)
             ->map(function ($el) use ($atributos) {
-            $u = $el->ultimoMovimiento;
-            $situacion = 'En Sala';
-            if ($u?->esPrestamo() && !$u?->fecha_devolucion) {
-                $situacion = 'Prestado (' . $u->diasPrestado() . ' d)';
-            } elseif ($u?->tipo_movimiento === 'baja' || $el->tipo?->nombre === 'basura tecnologica') {
-                $situacion = 'Basura Tecnológica / De Baja';
-            } elseif ($u?->esTicketAbierto()) {
-                $situacion = 'En Reparación';
-            }
+                /** @var Elemento $el */
+                /** @var Movimiento|null $u */
+                $u = $el->ultimoMovimiento;
+                $situacion = 'En Sala';
+                if ($u?->esPrestamo() && ! $u?->fecha_devolucion) {
+                    $situacion = 'Prestado ('.$u->diasPrestado().' d)';
+                } elseif ($u?->tipo_movimiento === 'baja' || $el->tipo?->nombre === 'basura tecnologica') {
+                    $situacion = 'Basura Tecnológica / De Baja';
+                } elseif ($u?->esTicketAbierto()) {
+                    $situacion = 'En Reparación';
+                }
 
-            $fila = [
-                $el->tipo?->nombre ?? 'N/A',
-                $el->nro_lia ?? '-',
-                $el->nro_unsj ?? '-',
-                $el->marca ?? '-',
-                $el->modelo ?? '-',
-                $el->especificacionesSintetizadas(false),
-                $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo Externo' : 'Sin asignar'),
-                $u?->puesto ?: ($el->puesto ?? '-'),
-                $situacion,
-            ];
+                $fila = [
+                    $el->tipo?->nombre ?? 'N/A',
+                    $el->nro_lia ?? '-',
+                    $el->nro_unsj ?? '-',
+                    $el->marca ?? '-',
+                    $el->modelo ?? '-',
+                    $el->especificacionesSintetizadas(false),
+                    $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo Externo' : 'Sin asignar'),
+                    $u?->puesto ?: ($el->puesto ?? '-'),
+                    $situacion,
+                ];
 
-            foreach ($atributos as $attr) {
-                $fila[] = $el->getValorAtributo($attr);
-            }
+                foreach ($atributos as $attr) {
+                    $fila[] = $el->getValorAtributo($attr);
+                }
 
-            $fila[] = $u?->solicitante ?? '-';
-            $fila[] = $el->observaciones ?: ($el->descripcion_texto ?? '-');
+                $fila[] = $u?->solicitante ?? '-';
+                $fila[] = $el->observaciones ?: ($el->descripcion_texto ?? '-');
 
-            return $fila;
-        });
+                return $fila;
+            });
 
         return view('reportes.show', [
             'titulo' => 'Informe de Inventario Completo',
@@ -241,7 +242,7 @@ class ElementoController extends Controller
             'tipoReporte' => 'inventario-completo',
             'request' => $request,
             'columnasOcultasIniciales' => $request->has('columnas_ocultas')
-                ? array_filter(array_map('trim', explode(',', (string)$request->input('columnas_ocultas'))))
+                ? array_filter(array_map('trim', explode(',', (string) $request->input('columnas_ocultas'))))
                 : $columnasOcultasDefecto,
         ]);
     }
@@ -251,7 +252,7 @@ class ElementoController extends Controller
      */
     public function create(): View
     {
-        if (!auth()->user()?->canManageElementos()) {
+        if (! auth()->user()?->canManageElementos()) {
             abort(403, 'Acceso restringido a administradores de inventario (asset_admin).');
         }
 
@@ -266,7 +267,7 @@ class ElementoController extends Controller
      */
     public function store(StoreElementoRequest $request): RedirectResponse
     {
-        if (!auth()->user()?->canManageElementos()) {
+        if (! auth()->user()?->canManageElementos()) {
             abort(403, 'Acceso restringido a administradores de inventario (asset_admin).');
         }
 
@@ -304,14 +305,14 @@ class ElementoController extends Controller
 
             // GARANTIZAR MOVIMIENTO INICIAL AUTOMÁTICO
             $defaultUbicacion = Ubicacion::where('nombre', 'Armario de HW')->first() ?? Ubicacion::first();
-            $ubicacionId = !empty($validated['ubicacion_id']) ? $validated['ubicacion_id'] : $defaultUbicacion->id;
+            $ubicacionId = ! empty($validated['ubicacion_id']) ? $validated['ubicacion_id'] : $defaultUbicacion->id;
 
             Movimiento::create([
                 'elemento_id' => $elemento->id,
                 'tipo_movimiento' => 'interno',
                 'ubicacion_id' => $ubicacionId,
                 'puesto' => $validated['puesto'] ?? null,
-                'user_id' => auth()->id() ?? throw new \Illuminate\Auth\AuthenticationException('Usuario no autenticado.'),
+                'user_id' => auth()->id() ?? throw new AuthenticationException('Usuario no autenticado.'),
                 'fecha' => now(),
                 'comentario' => 'Alta inicial del elemento en el inventario',
             ]);
@@ -344,12 +345,13 @@ class ElementoController extends Controller
      */
     public function edit(Elemento $elemento): View
     {
-        if (!auth()->user()?->canManageElementos()) {
+        if (! auth()->user()?->canManageElementos()) {
             abort(403, 'Acceso restringido a administradores de inventario (asset_admin).');
         }
 
         $elemento->load('valoresAtributos');
         $tipos = Tipo::with('atributos')->orderBy('nombre')->get();
+
         return view('elementos.edit', compact('elemento', 'tipos'));
     }
 
@@ -358,7 +360,7 @@ class ElementoController extends Controller
      */
     public function update(UpdateElementoRequest $request, Elemento $elemento): RedirectResponse
     {
-        if (!auth()->user()?->canManageElementos()) {
+        if (! auth()->user()?->canManageElementos()) {
             abort(403, 'Acceso restringido a administradores de inventario (asset_admin).');
         }
 
@@ -402,7 +404,7 @@ class ElementoController extends Controller
      */
     public function destroy(Elemento $elemento): RedirectResponse
     {
-        if (!auth()->user()?->canManageElementos()) {
+        if (! auth()->user()?->canManageElementos()) {
             abort(403, 'Acceso restringido a administradores de inventario.');
         }
 

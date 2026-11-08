@@ -2,22 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Movimiento;
-use App\Models\Elemento;
-use App\Models\Usuario;
-use App\Models\Ubicacion;
-use App\Enums\EstadoElemento;
-use App\Actions\Movimientos\RegistrarPrestamoAction;
 use App\Actions\Movimientos\RegistrarDevolucionAction;
-use App\Http\Requests\StoreMovimientoRequest;
+use App\Actions\Movimientos\RegistrarPrestamoAction;
+use App\Enums\EstadoElemento;
 use App\Http\Requests\DevolucionMovimientoRequest;
 use App\Http\Requests\StoreEnmiendaRequest;
-use Illuminate\Http\Request;
-use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
+use App\Http\Requests\StoreMovimientoRequest;
+use App\Models\Elemento;
+use App\Models\Movimiento;
+use App\Models\Ubicacion;
 use Carbon\Carbon;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class MovimientoController extends Controller
 {
@@ -32,17 +32,17 @@ class MovimientoController extends Controller
             $search = trim($request->input('search'));
             $query->where(function ($q) use ($search) {
                 $q->where('comentario', 'like', "%{$search}%")
-                  ->orWhere('solicitante', 'like', "%{$search}%")
-                  ->orWhere('puesto', 'like', "%{$search}%")
-                  ->orWhereHas('elemento', function ($eq) use ($search) {
-                      $eq->where('nro_lia', 'like', "%{$search}%")
-                         ->orWhere('nro_unsj', 'like', "%{$search}%")
-                         ->orWhere('marca', 'like', "%{$search}%")
-                         ->orWhere('modelo', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('ubicacion', function ($uq) use ($search) {
-                      $uq->where('nombre', 'like', "%{$search}%");
-                  });
+                    ->orWhere('solicitante', 'like', "%{$search}%")
+                    ->orWhere('puesto', 'like', "%{$search}%")
+                    ->orWhereHas('elemento', function ($eq) use ($search) {
+                        $eq->where('nro_lia', 'like', "%{$search}%")
+                            ->orWhere('nro_unsj', 'like', "%{$search}%")
+                            ->orWhere('marca', 'like', "%{$search}%")
+                            ->orWhere('modelo', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('ubicacion', function ($uq) use ($search) {
+                        $uq->where('nombre', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -55,12 +55,12 @@ class MovimientoController extends Controller
         }
 
         if ($request->filled('fecha_desde')) {
-            $desde = \Carbon\Carbon::parse($request->fecha_desde)->startOfDay();
+            $desde = Carbon::parse($request->fecha_desde)->startOfDay();
             $query->where('fecha', '>=', $desde);
         }
 
         if ($request->filled('fecha_hasta')) {
-            $hasta = \Carbon\Carbon::parse($request->fecha_hasta)->endOfDay();
+            $hasta = Carbon::parse($request->fecha_hasta)->endOfDay();
             $query->where('fecha', '<=', $hasta);
         }
 
@@ -103,7 +103,7 @@ class MovimientoController extends Controller
      */
     public function apiBuscar(Request $request): JsonResponse
     {
-        $term = trim((string)$request->get('q', ''));
+        $term = trim((string) $request->get('q', ''));
         if (strlen($term) < 1) {
             return response()->json([]);
         }
@@ -113,7 +113,9 @@ class MovimientoController extends Controller
             ->limit(10)
             ->get()
             ->map(function ($el) {
+                /** @var Movimiento|null $ultimo */
                 $ultimo = $el->ultimoMovimiento;
+
                 return [
                     'id' => $el->id,
                     'nro_lia' => $el->nro_lia ?: 'S/N',
@@ -123,8 +125,8 @@ class MovimientoController extends Controller
                     'modelo' => $el->modelo,
                     'puesto' => $el->puesto,
                     'ubicacion_actual' => $ultimo?->ubicacion?->nombre ?? 'N/A',
-                    'es_prestamo_activo' => $ultimo && $ultimo->esPrestamo() && !$ultimo->fecha_devolucion,
-                    'prestamo_id' => ($ultimo && $ultimo->esPrestamo() && !$ultimo->fecha_devolucion) ? $ultimo->id : null,
+                    'es_prestamo_activo' => $ultimo && $ultimo->esPrestamo() && ! $ultimo->fecha_devolucion,
+                    'prestamo_id' => ($ultimo && $ultimo->esPrestamo() && ! $ultimo->fecha_devolucion) ? $ultimo->id : null,
                     'solicitante_actual' => $ultimo?->solicitante,
                     'dias_prestado' => $ultimo?->diasPrestado(),
                 ];
@@ -156,7 +158,7 @@ class MovimientoController extends Controller
                     $validated,
                     auth()->user()
                 );
-            } catch (\Illuminate\Validation\ValidationException $e) {
+            } catch (ValidationException $e) {
                 return redirect()->back()->withErrors($e->errors())->withInput();
             }
 
@@ -177,14 +179,14 @@ class MovimientoController extends Controller
                 ->withInput();
         }
 
-        $fecha = !empty($validated['fecha']) ? Carbon::parse($validated['fecha']) : now();
+        $fecha = ! empty($validated['fecha']) ? Carbon::parse($validated['fecha']) : now();
 
         Movimiento::create([
             'elemento_id' => $validated['elemento_id'],
             'tipo_movimiento' => 'interno',
             'ubicacion_id' => $validated['ubicacion_id'] ?? null,
             'puesto' => $validated['puesto'] ?? null,
-            'user_id' => auth()->id() ?? throw new \Illuminate\Auth\AuthenticationException('Usuario no autenticado.'),
+            'user_id' => auth()->id() ?? throw new AuthenticationException('Usuario no autenticado.'),
             'fecha' => $fecha,
             'comentario' => $validated['comentario'] ?? null,
         ]);
@@ -202,7 +204,7 @@ class MovimientoController extends Controller
 
         try {
             $registrarDevolucionAction->execute($movimiento, $validated, auth()->user());
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         }
 
@@ -216,7 +218,7 @@ class MovimientoController extends Controller
     public function storeCorreccion(StoreEnmiendaRequest $request, Movimiento $movimiento): RedirectResponse
     {
         $validated = $request->validated();
-        $usuarioId = auth()->id() ?? throw new \Illuminate\Auth\AuthenticationException('Usuario no autenticado.');
+        $usuarioId = auth()->id() ?? throw new AuthenticationException('Usuario no autenticado.');
 
         $nuevoMovimiento = $movimiento->crearEnmienda(
             $validated,

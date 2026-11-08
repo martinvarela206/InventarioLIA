@@ -1,13 +1,12 @@
 <?php
 
+use App\Models\Elemento;
+use App\Models\Movimiento;
+use App\Models\Tipo;
+use App\Models\Usuario;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
-use App\Models\Tipo;
-use App\Models\Elemento;
-use App\Models\Movimiento;
-use App\Models\Usuario;
 
 return new class extends Migration
 {
@@ -54,7 +53,7 @@ return new class extends Migration
                     ->where('tipo_movimiento', 'baja')
                     ->exists();
 
-                if (!$tieneBaja) {
+                if (! $tieneBaja) {
                     $ultimo = Movimiento::where('elemento_id', $el->id)->orderBy('id', 'desc')->first();
                     Movimiento::create([
                         'elemento_id' => $el->id,

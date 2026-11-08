@@ -2,10 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\Elemento;
+use App\Models\Tipo;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Elemento>
+ * @extends Factory<Elemento>
  */
 class ElementoFactory extends Factory
 {
@@ -33,7 +35,7 @@ class ElementoFactory extends Factory
         return [
             'nro_lia' => fake()->unique()->bothify('LIA-#####'),
             'nro_unsj' => fake()->optional()->bothify('UNSJ-#####'),
-            'tipo_id' => \App\Models\Tipo::first()?->id ?? 1,
+            'tipo_id' => Tipo::first()?->id ?? 1,
             'descripcion' => fake()->sentence(3),
             'cantidad' => fake()->numberBetween(1, 10),
             'fecha_adquisicion' => $fechaAdquisicion,

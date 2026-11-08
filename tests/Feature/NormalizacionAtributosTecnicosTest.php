@@ -4,11 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Atributo;
 use App\Models\Elemento;
-use App\Models\ElementoAtributoValor;
 use App\Models\Rol;
 use App\Models\Tipo;
-use App\Models\Ubicacion;
-use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

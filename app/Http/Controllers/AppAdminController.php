@@ -2,20 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Carrera;
-use App\Models\Cargo;
-use App\Models\Usuario;
-use App\Models\EspacioLia;
-use App\Models\PersonalLia;
 use App\Models\ActividadLia;
 use App\Models\AvisoSeguridad;
+use App\Models\Cargo;
+use App\Models\Carrera;
+use App\Models\EspacioLia;
+use App\Models\PersonalLia;
 use App\Models\ReporteConfigurado;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\View\View;
+use App\Models\Usuario;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class AppAdminController extends Controller
 {
@@ -66,6 +65,7 @@ class AppAdminController extends Controller
     public function carrerasIndex(): View
     {
         $carreras = Carrera::withCount('usuarios')->orderBy('activa', 'desc')->orderBy('nombre')->get();
+
         return view('admin.app.carreras', compact('carreras'));
     }
 
@@ -88,7 +88,7 @@ class AppAdminController extends Controller
     public function carreraUpdate(Request $request, Carrera $carrera): RedirectResponse
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:150|unique:carreras,nombre,' . $carrera->id,
+            'nombre' => 'required|string|max:150|unique:carreras,nombre,'.$carrera->id,
             'codigo' => 'nullable|string|max:50',
             'activa' => 'nullable|boolean',
         ]);
@@ -103,7 +103,7 @@ class AppAdminController extends Controller
 
     public function carreraToggle(Carrera $carrera): RedirectResponse
     {
-        $carrera->update(['activa' => !$carrera->activa]);
+        $carrera->update(['activa' => ! $carrera->activa]);
         $estado = $carrera->activa ? 'habilitada' : 'deshabilitada';
 
         return redirect()->route('app_admin.carreras')
@@ -114,6 +114,7 @@ class AppAdminController extends Controller
     {
         if (Usuario::where('carrera_id', $carrera->id)->exists()) {
             $carrera->update(['activa' => false]);
+
             return redirect()->route('app_admin.carreras')
                 ->with('warning', 'La carrera posee usuarios vinculados y fue desactivada para proteger el historial académico.');
         }
@@ -130,6 +131,7 @@ class AppAdminController extends Controller
     public function cargosIndex(): View
     {
         $cargos = Cargo::withCount('usuarios')->orderBy('orden')->orderBy('nombre')->get();
+
         return view('admin.app.cargos', compact('cargos'));
     }
 
@@ -154,7 +156,7 @@ class AppAdminController extends Controller
     public function cargoUpdate(Request $request, Cargo $cargo): RedirectResponse
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:100|unique:cargos,nombre,' . $cargo->id,
+            'nombre' => 'required|string|max:100|unique:cargos,nombre,'.$cargo->id,
             'descripcion' => 'nullable|string|max:255',
             'orden' => 'nullable|integer',
             'activo' => 'nullable|boolean',
@@ -171,7 +173,7 @@ class AppAdminController extends Controller
 
     public function cargoToggle(Cargo $cargo): RedirectResponse
     {
-        $cargo->update(['activo' => !$cargo->activo]);
+        $cargo->update(['activo' => ! $cargo->activo]);
         $estado = $cargo->activo ? 'habilitado' : 'deshabilitado';
 
         return redirect()->route('app_admin.cargos')
@@ -193,6 +195,7 @@ class AppAdminController extends Controller
     public function espaciosIndex(): View
     {
         $espacios = EspacioLia::orderBy('orden')->orderBy('id')->get();
+
         return view('admin.app.espacios', compact('espacios'));
     }
 
@@ -209,7 +212,7 @@ class AppAdminController extends Controller
         $imagenPath = $validated['imagen_url'] ?? null;
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('espacios', 'public');
-            $imagenPath = '/storage/' . $path;
+            $imagenPath = '/storage/'.$path;
         }
 
         EspacioLia::create([
@@ -244,8 +247,8 @@ class AppAdminController extends Controller
 
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('espacios', 'public');
-            $data['imagen_path'] = '/storage/' . $path;
-        } elseif (!empty($validated['imagen_url'])) {
+            $data['imagen_path'] = '/storage/'.$path;
+        } elseif (! empty($validated['imagen_url'])) {
             $data['imagen_path'] = $validated['imagen_url'];
         }
 
@@ -258,6 +261,7 @@ class AppAdminController extends Controller
     public function espacioDestroy(EspacioLia $espacio): RedirectResponse
     {
         $espacio->delete();
+
         return redirect()->route('app_admin.espacios')
             ->with('success', 'Espacio eliminado del catálogo.');
     }
@@ -306,7 +310,7 @@ class AppAdminController extends Controller
     public function personalUpdate(Request $request, PersonalLia $personal): RedirectResponse
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:usuarios,id|unique:personal_lia,user_id,' . $personal->id,
+            'user_id' => 'required|exists:usuarios,id|unique:personal_lia,user_id,'.$personal->id,
             'comentario' => 'nullable|string|max:1000',
             'orden' => 'nullable|integer',
             'activo' => 'nullable|boolean',
@@ -328,6 +332,7 @@ class AppAdminController extends Controller
     public function personalDestroy(PersonalLia $personal): RedirectResponse
     {
         $personal->delete();
+
         return redirect()->route('app_admin.personal')
             ->with('success', 'Miembro eliminado del listado institucional.');
     }
@@ -338,6 +343,7 @@ class AppAdminController extends Controller
     public function actividadesIndex(): View
     {
         $actividades = ActividadLia::with('autor')->orderBy('fecha_publicacion', 'desc')->get();
+
         return view('admin.app.actividades', compact('actividades'));
     }
 
@@ -354,14 +360,14 @@ class AppAdminController extends Controller
         $imagenPath = $validated['imagen_url'] ?? null;
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('actividades', 'public');
-            $imagenPath = '/storage/' . $path;
+            $imagenPath = '/storage/'.$path;
         }
 
         ActividadLia::create([
             'titulo' => $validated['titulo'],
             'contenido' => $validated['contenido'],
             'imagen_path' => $imagenPath,
-            'fecha_publicacion' => !empty($validated['fecha_publicacion']) ? $validated['fecha_publicacion'] : now(),
+            'fecha_publicacion' => ! empty($validated['fecha_publicacion']) ? $validated['fecha_publicacion'] : now(),
             'activo' => true,
             'user_id' => auth()->id(),
         ]);
@@ -384,14 +390,14 @@ class AppAdminController extends Controller
         $data = [
             'titulo' => $validated['titulo'],
             'contenido' => $validated['contenido'],
-            'fecha_publicacion' => !empty($validated['fecha_publicacion']) ? $validated['fecha_publicacion'] : $actividad->fecha_publicacion,
+            'fecha_publicacion' => ! empty($validated['fecha_publicacion']) ? $validated['fecha_publicacion'] : $actividad->fecha_publicacion,
             'activo' => $request->has('activo'),
         ];
 
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('actividades', 'public');
-            $data['imagen_path'] = '/storage/' . $path;
-        } elseif (!empty($validated['imagen_url'])) {
+            $data['imagen_path'] = '/storage/'.$path;
+        } elseif (! empty($validated['imagen_url'])) {
             $data['imagen_path'] = $validated['imagen_url'];
         }
 
@@ -404,6 +410,7 @@ class AppAdminController extends Controller
     public function actividadDestroy(ActividadLia $actividad): RedirectResponse
     {
         $actividad->delete();
+
         return redirect()->route('app_admin.actividades')
             ->with('success', 'Publicación eliminada del feed.');
     }
@@ -497,7 +504,7 @@ class AppAdminController extends Controller
             'variables_requeridas' => $validated['variables_requeridas'] ?? [],
             'es_sistema' => false,
             'activo' => $request->has('activo'),
-            'orden' => (int)($validated['orden'] ?? ((ReporteConfigurado::max('orden') ?? 0) + 1)),
+            'orden' => (int) ($validated['orden'] ?? ((ReporteConfigurado::max('orden') ?? 0) + 1)),
             'creado_por' => auth()->id(),
         ]);
 
@@ -527,7 +534,7 @@ class AppAdminController extends Controller
             'filtros_fijos' => $validated['filtros_fijos'] ?? [],
             'variables_requeridas' => $validated['variables_requeridas'] ?? [],
             'activo' => $request->has('activo'),
-            'orden' => (int)($validated['orden'] ?? $reporte->orden),
+            'orden' => (int) ($validated['orden'] ?? $reporte->orden),
         ];
 
         $reporte->update($data);
@@ -537,18 +544,20 @@ class AppAdminController extends Controller
 
     public function reporteToggle(ReporteConfigurado $reporte): RedirectResponse
     {
-        $reporte->activo = !$reporte->activo;
+        $reporte->activo = ! $reporte->activo;
         $reporte->save();
 
         $estado = $reporte->activo ? 'activado' : 'desactivado';
+
         return redirect()->back()->with('success', "El reporte \"{$reporte->titulo}\" ha sido {$estado}.");
     }
 
     public function reporteDestroy(ReporteConfigurado $reporte, Request $request): RedirectResponse
     {
-        if ($reporte->es_sistema && !$request->boolean('force')) {
+        if ($reporte->es_sistema && ! $request->boolean('force')) {
             $reporte->activo = false;
             $reporte->save();
+
             return redirect()->route('app_admin.reportes')->with('success', "El reporte del sistema \"{$reporte->titulo}\" ha sido desactivado.");
         }
 
@@ -564,6 +573,7 @@ class AppAdminController extends Controller
     public function avisosIndex(): View
     {
         $avisos = AvisoSeguridad::orderBy('orden', 'asc')->orderBy('id', 'desc')->get();
+
         return view('admin.app.avisos', compact('avisos'));
     }
 
@@ -583,7 +593,7 @@ class AppAdminController extends Controller
             'descripcion' => $validated['descripcion'],
             'severidad' => $validated['severidad'],
             'icono' => $validated['icono'] ?: 'shield',
-            'orden' => (int)($validated['orden'] ?? 0),
+            'orden' => (int) ($validated['orden'] ?? 0),
             'activo' => $request->has('activo') || $request->boolean('activo'),
         ]);
 
@@ -605,7 +615,7 @@ class AppAdminController extends Controller
             'descripcion' => $validated['descripcion'],
             'severidad' => $validated['severidad'],
             'icono' => $validated['icono'] ?: 'shield',
-            'orden' => (int)($validated['orden'] ?? $aviso->orden),
+            'orden' => (int) ($validated['orden'] ?? $aviso->orden),
             'activo' => $request->has('activo') ? $request->boolean('activo') : $aviso->activo,
         ]);
 
@@ -614,10 +624,11 @@ class AppAdminController extends Controller
 
     public function avisoToggle(AvisoSeguridad $aviso): RedirectResponse
     {
-        $aviso->activo = !$aviso->activo;
+        $aviso->activo = ! $aviso->activo;
         $aviso->save();
 
         $estado = $aviso->activo ? 'activado' : 'desactivado';
+
         return redirect()->back()->with('success', "El aviso \"{$aviso->titulo}\" ha sido {$estado}.");
     }
 

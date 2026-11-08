@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Ubicacion;
-use App\Models\Movimiento;
-use App\Actions\Ubicaciones\RenombrarUbicacionAction;
 use App\Actions\Ubicaciones\ArchivarUbicacionAction;
-use Illuminate\Http\Request;
-use Illuminate\View\View;
+use App\Actions\Ubicaciones\RenombrarUbicacionAction;
+use App\Models\Movimiento;
+use App\Models\Ubicacion;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class UbicacionController extends Controller
 {
@@ -29,6 +29,7 @@ class UbicacionController extends Controller
         $ubicaciones = Ubicacion::all()->map(function ($ubicacion) use ($conteosPorUbicacion) {
             $count = isset($conteosPorUbicacion[$ubicacion->id]) ? $conteosPorUbicacion[$ubicacion->id]->count() : 0;
             $ubicacion->total_activos = $count;
+
             return $ubicacion;
         })->sortByDesc('total_activos')->values();
 
@@ -60,7 +61,7 @@ class UbicacionController extends Controller
 
         $ubicacion = Ubicacion::create([
             'nombre' => trim($validated['nombre']),
-            'descripcion' => !empty($validated['descripcion']) ? trim($validated['descripcion']) : null,
+            'descripcion' => ! empty($validated['descripcion']) ? trim($validated['descripcion']) : null,
         ]);
 
         return redirect()->route('ubicaciones.index')
@@ -73,6 +74,7 @@ class UbicacionController extends Controller
     public function edit(Ubicacion $ubicacione): View
     {
         $ubicacion = $ubicacione;
+
         return view('ubicaciones.edit', compact('ubicacion'));
     }
 

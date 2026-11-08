@@ -2,16 +2,18 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\Auditoria;
+use App\Models\AuditoriaDetalle;
 use App\Models\Elemento;
 use App\Models\Movimiento;
-use App\Models\Usuario;
+use App\Models\Rol;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
-use App\Models\Rol;
-use Illuminate\Support\Facades\DB;
+use App\Models\Usuario;
 use Illuminate\Database\QueryException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
 
 class IntegridadReferencialTest extends TestCase
 {
@@ -294,7 +296,7 @@ class IntegridadReferencialTest extends TestCase
     {
         [$user, $tipo, $ubicacion] = $this->crearDatosBase();
 
-        $auditoria = \App\Models\Auditoria::create([
+        $auditoria = Auditoria::create([
             'ubicacion_id' => $ubicacion->id,
             'user_id' => $user->id,
             'fecha' => now(),
@@ -307,7 +309,7 @@ class IntegridadReferencialTest extends TestCase
             'marca' => 'HP',
         ]);
 
-        \App\Models\AuditoriaDetalle::create([
+        AuditoriaDetalle::create([
             'auditoria_id' => $auditoria->id,
             'puesto' => 'Puesto 01',
             'elemento_id' => $elemento->id,
@@ -316,7 +318,7 @@ class IntegridadReferencialTest extends TestCase
 
         // Intentar registrar el mismo elemento_id en la misma auditoría debe fallar por unicidad
         $this->expectException(QueryException::class);
-        \App\Models\AuditoriaDetalle::create([
+        AuditoriaDetalle::create([
             'auditoria_id' => $auditoria->id,
             'puesto' => 'Puesto 02',
             'elemento_id' => $elemento->id,

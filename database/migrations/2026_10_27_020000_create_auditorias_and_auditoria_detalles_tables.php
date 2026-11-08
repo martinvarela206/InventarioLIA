@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('auditorias')) {
+        if (! Schema::hasTable('auditorias')) {
             Schema::create('auditorias', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('ubicacion_id')->constrained('ubicaciones')->cascadeOnDelete();
@@ -23,7 +23,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('auditoria_detalles')) {
+        if (! Schema::hasTable('auditoria_detalles')) {
             Schema::create('auditoria_detalles', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('auditoria_id')->constrained('auditorias')->cascadeOnDelete();

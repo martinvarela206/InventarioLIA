@@ -2,13 +2,14 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Atributo;
 use App\Models\Elemento;
+use App\Models\ElementoAtributoValor;
 use App\Models\Movimiento;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
-use App\Models\Tipo;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class MovimientoFakeSeeder extends Seeder
 {
@@ -17,7 +18,7 @@ class MovimientoFakeSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command?->info("Generando movimientos y datos simulados realistas para probar Nexo LIA...");
+        $this->command?->info('Generando movimientos y datos simulados realistas para probar Nexo LIA...');
 
         $adminUser = Usuario::where('email', 'admin@lia.unsj.edu.ar')->first() ?? Usuario::first();
         $tecUser = Usuario::where('email', 'tecnico@lia.unsj.edu.ar')->first() ?? $adminUser;
@@ -48,15 +49,15 @@ class MovimientoFakeSeeder extends Seeder
 
         foreach ($pcs as $idx => $pc) {
             $specs = is_array($pc->descripcion) ? $pc->descripcion : [];
-            
+
             // Si le falta RAM o CPU, agregarlo para probar el filtro de GB
-            if (!isset($specs['RAM']) && !isset($specs['Memoria RAM'])) {
+            if (! isset($specs['RAM']) && ! isset($specs['Memoria RAM'])) {
                 $specs['RAM'] = $ramOptions[$idx % count($ramOptions)];
             }
-            if (!isset($specs['CPU']) && !isset($specs['Procesador'])) {
+            if (! isset($specs['CPU']) && ! isset($specs['Procesador'])) {
                 $specs['CPU'] = $cpuOptions[$idx % count($cpuOptions)];
             }
-            if (!isset($specs['Disco']) && !isset($specs['Almacenamiento'])) {
+            if (! isset($specs['Disco']) && ! isset($specs['Almacenamiento'])) {
                 $specs['Disco'] = $discoOptions[$idx % count($discoOptions)];
             }
 
@@ -66,17 +67,17 @@ class MovimientoFakeSeeder extends Seeder
                 'descripcion' => $specs,
                 'anio_compra' => $anio,
                 'fecha_adquisicion' => Carbon::createFromDate($anio, 3, 15),
-                'fecha_vencimiento_garantia' => ($idx % 3 === 0) 
+                'fecha_vencimiento_garantia' => ($idx % 3 === 0)
                     ? Carbon::now()->addMonths(6 + ($idx % 12)) // Vigente
                     : Carbon::now()->subMonths(3 + ($idx % 24)), // Vencida
             ]);
 
             // Sincronizar en la tabla pivot elemento_atributo_valor
             foreach ($specs as $key => $val) {
-                $attr = \App\Models\Atributo::firstOrCreateNormalizado($key);
-                \App\Models\ElementoAtributoValor::updateOrCreate(
+                $attr = Atributo::firstOrCreateNormalizado($key);
+                ElementoAtributoValor::updateOrCreate(
                     ['elemento_id' => $pc->id, 'atributo_id' => $attr->id],
-                    ['valor' => (string)$val]
+                    ['valor' => (string) $val]
                 );
             }
         }
@@ -96,7 +97,9 @@ class MovimientoFakeSeeder extends Seeder
         ];
 
         foreach ($candidatosPrestamo as $i => $elemento) {
-            if (!isset($solicitantesMock[$i])) break;
+            if (! isset($solicitantesMock[$i])) {
+                break;
+            }
             $sol = $solicitantesMock[$i];
             $fechaSalida = Carbon::now()->subDays($sol['dias']);
 
@@ -145,7 +148,7 @@ class MovimientoFakeSeeder extends Seeder
                 'puesto' => null,
                 'user_id' => $tecUser->id,
                 'fecha' => $retorno,
-                'comentario' => "Reingreso conforme de préstamo externo. Retornado en perfecto estado operativo.",
+                'comentario' => 'Reingreso conforme de préstamo externo. Retornado en perfecto estado operativo.',
             ]);
         }
 
@@ -209,7 +212,7 @@ class MovimientoFakeSeeder extends Seeder
                 'puesto' => 'Banco de Trabajo HW',
                 'user_id' => $tecUser->id,
                 'fecha' => Carbon::now()->subDays(6 - $fIdx),
-                'comentario' => "Intervención técnica: " . $fallas[$fIdx],
+                'comentario' => 'Intervención técnica: '.$fallas[$fIdx],
             ]);
         }
 
@@ -240,6 +243,6 @@ class MovimientoFakeSeeder extends Seeder
             ]);
         }
 
-        $this->command?->info("✓ Movimientos simulados generados: préstamos activos con mora, devoluciones, puestos de laboratorio, reparaciones técnicas y enmiendas auditadas.");
+        $this->command?->info('✓ Movimientos simulados generados: préstamos activos con mora, devoluciones, puestos de laboratorio, reparaciones técnicas y enmiendas auditadas.');
     }
 }

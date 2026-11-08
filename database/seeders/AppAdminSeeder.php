@@ -2,12 +2,13 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\ActividadLia;
+use App\Models\AvisoSeguridad;
 use App\Models\Carrera;
 use App\Models\EspacioLia;
 use App\Models\PersonalLia;
-use App\Models\ActividadLia;
 use App\Models\Usuario;
+use Illuminate\Database\Seeder;
 
 class AppAdminSeeder extends Seeder
 {
@@ -171,7 +172,7 @@ class AppAdminSeeder extends Seeder
         ];
 
         foreach ($avisos as $av) {
-            \App\Models\AvisoSeguridad::firstOrCreate(['titulo' => $av['titulo']], $av);
+            AvisoSeguridad::firstOrCreate(['titulo' => $av['titulo']], $av);
         }
     }
 }

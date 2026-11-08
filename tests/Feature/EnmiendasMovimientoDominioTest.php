@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class EnmiendasMovimientoDominioTest extends TestCase
 {
@@ -24,7 +24,7 @@ class EnmiendasMovimientoDominioTest extends TestCase
     {
         $tipo = Tipo::first();
         $ubicacion = Ubicacion::where('activa', true)->first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-ENM-TKT-01',
@@ -56,7 +56,7 @@ class EnmiendasMovimientoDominioTest extends TestCase
     public function test_enmendar_prestamo_abierto_no_duplica_prestamos_activos(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-ENM-PREST-01',

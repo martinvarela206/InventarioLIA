@@ -88,8 +88,8 @@ return new class extends Migration
         $driver = DB::getDriverName();
 
         if ($driver === 'sqlite' || $driver === 'mysql') {
-            DB::unprepared("DROP TRIGGER IF EXISTS trigger_movimientos_before_delete;");
-            DB::unprepared("DROP TRIGGER IF EXISTS trigger_movimientos_before_update;");
+            DB::unprepared('DROP TRIGGER IF EXISTS trigger_movimientos_before_delete;');
+            DB::unprepared('DROP TRIGGER IF EXISTS trigger_movimientos_before_update;');
         }
     }
 };

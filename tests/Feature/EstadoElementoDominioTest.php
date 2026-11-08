@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Enums\EstadoElemento;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
-use App\Enums\EstadoElemento;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class EstadoElementoDominioTest extends TestCase
 {
@@ -23,7 +23,7 @@ class EstadoElementoDominioTest extends TestCase
 
     public function test_enum_estado_elemento_posee_los_cinco_estados_canonicos(): void
     {
-        $estados = array_map(fn($case) => $case->value, EstadoElemento::cases());
+        $estados = array_map(fn ($case) => $case->value, EstadoElemento::cases());
         $this->assertContains('operativo', $estados);
         $this->assertContains('prestado', $estados);
         $this->assertContains('en_reparacion', $estados);

@@ -2,11 +2,12 @@
 
 namespace App\Actions\Tickets;
 
+use App\Enums\EstadoElemento;
 use App\Models\Elemento;
 use App\Models\Movimiento;
-use App\Models\Usuario;
 use App\Models\MovimientoAdjunto;
-use App\Enums\EstadoElemento;
+use App\Models\Usuario;
+use App\Services\ImageSanitizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -21,7 +22,7 @@ class AbrirTicketAction
     {
         $elementoId = $elemento instanceof Elemento ? $elemento->id : $elemento;
         $user = $usuario ?? auth()->user();
-        if (!$user) {
+        if (! $user) {
             throw new \InvalidArgumentException('Se requiere un usuario responsable identificado para registrar la operación patrimonial.');
         }
 
@@ -64,14 +65,14 @@ class AbrirTicketAction
                 }
             }
 
-            $comentario = trim((string)($datos['comentario'] ?? ''));
+            $comentario = trim((string) ($datos['comentario'] ?? ''));
             if (strlen($comentario) < 5) {
                 throw ValidationException::withMessages([
                     'comentario' => 'La descripción del problema técnico debe contener al menos 5 caracteres.',
                 ]);
             }
 
-            $solicitante = trim((string)($datos['solicitante'] ?? ''));
+            $solicitante = trim((string) ($datos['solicitante'] ?? ''));
             if ($solicitante === '') {
                 $solicitante = $user->nombre ?: $user->email;
             }
@@ -83,7 +84,7 @@ class AbrirTicketAction
                 : ($datos['ubicacion_id'] ?? $ultimo?->ubicacion_id);
             $puesto = $esInsitu
                 ? $ultimo?->puesto
-                : ($datos['puesto'] ?? (!empty($datos['ubicacion_id']) ? null : $ultimo?->puesto));
+                : ($datos['puesto'] ?? (! empty($datos['ubicacion_id']) ? null : $ultimo?->puesto));
 
             $movimiento = Movimiento::create([
                 'elemento_id' => $el->id,
@@ -97,7 +98,7 @@ class AbrirTicketAction
                 'comentario' => $comentario,
             ]);
 
-            if (!empty($datos['area_id'])) {
+            if (! empty($datos['area_id'])) {
                 $movimiento->areas()->attach($datos['area_id'], [
                     'user_id' => $user->id,
                     'created_at' => now(),
@@ -106,7 +107,7 @@ class AbrirTicketAction
 
             foreach ($fotos as $foto) {
                 if ($foto && $foto->isValid()) {
-                    $path = \App\Services\ImageSanitizer::sanitizeAndStore($foto, 'tickets', 'local');
+                    $path = ImageSanitizer::sanitizeAndStore($foto, 'tickets', 'local');
                     MovimientoAdjunto::create([
                         'movimiento_id' => $movimiento->id,
                         'archivo_path' => $path,

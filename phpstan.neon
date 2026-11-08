@@ -1,0 +1,12 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+
+    level: 2
+
+    ignoreErrors:
+        - '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model::#'
+        - '#Access to an undefined property App\\Models\\[a-zA-Z0-9_]+::\$[a-zA-Z0-9_]+#'

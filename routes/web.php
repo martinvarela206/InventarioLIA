@@ -1,22 +1,26 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ElementoController;
-use App\Http\Controllers\MovimientoController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ReporteController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\RevisionController;
+use App\Http\Controllers\AdjuntoController;
+use App\Http\Controllers\AppAdminController;
+use App\Http\Controllers\AuditoriaController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\AppAdminController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ElementoController;
+use App\Http\Controllers\MovimientoController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\ReubicacionController;
+use App\Http\Controllers\RevisionController;
 use App\Http\Controllers\TicketController;
-use App\Http\Controllers\AdjuntoController;
-use App\Models\EspacioLia;
-use App\Models\PersonalLia;
+use App\Http\Controllers\TipoController;
+use App\Http\Controllers\UbicacionController;
+use App\Http\Controllers\UserController;
 use App\Models\ActividadLia;
 use App\Models\AvisoSeguridad;
+use App\Models\EspacioLia;
+use App\Models\PersonalLia;
+use Illuminate\Support\Facades\Route;
 
 // Autenticación
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -32,6 +36,7 @@ Route::get('/', function () {
     $personal = PersonalLia::activos()->with('user.cargo')->get();
     $actividades = ActividadLia::activos()->with('autor')->take(6)->get();
     $avisos = AvisoSeguridad::activos()->get();
+
     return view('welcome', compact('espacios', 'personal', 'actividades', 'avisos'));
 });
 
@@ -46,6 +51,7 @@ Route::middleware('auth')->group(function () {
             return redirect()->route('dashboard.index');
         }
         $avisos = AvisoSeguridad::activos()->get();
+
         return view('auth.bienvenida', compact('avisos'));
     })->name('bienvenida');
 
@@ -76,11 +82,11 @@ Route::middleware('auth')->group(function () {
             Route::get('/elementos/{elemento}/edit', [ElementoController::class, 'edit'])->name('elementos.edit');
             Route::put('/elementos/{elemento}', [ElementoController::class, 'update'])->name('elementos.update');
             Route::delete('/elementos/{elemento}', [ElementoController::class, 'destroy'])->name('elementos.destroy');
-            Route::resource('tipos', \App\Http\Controllers\TipoController::class)->except(['show']);
-            Route::post('/atributos', [\App\Http\Controllers\TipoController::class, 'storeAtributo'])->name('atributos.store');
-            Route::get('/ubicaciones/reubicar', [\App\Http\Controllers\ReubicacionController::class, 'show'])->name('ubicaciones.reubicar');
-            Route::post('/ubicaciones/reubicar', [\App\Http\Controllers\ReubicacionController::class, 'reubicar'])->name('ubicaciones.reubicar.store');
-            Route::resource('ubicaciones', \App\Http\Controllers\UbicacionController::class);
+            Route::resource('tipos', TipoController::class)->except(['show']);
+            Route::post('/atributos', [TipoController::class, 'storeAtributo'])->name('atributos.store');
+            Route::get('/ubicaciones/reubicar', [ReubicacionController::class, 'show'])->name('ubicaciones.reubicar');
+            Route::post('/ubicaciones/reubicar', [ReubicacionController::class, 'reubicar'])->name('ubicaciones.reubicar.store');
+            Route::resource('ubicaciones', UbicacionController::class);
         });
 
         Route::get('/elementos/{elemento}', [ElementoController::class, 'show'])->name('elementos.show');
@@ -125,17 +131,17 @@ Route::middleware('auth')->group(function () {
 
         // Módulo de Auditorías Físicas de Ubicación y Archivo Histórico
         Route::middleware('role:rev,subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
-            Route::get('/auditorias', [\App\Http\Controllers\AuditoriaController::class, 'index'])->name('auditorias.index');
-            Route::get('/auditorias/crear', [\App\Http\Controllers\AuditoriaController::class, 'create'])->name('auditorias.create');
-            Route::get('/auditorias/{auditoria}', [\App\Http\Controllers\AuditoriaController::class, 'show'])->name('auditorias.show');
-            Route::post('/auditorias', [\App\Http\Controllers\AuditoriaController::class, 'store'])->name('auditorias.store');
-            Route::post('/auditorias/{auditoria}/detalle', [\App\Http\Controllers\AuditoriaController::class, 'guardarDetalle'])->name('auditorias.guardarDetalle');
-            Route::post('/auditorias/{auditoria}/ticket', [\App\Http\Controllers\AuditoriaController::class, 'crearTicketInconsistencia'])->name('auditorias.crearTicketInconsistencia');
-            Route::post('/auditorias/{auditoria}/finalizar', [\App\Http\Controllers\AuditoriaController::class, 'finalizar'])->name('auditorias.finalizar');
+            Route::get('/auditorias', [AuditoriaController::class, 'index'])->name('auditorias.index');
+            Route::get('/auditorias/crear', [AuditoriaController::class, 'create'])->name('auditorias.create');
+            Route::get('/auditorias/{auditoria}', [AuditoriaController::class, 'show'])->name('auditorias.show');
+            Route::post('/auditorias', [AuditoriaController::class, 'store'])->name('auditorias.store');
+            Route::post('/auditorias/{auditoria}/detalle', [AuditoriaController::class, 'guardarDetalle'])->name('auditorias.guardarDetalle');
+            Route::post('/auditorias/{auditoria}/ticket', [AuditoriaController::class, 'crearTicketInconsistencia'])->name('auditorias.crearTicketInconsistencia');
+            Route::post('/auditorias/{auditoria}/finalizar', [AuditoriaController::class, 'finalizar'])->name('auditorias.finalizar');
         });
 
         // API de Atributos por Tipo
-        Route::get('/api/tipos/{tipo}/atributos', [\App\Http\Controllers\TipoController::class, 'apiAtributosPorTipo'])->name('api.tipos.atributos');
+        Route::get('/api/tipos/{tipo}/atributos', [TipoController::class, 'apiAtributosPorTipo'])->name('api.tipos.atributos');
 
         // Gestión de Usuarios y Trayectorias (user_admin)
         Route::middleware('user_admin')->group(function () {

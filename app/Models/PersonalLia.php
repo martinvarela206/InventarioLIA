@@ -64,7 +64,7 @@ class PersonalLia extends Model
         return $query->where('personal_lia.activo', true)
             ->whereHas('user', function ($q) {
                 $q->where('activo', true)
-                  ->where('huella_borrada', false);
+                    ->where('huella_borrada', false);
             })
             ->orderBy('orden')
             ->orderBy('id');

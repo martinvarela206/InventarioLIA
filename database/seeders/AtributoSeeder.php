@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Atributo;
 use App\Models\Tipo;
+use Illuminate\Database\Seeder;
 
 class AtributoSeeder extends Seeder
 {
@@ -87,7 +87,9 @@ class AtributoSeeder extends Seeder
 
         foreach ($asignaciones as $tipoNombre => $attrs) {
             $tipo = Tipo::where('nombre', $tipoNombre)->first();
-            if (!$tipo) continue;
+            if (! $tipo) {
+                continue;
+            }
 
             $syncData = [];
             foreach ($attrs as $attrNombre => $cfg) {

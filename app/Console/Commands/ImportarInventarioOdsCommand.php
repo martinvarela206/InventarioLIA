@@ -2,19 +2,19 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
+use App\Models\Atributo;
 use App\Models\Elemento;
+use App\Models\ElementoAtributoValor;
 use App\Models\Movimiento;
+use App\Models\Rol;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
 use Carbon\Carbon;
-use ZipArchive;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use SimpleXMLElement;
-
-use App\Models\Atributo;
-use App\Models\ElementoAtributoValor;
+use ZipArchive;
 
 class ImportarInventarioOdsCommand extends Command
 {
@@ -41,20 +41,23 @@ class ImportarInventarioOdsCommand extends Command
     public function handle(): int
     {
         if (app()->isProduction()) {
-            if (!$this->option('force')) {
+            if (! $this->option('force')) {
                 $this->error('ACCESO DENEGADO: El importador masivo ODS no puede ejecutarse en producción sin la opción --force.');
+
                 return Command::FAILURE;
             }
             if ($this->option('fresh')) {
                 $this->error('OPERACIÓN ABORTADA: La opción --fresh está estrictamente prohibida en producción para preservar la trazabilidad e inmutabilidad.');
+
                 return Command::FAILURE;
             }
         }
 
         $filePath = $this->option('file') ?: base_path('DocsSistemaLia/material/Inventario LIA.ods');
 
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             $this->error("El archivo ODS no fue encontrado en: {$filePath}");
+
             return Command::FAILURE;
         }
 
@@ -77,17 +80,19 @@ class ImportarInventarioOdsCommand extends Command
             }
         }
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($filePath) !== true) {
-            $this->error("No se pudo descomprimir el archivo ODS.");
+            $this->error('No se pudo descomprimir el archivo ODS.');
+
             return Command::FAILURE;
         }
 
         $content = $zip->getFromName('content.xml');
         $zip->close();
 
-        if (!$content) {
-            $this->error("No se pudo leer content.xml del archivo ODS.");
+        if (! $content) {
+            $this->error('No se pudo leer content.xml del archivo ODS.');
+
             return Command::FAILURE;
         }
 
@@ -99,15 +104,15 @@ class ImportarInventarioOdsCommand extends Command
 
         // Pre-cargar catálogos y usuario por defecto
         $defaultUser = Usuario::first();
-        if (!$defaultUser) {
-            $defaultPass = env('SEED_DEFAULT_PASSWORD', 'LiaSegura2026!');
+        if (! $defaultUser) {
+            $defaultPass = config('app.seed_default_password', 'LiaSegura2026!');
             $defaultUser = Usuario::create([
                 'nombre' => 'Administrador Sistema',
                 'email' => 'admin@lia.unsj.edu.ar',
                 'password' => bcrypt($defaultPass),
                 'activo' => true,
             ]);
-            $rolAdmin = \App\Models\Rol::where('rol', 'app_admin')->first();
+            $rolAdmin = Rol::where('rol', 'app_admin')->first();
             if ($rolAdmin) {
                 $defaultUser->roles()->attach($rolAdmin->id);
             }
@@ -123,7 +128,7 @@ class ImportarInventarioOdsCommand extends Command
         $seenTuples = [];
 
         foreach ($tables as $table) {
-            $sheetName = (string)$table->attributes('urn:oasis:names:tc:opendocument:xmlns:table:1.0')['name'];
+            $sheetName = (string) $table->attributes('urn:oasis:names:tc:opendocument:xmlns:table:1.0')['name'];
             $rows = $table->xpath('table:table-row');
 
             if (count($rows) <= 1) {
@@ -155,7 +160,7 @@ class ImportarInventarioOdsCommand extends Command
                 $rawModelo = $colMap['modelo'] !== null && isset($rowVals[$colMap['modelo']]) ? trim($rowVals[$colMap['modelo']]) : null;
                 $rawUbicacion = $colMap['ubicacion'] !== null && isset($rowVals[$colMap['ubicacion']]) ? trim($rowVals[$colMap['ubicacion']]) : 'Administracion';
                 $rawFecha = $colMap['fecha'] !== null && isset($rowVals[$colMap['fecha']]) ? trim($rowVals[$colMap['fecha']]) : null;
-                $rawCantidad = $colMap['cantidad'] !== null && isset($rowVals[$colMap['cantidad']]) ? (int)$rowVals[$colMap['cantidad']] : 1;
+                $rawCantidad = $colMap['cantidad'] !== null && isset($rowVals[$colMap['cantidad']]) ? (int) $rowVals[$colMap['cantidad']] : 1;
                 $rawComentarios = $colMap['comentarios'] !== null && isset($rowVals[$colMap['comentarios']]) ? trim($rowVals[$colMap['comentarios']]) : null;
 
                 // Filtro estricto anti-cabeceras intermedias: descartar filas que repiten nombres de columnas ODS
@@ -183,7 +188,7 @@ class ImportarInventarioOdsCommand extends Command
                 if ($colMap['anio'] !== null && isset($rowVals[$colMap['anio']]) && $rowVals[$colMap['anio']] !== '') {
                     $valAnio = trim($rowVals[$colMap['anio']]);
                     if (preg_match('/\b(19\d{2}|20\d{2})\b/', $valAnio, $matches)) {
-                        $anio = (int)$matches[1];
+                        $anio = (int) $matches[1];
                     } else {
                         $specs['Año'] = $valAnio;
                     }
@@ -193,21 +198,25 @@ class ImportarInventarioOdsCommand extends Command
                 $nroLia = $this->limpiarIdentificador($rawLia);
                 $nroUnsj = $this->limpiarIdentificador($rawUnsj);
 
-                if ($nroLia !== null) $totalConLia++;
-                if ($nroUnsj !== null) $totalConUnsj++;
+                if ($nroLia !== null) {
+                    $totalConLia++;
+                }
+                if ($nroUnsj !== null) {
+                    $totalConUnsj++;
+                }
 
                 // Si carece de ambos identificadores, asignar identificador patrimonial temporal para cumplir constraint
                 if ($nroLia === null && $nroUnsj === null) {
                     $totalSinAmbos++;
-                    $nroLia = 'LIA-S-N-' . str_pad($totalSinAmbos, 3, '0', STR_PAD_LEFT);
-                    $rawComentarios = ($rawComentarios ? $rawComentarios . ' | ' : '') . 'Activo sin identificación en planilla original';
+                    $nroLia = 'LIA-S-N-'.str_pad((string) $totalSinAmbos, 3, '0', STR_PAD_LEFT);
+                    $rawComentarios = ($rawComentarios ? $rawComentarios.' | ' : '').'Activo sin identificación en planilla original';
                 }
 
                 // Prevención estricta de colisión en índices únicos individuales
                 if ($nroLia !== null) {
                     if (isset($seenLia[$nroLia])) {
                         $seenLia[$nroLia]++;
-                        $rawComentarios = ($rawComentarios ? $rawComentarios . ' | ' : '') . "Nro LIA duplicado en planilla: {$nroLia}";
+                        $rawComentarios = ($rawComentarios ? $rawComentarios.' | ' : '')."Nro LIA duplicado en planilla: {$nroLia}";
                         $nroLia = "{$nroLia}-DUP-{$seenLia[$nroLia]}";
                     } else {
                         $seenLia[$nroLia] = 1;
@@ -217,7 +226,7 @@ class ImportarInventarioOdsCommand extends Command
                 if ($nroUnsj !== null) {
                     if (isset($seenUnsj[$nroUnsj])) {
                         $seenUnsj[$nroUnsj]++;
-                        $rawComentarios = ($rawComentarios ? $rawComentarios . ' | ' : '') . "Nro UNSJ duplicado en planilla: {$nroUnsj}";
+                        $rawComentarios = ($rawComentarios ? $rawComentarios.' | ' : '')."Nro UNSJ duplicado en planilla: {$nroUnsj}";
                         $nroUnsj = "{$nroUnsj}-DUP-{$seenUnsj[$nroUnsj]}";
                     } else {
                         $seenUnsj[$nroUnsj] = 1;
@@ -226,8 +235,8 @@ class ImportarInventarioOdsCommand extends Command
 
                 // Detección de puesto si está especificado en ubicación o nro_lia
                 $puesto = null;
-                if (preg_match('/Puesto\s*(\d+)/i', (string)$rawUbicacion, $m)) {
-                    $puesto = "Puesto " . str_pad($m[1], 2, '0', STR_PAD_LEFT);
+                if (preg_match('/Puesto\s*(\d+)/i', (string) $rawUbicacion, $m)) {
+                    $puesto = 'Puesto '.str_pad($m[1], 2, '0', STR_PAD_LEFT);
                 }
 
                 // Resolver Ubicación canónica
@@ -246,19 +255,19 @@ class ImportarInventarioOdsCommand extends Command
                     'anio_compra' => $anio,
                     'puesto' => $puesto,
                     'observaciones' => ($rawComentarios !== '' && $rawComentarios !== '-') ? $rawComentarios : null,
-                    'descripcion' => !empty($specs) ? $specs : null,
+                    'descripcion' => ! empty($specs) ? $specs : null,
                     'cantidad' => $rawCantidad > 0 ? $rawCantidad : 1,
                     'fecha_adquisicion' => $fechaMovimiento->toDateString(),
                 ]);
 
                 // Almacenar características dinámicas en la tabla pivot elemento_atributo_valor
                 foreach ($specs as $attrNombre => $attrValor) {
-                    if (!empty($attrValor)) {
+                    if (! empty($attrValor)) {
                         $attrModel = Atributo::firstOrCreateNormalizado($attrNombre);
                         ElementoAtributoValor::create([
                             'elemento_id' => $elemento->id,
                             'atributo_id' => $attrModel->id,
-                            'valor' => (string)$attrValor,
+                            'valor' => (string) $attrValor,
                         ]);
                     }
                 }
@@ -292,14 +301,14 @@ class ImportarInventarioOdsCommand extends Command
         $this->newLine();
         $this->table(['Hoja ODS', 'Tipo Asignado', 'Total Importados'], $summary);
 
-        $this->info("==================================================");
-        $this->info("REPORTE FINAL DE INTEGRIDAD DE IMPORTACIÓN ODS");
-        $this->info("==================================================");
+        $this->info('==================================================');
+        $this->info('REPORTE FINAL DE INTEGRIDAD DE IMPORTACIÓN ODS');
+        $this->info('==================================================');
         $this->info("Total Activos Importados: {$totalImportados}");
         $this->info("Con Nro LIA asignado:     {$totalConLia}");
         $this->info("Con Nro UNSJ asignado:    {$totalConUnsj}");
         $this->info("Sin identificadores (S/N): {$totalSinAmbos} (almacenados como NULL sin prefijos ficticios)");
-        $this->info("==================================================");
+        $this->info('==================================================');
 
         return Command::SUCCESS;
     }
@@ -311,14 +320,14 @@ class ImportarInventarioOdsCommand extends Command
 
         foreach ($cells as $cell) {
             $repeatAttr = $cell->attributes('urn:oasis:names:tc:opendocument:xmlns:table:1.0')['number-columns-repeated'] ?? null;
-            $repeat = $repeatAttr ? (int)$repeatAttr : 1;
+            $repeat = $repeatAttr ? (int) $repeatAttr : 1;
 
             $p = $cell->xpath('text:p');
             $val = '';
             if ($p) {
                 $texts = [];
                 foreach ($p as $pelem) {
-                    $texts[] = (string)$pelem;
+                    $texts[] = (string) $pelem;
                 }
                 $val = trim(implode(' ', $texts));
             }
@@ -359,42 +368,70 @@ class ImportarInventarioOdsCommand extends Command
             $map['data_start_row'] = 2;
             foreach ($h1 as $idx => $col) {
                 $colLower = mb_strtolower($col, 'UTF-8');
-                if (str_contains($colLower, 'lia')) $map['lia'] = $idx;
-                elseif (str_contains($colLower, 'inventario')) $map['unsj'] = $idx;
-                elseif (str_contains($colLower, 'marca')) $map['marca'] = $idx;
-                elseif (str_contains($colLower, 'cpu')) $map['procesador'] = $idx;
-                elseif (str_contains($colLower, 'ram')) $map['ram'] = $idx;
-                elseif (str_contains($colLower, 'disco')) $map['disco'] = $idx;
-                elseif (str_contains($colLower, 'año') || str_contains($colLower, 'compra')) $map['anio'] = $idx;
-                elseif (str_contains($colLower, 'observaci')) $map['comentarios'] = $idx;
+                if (str_contains($colLower, 'lia')) {
+                    $map['lia'] = $idx;
+                } elseif (str_contains($colLower, 'inventario')) {
+                    $map['unsj'] = $idx;
+                } elseif (str_contains($colLower, 'marca')) {
+                    $map['marca'] = $idx;
+                } elseif (str_contains($colLower, 'cpu')) {
+                    $map['procesador'] = $idx;
+                } elseif (str_contains($colLower, 'ram')) {
+                    $map['ram'] = $idx;
+                } elseif (str_contains($colLower, 'disco')) {
+                    $map['disco'] = $idx;
+                } elseif (str_contains($colLower, 'año') || str_contains($colLower, 'compra')) {
+                    $map['anio'] = $idx;
+                } elseif (str_contains($colLower, 'observaci')) {
+                    $map['comentarios'] = $idx;
+                }
             }
+
             return $map;
         }
 
         // Mapeo general de Fila 0
         foreach ($h0 as $idx => $col) {
             $colLower = mb_strtolower($col, 'UTF-8');
-            if (str_contains($colLower, 'actualizaci')) $map['fecha'] = $idx;
-            elseif (str_contains($colLower, 'lia') || str_contains($colLower, 'nombre equipo')) {
-                if ($map['lia'] === null) $map['lia'] = $idx;
+            if (str_contains($colLower, 'actualizaci')) {
+                $map['fecha'] = $idx;
+            } elseif (str_contains($colLower, 'lia') || str_contains($colLower, 'nombre equipo')) {
+                if ($map['lia'] === null) {
+                    $map['lia'] = $idx;
+                }
             } elseif (str_contains($colLower, 'exactas') || str_contains($colLower, 'inventario')) {
-                if ($map['unsj'] === null) $map['unsj'] = $idx;
-            } elseif (str_contains($colLower, 'marca')) $map['marca'] = $idx;
-            elseif (str_contains($colLower, 'modelo') || str_contains($colLower, 'tipo')) $map['modelo'] = $idx;
-            elseif (str_contains($colLower, 'ubicaci')) $map['ubicacion'] = $idx;
-            elseif (str_contains($colLower, 'cantidad')) $map['cantidad'] = $idx;
-            elseif (str_contains($colLower, 'comentario')) $map['comentarios'] = $idx;
-            elseif (str_contains($colLower, 'capacidad')) $map['disco'] = $idx;
-            elseif (str_contains($colLower, 'año')) $map['anio'] = $idx;
+                if ($map['unsj'] === null) {
+                    $map['unsj'] = $idx;
+                }
+            } elseif (str_contains($colLower, 'marca')) {
+                $map['marca'] = $idx;
+            } elseif (str_contains($colLower, 'modelo') || str_contains($colLower, 'tipo')) {
+                $map['modelo'] = $idx;
+            } elseif (str_contains($colLower, 'ubicaci')) {
+                $map['ubicacion'] = $idx;
+            } elseif (str_contains($colLower, 'cantidad')) {
+                $map['cantidad'] = $idx;
+            } elseif (str_contains($colLower, 'comentario')) {
+                $map['comentarios'] = $idx;
+            } elseif (str_contains($colLower, 'capacidad')) {
+                $map['disco'] = $idx;
+            } elseif (str_contains($colLower, 'año')) {
+                $map['anio'] = $idx;
+            }
         }
 
         // Mapeo de Subcaracterísticas de Fila 1 (Procesador, RAM, Disco, Año)
         foreach ($h1 as $idx => $subCol) {
             $subLower = mb_strtolower($subCol, 'UTF-8');
-            if (str_contains($subLower, 'procesador') || str_contains($subLower, 'cpu')) $map['procesador'] = $idx;
-            elseif (str_contains($subLower, 'ram')) $map['ram'] = $idx;
-            elseif (str_contains($subLower, 'disco')) $map['disco'] = $idx;
-            elseif (str_contains($subLower, 'año') || str_contains($subLower, 'ano')) $map['anio'] = $idx;
+            if (str_contains($subLower, 'procesador') || str_contains($subLower, 'cpu')) {
+                $map['procesador'] = $idx;
+            } elseif (str_contains($subLower, 'ram')) {
+                $map['ram'] = $idx;
+            } elseif (str_contains($subLower, 'disco')) {
+                $map['disco'] = $idx;
+            } elseif (str_contains($subLower, 'año') || str_contains($subLower, 'ano')) {
+                $map['anio'] = $idx;
+            }
         }
 
         return $map;
@@ -434,12 +471,15 @@ class ImportarInventarioOdsCommand extends Command
 
     private function limpiarIdentificador(?string $val): ?string
     {
-        if ($val === null) return null;
+        if ($val === null) {
+            return null;
+        }
         $t = trim($val);
         $upper = strtoupper($t);
         if ($t === '' || $upper === 'S/N' || $upper === 'SN' || $t === '-' || $t === '--' || $upper === 'S') {
             return null;
         }
+
         return $t;
     }
 
@@ -451,13 +491,15 @@ class ImportarInventarioOdsCommand extends Command
 
         // Formato D/M/YYYY o D/MM/YYYY
         if (preg_match('/^(\d{1,2})\/(\d{1,3})\/(\d{4})$/', trim($raw), $m)) {
-            $day = (int)$m[1];
-            $month = (int)$m[2];
-            $year = (int)$m[3];
+            $day = (int) $m[1];
+            $month = (int) $m[2];
+            $year = (int) $m[3];
             if ($month > 12) {
                 // Caso como 1/009/2025 -> mes 9
-                $month = (int)ltrim($m[2], '0');
-                if ($month === 0) $month = 9;
+                $month = (int) ltrim($m[2], '0');
+                if ($month === 0) {
+                    $month = 9;
+                }
             }
             if (checkdate($month, $day, $year)) {
                 return Carbon::create($year, $month, $day, 10, 0, 0);

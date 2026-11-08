@@ -43,32 +43,36 @@ class RestoreBackupCommand extends Command
         if ($targetFile) {
             if (File::exists($targetFile)) {
                 $filepath = $targetFile;
-            } elseif (File::exists($backupDir . DIRECTORY_SEPARATOR . $targetFile)) {
-                $filepath = $backupDir . DIRECTORY_SEPARATOR . $targetFile;
+            } elseif (File::exists($backupDir.DIRECTORY_SEPARATOR.$targetFile)) {
+                $filepath = $backupDir.DIRECTORY_SEPARATOR.$targetFile;
             } else {
                 $this->error("El archivo de respaldo especificado no existe: {$targetFile}");
+
                 return Command::FAILURE;
             }
         } else {
             // Buscar el respaldo SQL más reciente
-            if (!File::isDirectory($backupDir)) {
+            if (! File::isDirectory($backupDir)) {
                 $this->error("El directorio de respaldos no existe: {$backupDir}");
+
                 return Command::FAILURE;
             }
 
-            $sqlFiles = array_filter(File::files($backupDir), fn($f) => $f->getExtension() === 'sql');
+            $sqlFiles = array_filter(File::files($backupDir), fn ($f) => $f->getExtension() === 'sql');
             if (empty($sqlFiles)) {
                 $this->error("No se detectaron archivos de respaldo (.sql) en: {$backupDir}");
+
                 return Command::FAILURE;
             }
 
-            usort($sqlFiles, fn($a, $b) => $b->getMTime() <=> $a->getMTime());
+            usort($sqlFiles, fn ($a, $b) => $b->getMTime() <=> $a->getMTime());
             $filepath = reset($sqlFiles)->getPathname();
         }
 
         $size = File::size($filepath);
         if ($size === 0) {
             $this->error("El archivo de respaldo está vacío (0 bytes): {$filepath}");
+
             return Command::FAILURE;
         }
 
@@ -79,8 +83,9 @@ class RestoreBackupCommand extends Command
 
         // 1. Verificación básica de contenido
         $content = File::get($filepath);
-        if (!str_contains($content, 'INSERT INTO') && !str_contains($content, 'CREATE TABLE')) {
-            $this->error("El archivo no contiene sentencias SQL válidas de restauración (CREATE/INSERT).");
+        if (! str_contains($content, 'INSERT INTO') && ! str_contains($content, 'CREATE TABLE')) {
+            $this->error('El archivo no contiene sentencias SQL válidas de restauración (CREATE/INSERT).');
+
             return Command::FAILURE;
         }
 
@@ -90,14 +95,16 @@ class RestoreBackupCommand extends Command
         }
 
         // 3. Ejecución de la restauración
-        if (app()->isProduction() && !$this->option('force')) {
-            if (!$this->confirm("ADVERTENCIA CRÍTICA: Se dispone a restaurar la base de datos en PRODUCCIÓN desde '{$filename}'. Todos los datos actuales serán reemplazados. ¿Desea continuar?")) {
+        if (app()->isProduction() && ! $this->option('force')) {
+            if (! $this->confirm("ADVERTENCIA CRÍTICA: Se dispone a restaurar la base de datos en PRODUCCIÓN desde '{$filename}'. Todos los datos actuales serán reemplazados. ¿Desea continuar?")) {
                 $this->warn('Operación de restauración cancelada por el usuario.');
+
                 return Command::SUCCESS;
             }
-        } elseif (!$this->option('force') && $this->input->isInteractive()) {
-            if (!$this->confirm("¿Está seguro de restaurar la base de datos desde '{$filename}'?")) {
+        } elseif (! $this->option('force') && $this->input->isInteractive()) {
+            if (! $this->confirm("¿Está seguro de restaurar la base de datos desde '{$filename}'?")) {
                 $this->warn('Operación cancelada.');
+
                 return Command::SUCCESS;
             }
         }
@@ -105,9 +112,10 @@ class RestoreBackupCommand extends Command
         $this->info('Ejecutando proceso de restauración...');
         $restored = $this->restaurarSql($filepath, $content);
 
-        if (!$restored) {
+        if (! $restored) {
             $this->error('Falló la restauración del respaldo.');
             Log::error("RESTORE_BACKUP_ERROR: No se pudo restaurar desde {$filepath}");
+
             return Command::FAILURE;
         }
 
@@ -138,12 +146,13 @@ class RestoreBackupCommand extends Command
                 $tempPdo->exec($content);
                 $this->line('  ↳ Validación de sintaxis SQLite en memoria: OK');
             } catch (\Throwable $e) {
-                $this->error("Error de sintaxis en el volcado SQL: " . $e->getMessage());
+                $this->error('Error de sintaxis en el volcado SQL: '.$e->getMessage());
+
                 return Command::FAILURE;
             }
         }
 
-        $this->info("✓ Archivo de respaldo íntegro y sintácticamente válido.");
+        $this->info('✓ Archivo de respaldo íntegro y sintácticamente válido.');
         $this->line("  Líneas: {$lineas}");
         $this->line("  Sentencias de creación de tablas: {$creates}");
         $this->line("  Sentencias de inserción de datos: {$inserts}");
@@ -173,17 +182,17 @@ class RestoreBackupCommand extends Command
                     $check = Process::run("{$cmd} --version");
                     if ($check->successful()) {
                         $env = [];
-                        if (!empty($password)) {
-                            $env['MYSQL_PWD'] = (string)$password;
+                        if (! empty($password)) {
+                            $env['MYSQL_PWD'] = (string) $password;
                         }
 
-                        $restoreCmd = "{$cmd} -h " . escapeshellarg($host) .
-                                      " -P " . escapeshellarg((string)$port) .
-                                      " -u " . escapeshellarg($username) .
-                                      " " . escapeshellarg($database) .
-                                      " < " . escapeshellarg($filepath);
+                        $restoreCmd = "{$cmd} -h ".escapeshellarg($host).
+                                      ' -P '.escapeshellarg((string) $port).
+                                      ' -u '.escapeshellarg($username).
+                                      ' '.escapeshellarg($database).
+                                      ' < '.escapeshellarg($filepath);
 
-                        $res = Process::withEnvironment($env)->run($restoreCmd);
+                        $res = Process::env($env)->run($restoreCmd);
                         if ($res->successful()) {
                             return true;
                         }
@@ -202,9 +211,11 @@ class RestoreBackupCommand extends Command
         // Fallback para SQLite o ejecución directa PDO
         try {
             DB::unprepared($content);
+
             return true;
         } catch (\Throwable $e) {
-            $this->error("Error en ejecución directa: " . $e->getMessage());
+            $this->error('Error en ejecución directa: '.$e->getMessage());
+
             return false;
         }
     }

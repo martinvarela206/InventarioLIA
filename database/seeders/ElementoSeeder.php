@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Schema;
-use App\Models\Movimiento;
 use App\Models\Elemento;
+use App\Models\Movimiento;
 use App\Models\Tipo;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class ElementoSeeder extends Seeder
 {

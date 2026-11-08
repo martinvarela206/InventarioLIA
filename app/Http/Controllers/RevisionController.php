@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Elemento;
 use App\Models\Tipo;
-
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class RevisionController extends Controller
@@ -14,7 +13,7 @@ class RevisionController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user || (!$user->hasRole(['rev', 'tec', 'asset_admin', 'user_admin']))) {
+        if (! $user || (! $user->hasRole(['rev', 'tec', 'asset_admin', 'user_admin']))) {
             return view('revision.welcome');
         }
 
@@ -24,18 +23,18 @@ class RevisionController extends Controller
             $search = trim($request->input('search'));
             $query->where(function ($q) use ($search) {
                 $q->where('nro_lia', 'like', "%{$search}%")
-                  ->orWhere('nro_unsj', 'like', "%{$search}%")
-                  ->orWhere('marca', 'like', "%{$search}%")
-                  ->orWhere('modelo', 'like', "%{$search}%")
-                  ->orWhere('nro_serie', 'like', "%{$search}%")
-                  ->orWhere('descripcion', 'like', "%{$search}%")
-                  ->orWhere('observaciones', 'like', "%{$search}%")
-                  ->orWhereHas('tipo', function ($tq) use ($search) {
-                      $tq->where('nombre', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('ultimoMovimiento.ubicacion', function ($uq) use ($search) {
-                      $uq->where('nombre', 'like', "%{$search}%");
-                  });
+                    ->orWhere('nro_unsj', 'like', "%{$search}%")
+                    ->orWhere('marca', 'like', "%{$search}%")
+                    ->orWhere('modelo', 'like', "%{$search}%")
+                    ->orWhere('nro_serie', 'like', "%{$search}%")
+                    ->orWhere('descripcion', 'like', "%{$search}%")
+                    ->orWhere('observaciones', 'like', "%{$search}%")
+                    ->orWhereHas('tipo', function ($tq) use ($search) {
+                        $tq->where('nombre', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('ultimoMovimiento.ubicacion', function ($uq) use ($search) {
+                        $uq->where('nombre', 'like', "%{$search}%");
+                    });
             });
         }
 

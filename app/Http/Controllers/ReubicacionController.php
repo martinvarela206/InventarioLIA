@@ -27,16 +27,16 @@ class ReubicacionController extends Controller
             if ($origenId) {
                 $q->where('ubicacion_id', $origenId);
             } else {
-                $q->whereHas('ubicacion', fn($u) => $u->where('activa', false));
+                $q->whereHas('ubicacion', fn ($u) => $u->where('activa', false));
             }
             $q->whereNotIn('tipo_movimiento', ['baja']);
-        })->whereDoesntHave('tipo', fn($t) => $t->where('nombre', 'basura tecnologica'))
-          ->with(['tipo', 'ultimoMovimiento.ubicacion']);
+        })->whereDoesntHave('tipo', fn ($t) => $t->where('nombre', 'basura tecnologica'))
+            ->with(['tipo', 'ultimoMovimiento.ubicacion']);
 
         $activos = $query->get();
 
         $ubicacionesActivas = Ubicacion::activas()
-            ->when($origenId, fn($q) => $q->where('id', '!=', $origenId))
+            ->when($origenId, fn ($q) => $q->where('id', '!=', $origenId))
             ->orderBy('nombre')
             ->get();
 

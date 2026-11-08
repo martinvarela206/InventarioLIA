@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Elemento;
 use App\Models\Rol;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
@@ -15,8 +14,11 @@ class PropagacionGlobalAssetAdminTest extends TestCase
     use RefreshDatabase;
 
     protected Ubicacion $ubicacion;
+
     protected Tipo $tipo;
+
     protected Rol $rolAssetAdmin;
+
     protected Rol $rolTec;
 
     protected function setUp(): void

@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use App\Models\Usuario;
-use App\Models\Rol;
-use App\Models\UsuarioTrayectoria;
 use App\Models\Cargo;
 use App\Models\Carrera;
+use App\Models\Rol;
+use App\Models\Usuario;
+use App\Models\UsuarioTrayectoria;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
@@ -181,7 +181,7 @@ class UserSeeder extends Seeder
 
             if ($cargoNombre) {
                 $cargoId = $cargosMap[$cargoNombre] ?? null;
-                if (!$cargoId) {
+                if (! $cargoId) {
                     $nuevoCargo = Cargo::firstOrCreate(['nombre' => $cargoNombre]);
                     $cargoId = $nuevoCargo->id;
                     $cargosMap[$cargoNombre] = $cargoId;
@@ -194,7 +194,7 @@ class UserSeeder extends Seeder
             }
 
             $user = Usuario::firstOrCreate(['email' => $u['email']], $u);
-            
+
             $roleIds = [];
             foreach ($roleNames as $rName) {
                 if (isset($roles[$rName])) {

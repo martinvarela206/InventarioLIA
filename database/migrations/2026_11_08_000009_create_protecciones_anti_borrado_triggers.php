@@ -150,11 +150,11 @@ return new class extends Migration
         $driver = DB::getDriverName();
 
         if ($driver === 'sqlite' || $driver === 'mysql') {
-            DB::unprepared("DROP TRIGGER IF EXISTS trigger_elementos_before_delete;");
-            DB::unprepared("DROP TRIGGER IF EXISTS trigger_usuarios_before_delete;");
-            DB::unprepared("DROP TRIGGER IF EXISTS trigger_ubicaciones_before_delete;");
-            DB::unprepared("DROP TRIGGER IF EXISTS trigger_roles_before_delete;");
-            DB::unprepared("DROP TRIGGER IF EXISTS trigger_tipos_before_delete;");
+            DB::unprepared('DROP TRIGGER IF EXISTS trigger_elementos_before_delete;');
+            DB::unprepared('DROP TRIGGER IF EXISTS trigger_usuarios_before_delete;');
+            DB::unprepared('DROP TRIGGER IF EXISTS trigger_ubicaciones_before_delete;');
+            DB::unprepared('DROP TRIGGER IF EXISTS trigger_roles_before_delete;');
+            DB::unprepared('DROP TRIGGER IF EXISTS trigger_tipos_before_delete;');
         }
     }
 };

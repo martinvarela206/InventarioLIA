@@ -2,11 +2,11 @@
 
 namespace App\Actions\Ubicaciones;
 
+use App\Enums\EstadoElemento;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
-use App\Enums\EstadoElemento;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -16,11 +16,10 @@ class ReubicarActivosLoteAction
      * Reubica un lote de activos (sea a un destino común o con destinos discriminados por activo),
      * aplicando bloqueo pesimista y sacando a los activos de estado de "limbo".
      *
-     * @param array<int|array{elemento_id: int, ubicacion_id?: int, puesto?: string}> $items
-     * @param int|null $ubicacionComunId ID de destino si todos van al mismo espacio
-     * @param Usuario|null $usuario
-     * @param string|null $comentario
+     * @param  array<int|array{elemento_id: int, ubicacion_id?: int, puesto?: string}>  $items
+     * @param  int|null  $ubicacionComunId  ID de destino si todos van al mismo espacio
      * @return array{total_reubicados: int, movimientos: array<Movimiento>}
+     *
      * @throws ValidationException
      */
     public function execute(array $items, ?int $ubicacionComunId = null, ?Usuario $usuario = null, ?string $comentario = null): array
@@ -32,7 +31,7 @@ class ReubicarActivosLoteAction
         }
 
         $actor = $usuario ?? auth()->user();
-        if (!$actor) {
+        if (! $actor) {
             throw new \InvalidArgumentException('Se requiere un usuario responsable identificado para registrar la operación patrimonial.');
         }
         $userId = $actor->id;
@@ -42,24 +41,24 @@ class ReubicarActivosLoteAction
             $movimientosGenerados = [];
 
             foreach ($items as $item) {
-                $elementoId = is_array($item) ? ($item['elemento_id'] ?? null) : (int)$item;
+                $elementoId = is_array($item) ? ($item['elemento_id'] ?? null) : (int) $item;
                 $destinoId = is_array($item) ? ($item['ubicacion_id'] ?? $ubicacionComunId) : $ubicacionComunId;
                 $puesto = is_array($item) ? ($item['puesto'] ?? null) : null;
 
-                if (!$elementoId) {
+                if (! $elementoId) {
                     continue;
                 }
 
-                if (!$destinoId) {
+                if (! $destinoId) {
                     throw ValidationException::withMessages([
                         'ubicacion_id' => 'Cada activo debe poseer una sala destino válida asignada.',
                     ]);
                 }
 
                 // Cargar y validar la sala destino
-                if (!isset($destinosCache[$destinoId])) {
+                if (! isset($destinosCache[$destinoId])) {
                     $sala = Ubicacion::where('id', $destinoId)->first();
-                    if (!$sala || !$sala->activa) {
+                    if (! $sala || ! $sala->activa) {
                         throw ValidationException::withMessages([
                             'ubicacion_id' => "La sala destino seleccionada (ID: {$destinoId}) no existe o se encuentra archivada e inactiva.",
                         ]);

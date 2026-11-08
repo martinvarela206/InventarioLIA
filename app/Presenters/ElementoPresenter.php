@@ -3,8 +3,6 @@
 namespace App\Presenters;
 
 use App\Models\Elemento;
-use App\Enums\EstadoElemento;
-use Carbon\Carbon;
 
 class ElementoPresenter
 {
@@ -22,6 +20,7 @@ class ElementoPresenter
     {
         $lia = $this->elemento->nro_lia ?: '-';
         $unsj = $this->elemento->nro_unsj ?: '-';
+
         return "LIA: {$lia} | UNSJ: {$unsj}";
     }
 

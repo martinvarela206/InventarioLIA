@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('elementos', function (Blueprint $table) {
-            if (!Schema::hasColumn('elementos', 'deleted_at')) {
+            if (! Schema::hasColumn('elementos', 'deleted_at')) {
                 $table->softDeletes();
             }
-            if (!Schema::hasColumn('elementos', 'deleted_by')) {
+            if (! Schema::hasColumn('elementos', 'deleted_by')) {
                 $table->foreignId('deleted_by')->nullable()->after('deleted_at')->constrained('usuarios')->nullOnDelete();
             }
         });

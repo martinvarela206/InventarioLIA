@@ -2,17 +2,17 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Actions\Tickets\AbrirTicketAction;
+use App\Actions\Tickets\ResolverTicketAction;
+use App\Enums\EstadoElemento;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
-use App\Enums\EstadoElemento;
-use App\Actions\Tickets\AbrirTicketAction;
-use App\Actions\Tickets\ResolverTicketAction;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Tests\TestCase;
 
 class TicketsDominioActionTest extends TestCase
 {
@@ -28,7 +28,7 @@ class TicketsDominioActionTest extends TestCase
     {
         $tipo = Tipo::first();
         $ubicacion = Ubicacion::where('activa', true)->first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-TKT-01',
@@ -60,7 +60,7 @@ class TicketsDominioActionTest extends TestCase
     public function test_apertura_ticket_sobre_activo_prestado_cierra_prestamo_formalmente(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-TKT-PREST',
@@ -98,7 +98,7 @@ class TicketsDominioActionTest extends TestCase
     public function test_rechaza_abrir_ticket_sobre_activo_en_baja_o_con_ticket_abierto(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         // 1. Activo en baja
         $elementoBaja = Elemento::create([
@@ -150,7 +150,7 @@ class TicketsDominioActionTest extends TestCase
     {
         $tipo = Tipo::first();
         $ubicacion = Ubicacion::where('activa', true)->first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-RES-01',
@@ -191,7 +191,7 @@ class TicketsDominioActionTest extends TestCase
     {
         $tipo = Tipo::first();
         $ubicacion = Ubicacion::where('activa', true)->first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-RES-BAJA',
@@ -229,7 +229,7 @@ class TicketsDominioActionTest extends TestCase
     {
         $tipo = Tipo::first();
         $ubicacion = Ubicacion::where('activa', true)->first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-RES-NORESURREC',

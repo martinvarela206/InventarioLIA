@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
@@ -28,7 +26,7 @@ class LoginController extends Controller
             ])->withInput();
         }
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return back()->withErrors([
                 'login' => 'El formato del correo electrónico no es válido.',
             ])->withInput();
@@ -38,6 +36,7 @@ class LoginController extends Controller
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
+
             return back()->withErrors([
                 'login' => "Demasiados intentos de acceso. Por favor, vuelva a intentarlo en {$seconds} segundos.",
             ])->withInput();
@@ -57,6 +56,7 @@ class LoginController extends Controller
             if ($intended === url('/') || empty($intended)) {
                 return redirect($target);
             }
+
             return redirect()->intended($target);
         }
 

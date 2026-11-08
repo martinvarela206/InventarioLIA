@@ -18,7 +18,7 @@ class EnsureUserIsActive
     {
         $user = $request->user();
 
-        if ($user && !$user->activo) {
+        if ($user && ! $user->activo) {
             // Revocar tokens API si existieran
             $user->tokens()->delete();
 

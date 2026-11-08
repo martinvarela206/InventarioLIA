@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class ConsistenciaTemporalMovimientosTest extends TestCase
 {
@@ -26,7 +26,7 @@ class ConsistenciaTemporalMovimientosTest extends TestCase
         $tipo = Tipo::first();
         $ubicacion1 = Ubicacion::first();
         $ubicacion2 = Ubicacion::skip(1)->first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-TEMP-01',
@@ -62,9 +62,9 @@ class ConsistenciaTemporalMovimientosTest extends TestCase
 
     public function test_form_requests_rechazan_fechas_futuras_en_todos_los_flujos(): void
     {
-        $admin = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'asset_admin'))->first()
-            ?? Usuario::whereHas('roles', fn($q) => $q->where('rol', 'item_admin'))->first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $admin = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'asset_admin'))->first()
+            ?? Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'item_admin'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
         $tipo = Tipo::first();
         $ubicacion = Ubicacion::first();
 
@@ -122,7 +122,7 @@ class ConsistenciaTemporalMovimientosTest extends TestCase
     {
         $tipo = Tipo::first();
         $ubicacion = Ubicacion::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-PHYS-TS',

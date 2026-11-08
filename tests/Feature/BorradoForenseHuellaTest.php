@@ -38,7 +38,7 @@ class BorradoForenseHuellaTest extends TestCase
         $response = $this->actingAs($admin)->post(route('users.anonimizar', $reciente->id));
 
         $response->assertStatus(422);
-        $this->assertFalse((bool)$reciente->fresh()->huella_borrada);
+        $this->assertFalse((bool) $reciente->fresh()->huella_borrada);
     }
 
     public function test_rechaza_anonimizar_usuario_activo(): void
@@ -54,7 +54,7 @@ class BorradoForenseHuellaTest extends TestCase
         $response = $this->actingAs($admin)->post(route('users.anonimizar', $activo->id));
 
         $response->assertStatus(422);
-        $this->assertFalse((bool)$activo->fresh()->huella_borrada);
+        $this->assertFalse((bool) $activo->fresh()->huella_borrada);
     }
 
     public function test_anonimizacion_exitosa_limpia_datos_trayectorias_y_solicitante_en_movimientos(): void
@@ -96,7 +96,7 @@ class BorradoForenseHuellaTest extends TestCase
         $response->assertRedirect(route('users.index'));
         $exColaborador->refresh();
 
-        $this->assertTrue((bool)$exColaborador->huella_borrada);
+        $this->assertTrue((bool) $exColaborador->huella_borrada);
         $this->assertTrue($exColaborador->esAnonimizado());
         $this->assertEquals("Usuario Histórico #{$exColaborador->id}", $exColaborador->nombre);
         $this->assertEquals("historico_{$exColaborador->id}@lia.local", $exColaborador->email);

@@ -3,13 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tipo extends Model
 {
     protected $table = 'tipos';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -25,9 +25,9 @@ class Tipo extends Model
     public function atributos(): BelongsToMany
     {
         return $this->belongsToMany(Atributo::class, 'tipo_atributo')
-                    ->withPivot('es_requerido', 'orden')
-                    ->orderBy('orden', 'asc')
-                    ->withTimestamps();
+            ->withPivot('es_requerido', 'orden')
+            ->orderBy('orden', 'asc')
+            ->withTimestamps();
     }
 
     /**
@@ -37,7 +37,7 @@ class Tipo extends Model
     {
         $raw = trim($nombre);
         $clean = mb_strtolower($raw, 'UTF-8');
-        
+
         // Quitar acentos para comparación
         $unaccented = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $clean);
         $unaccented = preg_replace('/[^a-z0-9\s]/', '', $unaccented);

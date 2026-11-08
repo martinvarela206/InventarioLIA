@@ -9,12 +9,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('ticket_comentarios', function (Blueprint $table) {
-            if (!Schema::hasColumn('ticket_comentarios', 'movimiento_id')) {
+            if (! Schema::hasColumn('ticket_comentarios', 'movimiento_id')) {
                 $table->foreignId('movimiento_id')->nullable()->after('tipo')->constrained('movimientos')->nullOnDelete();
             }
         });
 
-        if (!Schema::hasTable('ticket_comentario_adjuntos')) {
+        if (! Schema::hasTable('ticket_comentario_adjuntos')) {
             Schema::create('ticket_comentario_adjuntos', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('ticket_comentario_id')->constrained('ticket_comentarios')->cascadeOnDelete();

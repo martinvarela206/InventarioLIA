@@ -17,11 +17,11 @@ class EnsureHasOperationalRole
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
-        if (!$user->activo || !$user->hasActivePermissions()) {
+        if (! $user->activo || ! $user->hasActivePermissions()) {
             return redirect()->route('bienvenida');
         }
 
