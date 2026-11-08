@@ -6,6 +6,8 @@ use App\Models\Movimiento;
 use App\Models\Elemento;
 use App\Models\Usuario;
 use App\Models\Ubicacion;
+use App\Enums\EstadoElemento;
+use App\Actions\Movimientos\RegistrarPrestamoAction;
 use App\Http\Requests\StoreMovimientoRequest;
 use App\Http\Requests\DevolucionMovimientoRequest;
 use App\Http\Requests\StoreEnmiendaRequest;
@@ -137,23 +139,48 @@ class MovimientoController extends Controller
     /**
      * Store a newly created movement in storage.
      */
-    public function store(StoreMovimientoRequest $request): RedirectResponse
+    public function store(StoreMovimientoRequest $request, RegistrarPrestamoAction $registrarPrestamoAction): RedirectResponse
     {
         $validated = $request->validated();
         $tipoMovimiento = $validated['tipo_movimiento'];
-        $esPrestamo = $tipoMovimiento === 'externo_prestamo';
+
+        if ($tipoMovimiento === 'externo_prestamo') {
+            try {
+                $registrarPrestamoAction->execute(
+                    $validated['elemento_id'],
+                    $validated,
+                    auth()->user()
+                );
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                return redirect()->back()->withErrors($e->errors())->withInput();
+            }
+
+            return redirect()->route('elementos.show', $validated['elemento_id'])
+                ->with('success', 'Préstamo externo registrado con éxito.');
+        }
+
+        // Movimiento interno
+        $elemento = Elemento::findOrFail($validated['elemento_id']);
+        if ($elemento->estado === EstadoElemento::BAJA) {
+            return redirect()->back()
+                ->withErrors(['elemento_id' => 'No es posible trasladar un activo dado de baja o clasificado como basura tecnológica.'])
+                ->withInput();
+        }
+        if ($elemento->estado === EstadoElemento::PRESTADO) {
+            return redirect()->back()
+                ->withErrors(['elemento_id' => 'El activo se encuentra prestado actualmente. Debe registrar la devolución antes de realizar un traslado interno.'])
+                ->withInput();
+        }
 
         $fecha = !empty($validated['fecha']) ? Carbon::parse($validated['fecha']) : now();
 
         Movimiento::create([
             'elemento_id' => $validated['elemento_id'],
-            'tipo_movimiento' => $tipoMovimiento,
-            'ubicacion_id' => $esPrestamo ? null : ($validated['ubicacion_id'] ?? null),
-            'puesto' => $esPrestamo ? null : ($validated['puesto'] ?? null),
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $validated['ubicacion_id'] ?? null,
+            'puesto' => $validated['puesto'] ?? null,
             'user_id' => auth()->id() ?? Usuario::first()->id,
             'fecha' => $fecha,
-            'solicitante' => $esPrestamo ? ($validated['solicitante'] ?? null) : null,
-            'fecha_prestamo' => $esPrestamo ? (!empty($validated['fecha_prestamo']) ? Carbon::parse($validated['fecha_prestamo'])->toDateString() : now()->toDateString()) : null,
             'comentario' => $validated['comentario'] ?? null,
         ]);
 
