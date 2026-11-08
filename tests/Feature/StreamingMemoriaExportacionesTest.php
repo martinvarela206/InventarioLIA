@@ -17,7 +17,9 @@ class StreamingMemoriaExportacionesTest extends TestCase
     use RefreshDatabase;
 
     protected Usuario $revisor;
+
     protected Ubicacion $ubicacion;
+
     protected Tipo $tipo;
 
     protected function setUp(): void

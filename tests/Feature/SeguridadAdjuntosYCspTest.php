@@ -6,7 +6,6 @@ use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\MovimientoAdjunto;
 use App\Models\Rol;
-use App\Models\TicketComentario;
 use App\Models\TicketComentarioAdjunto;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
@@ -21,8 +20,11 @@ class SeguridadAdjuntosYCspTest extends TestCase
     use RefreshDatabase;
 
     protected Ubicacion $ubicacion;
+
     protected Tipo $tipo;
+
     protected Usuario $tecnico;
+
     protected Usuario $revisor;
 
     protected function setUp(): void

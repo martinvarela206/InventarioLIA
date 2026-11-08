@@ -2,17 +2,17 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Actions\Ubicaciones\ArchivarUbicacionAction;
+use App\Actions\Ubicaciones\RenombrarUbicacionAction;
+use App\Enums\EstadoElemento;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
-use App\Enums\EstadoElemento;
-use App\Actions\Ubicaciones\RenombrarUbicacionAction;
-use App\Actions\Ubicaciones\ArchivarUbicacionAction;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Tests\TestCase;
 
 class CicloVidaUbicacionesActionTest extends TestCase
 {
@@ -27,7 +27,7 @@ class CicloVidaUbicacionesActionTest extends TestCase
     public function test_renombrar_sala_crea_nueva_entidad_archiva_original_y_pasa_activos_a_limbo(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         // 1. Crear sala original con activos
         $salaOriginal = Ubicacion::create([
@@ -107,7 +107,7 @@ class CicloVidaUbicacionesActionTest extends TestCase
     public function test_archivar_sala_la_marca_inactiva_y_pasa_activos_a_limbo(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $sala = Ubicacion::create([
             'nombre' => 'Laboratorio Antiguo a Desmantelar',

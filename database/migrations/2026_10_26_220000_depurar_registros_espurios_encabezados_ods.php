@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
 use App\Models\Elemento;
-use App\Models\Movimiento;
 use App\Models\ElementoAtributoValor;
+use App\Models\Movimiento;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -16,7 +16,7 @@ return new class extends Migration
         $espurios = Elemento::whereIn('nro_lia', ['Disco', 'RAM', 'CPU', 'Procesador', 'Modelo'])
             ->orWhere(function ($q) {
                 $q->whereJsonContains('descripcion->Procesador', 'Procesador')
-                  ->whereJsonContains('descripcion->RAM', 'RAM');
+                    ->whereJsonContains('descripcion->RAM', 'RAM');
             })
             ->get();
 

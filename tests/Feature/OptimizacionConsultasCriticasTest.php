@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Auditoria;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Rol;
@@ -11,7 +10,6 @@ use App\Models\Ubicacion;
 use App\Models\Usuario;
 use App\Models\UsuarioTrayectoria;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class OptimizacionConsultasCriticasTest extends TestCase

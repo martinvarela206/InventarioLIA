@@ -2,11 +2,11 @@
 
 namespace App\Actions\Tickets;
 
+use App\Enums\EstadoElemento;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
-use App\Enums\EstadoElemento;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -22,7 +22,7 @@ class ResolverTicketAction
     {
         $ticketId = $ticket instanceof Movimiento ? $ticket->id : $ticket;
         $user = $usuario ?? auth()->user();
-        if (!$user) {
+        if (! $user) {
             throw new \InvalidArgumentException('Se requiere un usuario responsable identificado para registrar la operación patrimonial.');
         }
 
@@ -57,7 +57,7 @@ class ResolverTicketAction
             }
 
             $accion = $datos['accion'] ?? 'resolver';
-            if (!in_array($accion, ['resolver', 'baja'])) {
+            if (! in_array($accion, ['resolver', 'baja'])) {
                 throw ValidationException::withMessages([
                     'accion' => 'La acción de cierre debe ser resolver o baja.',
                 ]);
@@ -69,7 +69,7 @@ class ResolverTicketAction
                 ]);
             }
 
-            $solucion = trim((string)($datos['solucion'] ?? ''));
+            $solucion = trim((string) ($datos['solucion'] ?? ''));
             if (strlen($solucion) < 5) {
                 throw ValidationException::withMessages([
                     'solucion' => 'El detalle técnico de la solución debe contener al menos 5 caracteres.',
@@ -81,9 +81,9 @@ class ResolverTicketAction
             $estadoTicket = $esBaja ? 'baja' : 'resuelto';
 
             $ubicacionId = $datos['ubicacion_id'] ?? $tkt->ubicacion_id;
-            if (!$esBaja && $ubicacionId) {
+            if (! $esBaja && $ubicacionId) {
                 $ubicacion = Ubicacion::find($ubicacionId);
-                if ($ubicacion && !$ubicacion->activa) {
+                if ($ubicacion && ! $ubicacion->activa) {
                     throw ValidationException::withMessages([
                         'ubicacion_id' => 'No se puede reintegrar el activo a una sala que se encuentra inactiva o archivada.',
                     ]);

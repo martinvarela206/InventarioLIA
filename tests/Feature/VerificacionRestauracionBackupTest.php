@@ -61,7 +61,7 @@ class VerificacionRestauracionBackupTest extends TestCase
         $this->assertEquals(1, $exitInexistente);
 
         // Archivo vacío (0 bytes)
-        $emptyPath = $this->backupDir . DIRECTORY_SEPARATOR . 'backup_vacio.sql';
+        $emptyPath = $this->backupDir.DIRECTORY_SEPARATOR.'backup_vacio.sql';
         File::put($emptyPath, '');
 
         $exitVacio = Artisan::call('inventario:restore-backup', [

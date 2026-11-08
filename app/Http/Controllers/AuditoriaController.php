@@ -8,6 +8,7 @@ use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,19 +35,19 @@ class AuditoriaController extends Controller
         if ($request->filled('auditoria_id')) {
             $auditoria = Auditoria::find($request->auditoria_id);
         }
-        if (!$auditoria) {
+        if (! $auditoria) {
             $auditoria = Auditoria::where('ubicacion_id', $ubicacionSeleccionada->id)
                 ->where('user_id', $user?->id)
                 ->where('estado', 'en_progreso')
                 ->first();
         }
-        if (!$auditoria) {
+        if (! $auditoria) {
             $auditoria = Auditoria::where('ubicacion_id', $ubicacionSeleccionada->id)
                 ->where('estado', 'en_progreso')
                 ->first();
         }
         // Si no existe, se instancia en memoria para permitir visualización sin mutar la BD
-        if (!$auditoria) {
+        if (! $auditoria) {
             $auditoria = new Auditoria([
                 'ubicacion_id' => $ubicacionSeleccionada->id,
                 'user_id' => $user?->id,
@@ -123,12 +124,12 @@ class AuditoriaController extends Controller
         }
 
         if ($request->filled('fecha_desde')) {
-            $desde = \Carbon\Carbon::parse($request->fecha_desde)->startOfDay();
+            $desde = Carbon::parse($request->fecha_desde)->startOfDay();
             $query->where('fecha', '>=', $desde);
         }
 
         if ($request->filled('fecha_hasta')) {
-            $hasta = \Carbon\Carbon::parse($request->fecha_hasta)->endOfDay();
+            $hasta = Carbon::parse($request->fecha_hasta)->endOfDay();
             $query->where('fecha', '<=', $hasta);
         }
 
@@ -216,7 +217,7 @@ class AuditoriaController extends Controller
         }
 
         // Autorización por objeto: solo el profesional asignado o administradores
-        if ($auditoria->user_id !== $user?->id && !$user?->hasRole(['app_admin', 'asset_admin', 'user_admin'])) {
+        if ($auditoria->user_id !== $user?->id && ! $user?->hasRole(['app_admin', 'asset_admin', 'user_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes autorización para modificar una auditoría iniciada por otro usuario.',
@@ -225,9 +226,9 @@ class AuditoriaController extends Controller
 
         $detalle = DB::transaction(function () use ($auditoria, $validated) {
             $criterios = ['auditoria_id' => $auditoria->id];
-            if (!empty($validated['elemento_id'])) {
+            if (! empty($validated['elemento_id'])) {
                 $criterios['elemento_id'] = $validated['elemento_id'];
-            } elseif (!empty($validated['puesto'])) {
+            } elseif (! empty($validated['puesto'])) {
                 $criterios['puesto'] = $validated['puesto'];
             }
 
@@ -276,7 +277,7 @@ class AuditoriaController extends Controller
         }
 
         // Autorización por objeto: solo el profesional asignado o administradores
-        if ($auditoria->user_id !== $user?->id && !$user?->hasRole(['app_admin', 'asset_admin', 'user_admin'])) {
+        if ($auditoria->user_id !== $user?->id && ! $user?->hasRole(['app_admin', 'asset_admin', 'user_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes autorización para modificar una auditoría iniciada por otro usuario.',
@@ -320,7 +321,7 @@ class AuditoriaController extends Controller
         }
 
         // Autorización por objeto: solo el profesional asignado o administradores
-        if ($auditoria->user_id !== $user?->id && !$user?->hasRole(['app_admin', 'asset_admin', 'user_admin'])) {
+        if ($auditoria->user_id !== $user?->id && ! $user?->hasRole(['app_admin', 'asset_admin', 'user_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes autorización para operar sobre una sesión de auditoría asignada a otro profesional.',

@@ -21,8 +21,9 @@ class MovimientoPresenter
     public function correccionBadge(): string
     {
         if ($this->movimiento->esCorreccion()) {
-            return '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-300">Enmienda de #' . (int)$this->movimiento->correccion_de_id . '</span>';
+            return '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-900 border border-purple-300">Enmienda de #'.(int) $this->movimiento->correccion_de_id.'</span>';
         }
+
         return '';
     }
 
@@ -33,6 +34,7 @@ class MovimientoPresenter
         if ($puesto) {
             return "{$ubicacion} ({$puesto})";
         }
+
         return $ubicacion;
     }
 
@@ -41,6 +43,7 @@ class MovimientoPresenter
         if ($this->movimiento->esPrestamo()) {
             return $this->movimiento->solicitante ?: 'No especificado';
         }
+
         return '-';
     }
 

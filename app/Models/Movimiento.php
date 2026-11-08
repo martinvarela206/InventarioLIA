@@ -2,22 +2,22 @@
 
 namespace App\Models;
 
+use App\Presenters\MovimientoPresenter;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
-use App\Presenters\MovimientoPresenter;
-use Illuminate\Support\Facades\DB;
-
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Movimiento extends Model
 {
     use HasFactory;
 
     protected $table = 'movimientos';
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -72,7 +72,7 @@ class Movimiento extends Model
     {
         return DB::transaction(function () use ($datos, $usuarioId, $motivo) {
             $comentario = "ENMIENDA / CORRECCIÓN de Movimiento #{$this->id}: {$motivo}";
-            if (!empty($datos['comentario'])) {
+            if (! empty($datos['comentario'])) {
                 $comentario .= " | {$datos['comentario']}";
             }
 
@@ -116,7 +116,7 @@ class Movimiento extends Model
 
     public function esCorreccion(): bool
     {
-        return !is_null($this->correccion_de_id);
+        return ! is_null($this->correccion_de_id);
     }
 
     public function elemento(): BelongsTo
@@ -141,16 +141,17 @@ class Movimiento extends Model
 
     public function esPrestamo(): bool
     {
-        return $this->tipo_movimiento === 'externo_prestamo' || !empty($this->fecha_prestamo);
+        return $this->tipo_movimiento === 'externo_prestamo' || ! empty($this->fecha_prestamo);
     }
 
     public function diasPrestado(): ?int
     {
-        if (!$this->fecha_prestamo) {
+        if (! $this->fecha_prestamo) {
             return null;
         }
         $fin = $this->fecha_devolucion ? Carbon::parse($this->fecha_devolucion) : Carbon::now();
-        return (int)Carbon::parse($this->fecha_prestamo)->diffInDays($fin);
+
+        return (int) Carbon::parse($this->fecha_prestamo)->diffInDays($fin);
     }
 
     public function scopePrestadosActivos(Builder $query): Builder
@@ -211,7 +212,7 @@ class Movimiento extends Model
         return $query->where('tipo_movimiento', 'reparacion')
             ->where(function ($q) {
                 $q->whereNull('estado_ticket')
-                  ->orWhereIn('estado_ticket', ['abierto', 'solucionado']);
+                    ->orWhereIn('estado_ticket', ['abierto', 'solucionado']);
             });
     }
 

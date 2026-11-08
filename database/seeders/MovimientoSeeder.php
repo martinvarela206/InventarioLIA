@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class MovimientoSeeder extends Seeder
 {

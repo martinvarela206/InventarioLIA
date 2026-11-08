@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Tipo;
 use App\Models\Atributo;
+use App\Models\Tipo;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\JsonResponse;
 
 class TipoController extends Controller
 {
@@ -17,9 +17,9 @@ class TipoController extends Controller
     public function index(): View
     {
         $tipos = Tipo::withCount('elementos')
-                    ->with('atributos')
-                    ->orderBy('nombre')
-                    ->paginate(20);
+            ->with('atributos')
+            ->orderBy('nombre')
+            ->paginate(20);
 
         $atributosGlobales = Atributo::orderBy('nombre')->get();
 
@@ -32,6 +32,7 @@ class TipoController extends Controller
     public function create(): View
     {
         $atributos = Atributo::orderBy('nombre')->get();
+
         return view('tipos.create', compact('atributos'));
     }
 
@@ -65,7 +66,7 @@ class TipoController extends Controller
         // Procesar nuevos atributos dinámicos
         $this->sincronizarNuevosAtributos($request, $atributoIds);
 
-        if (!empty($atributoIds)) {
+        if (! empty($atributoIds)) {
             $syncData = [];
             foreach (array_unique($atributoIds) as $idx => $attrId) {
                 $syncData[$attrId] = [
@@ -87,6 +88,7 @@ class TipoController extends Controller
     {
         $tipo->load('atributos');
         $atributos = Atributo::orderBy('nombre')->get();
+
         return view('tipos.edit', compact('tipo', 'atributos'));
     }
 
@@ -96,7 +98,7 @@ class TipoController extends Controller
     public function update(Request $request, Tipo $tipo): RedirectResponse
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:100|unique:tipos,nombre,' . $tipo->id,
+            'nombre' => 'required|string|max:100|unique:tipos,nombre,'.$tipo->id,
             'descripcion' => 'nullable|string|max:255',
             'atributos' => 'nullable|array',
             'atributos.*' => 'exists:atributos,id',
@@ -144,9 +146,9 @@ class TipoController extends Controller
         $nuevosTipos = (array) $request->input('nuevos_atributos_tipo', []);
 
         foreach ($nuevosNombres as $i => $rawNombre) {
-            $nom = trim((string)$rawNombre);
+            $nom = trim((string) $rawNombre);
             if ($nom !== '') {
-                $uni = isset($nuevasUnidades[$i]) ? trim((string)$nuevasUnidades[$i]) : null;
+                $uni = isset($nuevasUnidades[$i]) ? trim((string) $nuevasUnidades[$i]) : null;
                 $tipoDato = isset($nuevosTipos[$i]) && in_array($nuevosTipos[$i], ['texto', 'numero', 'fecha', 'booleano'])
                     ? $nuevosTipos[$i]
                     : 'texto';
@@ -178,7 +180,7 @@ class TipoController extends Controller
     {
         if ($tipo->elementos()->exists()) {
             return back()->withErrors([
-                'error' => "No se puede eliminar el tipo '{$tipo->nombre}' porque tiene {$tipo->elementos()->count()} activos asociados en el inventario."
+                'error' => "No se puede eliminar el tipo '{$tipo->nombre}' porque tiene {$tipo->elementos()->count()} activos asociados en el inventario.",
             ]);
         }
 
@@ -203,7 +205,7 @@ class TipoController extends Controller
                     'nombre' => $attr->nombre,
                     'tipo_dato' => $attr->tipo_dato,
                     'unidad_medida' => $attr->unidad_medida,
-                    'es_requerido' => (bool)$attr->pivot->es_requerido,
+                    'es_requerido' => (bool) $attr->pivot->es_requerido,
                 ];
             });
 

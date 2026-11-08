@@ -17,8 +17,11 @@ class FlujoReubicacionUbicacionesTest extends TestCase
     use RefreshDatabase;
 
     protected Usuario $assetAdmin;
+
     protected Usuario $tecnico;
+
     protected Ubicacion $salaA;
+
     protected Tipo $tipoPc;
 
     protected function setUp(): void

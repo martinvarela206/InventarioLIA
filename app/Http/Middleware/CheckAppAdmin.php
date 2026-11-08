@@ -11,11 +11,11 @@ class CheckAppAdmin
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user() || !$request->user()->activo || !$request->user()->isAppAdmin()) {
+        if (! $request->user() || ! $request->user()->activo || ! $request->user()->isAppAdmin()) {
             abort(403, 'Acceso restringido a administradores de la aplicación (app_admin).');
         }
 

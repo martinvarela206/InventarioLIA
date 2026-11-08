@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -23,8 +23,8 @@ class Atributo extends Model
     public function tipos(): BelongsToMany
     {
         return $this->belongsToMany(Tipo::class, 'tipo_atributo')
-                    ->withPivot('es_requerido', 'orden')
-                    ->withTimestamps();
+            ->withPivot('es_requerido', 'orden')
+            ->withTimestamps();
     }
 
     public function valores(): HasMany
@@ -35,12 +35,13 @@ class Atributo extends Model
     public static function firstOrCreateNormalizado(string $nombre, string $tipoDato = 'texto', ?string $unidadMedida = null): self
     {
         $limpio = trim($nombre);
+
         return static::firstOrCreate(
             ['nombre' => $limpio],
             [
                 'tipo_dato' => $tipoDato,
                 'unidad_medida' => $unidadMedida,
-                'descripcion' => "Atributo técnico: {$limpio}"
+                'descripcion' => "Atributo técnico: {$limpio}",
             ]
         );
     }

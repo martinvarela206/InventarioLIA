@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -15,28 +15,28 @@ return new class extends Migration
         $driver = DB::getDriverName();
 
         // 1. Eliminar índice compuesto defectuoso previo
-        Schema::table('elementos', function (Blueprint $table) use ($driver) {
+        Schema::table('elementos', function (Blueprint $table) {
             // En SQLite dropIndex/dropUnique recrea la tabla si es necesario
             try {
                 $table->dropUnique('elementos_nro_lia_nro_unsj_unique');
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Si el índice no existe bajo ese nombre exacto
             }
         });
 
         // 2. Crear índices de unicidad robustos por identificador
         if ($driver === 'sqlite') {
-            DB::unprepared("
+            DB::unprepared('
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_elementos_nro_lia_unique 
                 ON elementos(nro_lia) 
                 WHERE deleted_at IS NULL AND nro_lia IS NOT NULL;
-            ");
+            ');
 
-            DB::unprepared("
+            DB::unprepared('
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_elementos_nro_unsj_unique 
                 ON elementos(nro_unsj) 
                 WHERE deleted_at IS NULL AND nro_unsj IS NOT NULL;
-            ");
+            ');
 
             // Disparador de verificación CHECK en SQLite para asegurar al menos un identificador
             DB::unprepared("
@@ -66,11 +66,11 @@ return new class extends Migration
                 $table->unique('nro_unsj', 'idx_elementos_nro_unsj_unique');
             });
 
-            DB::unprepared("
+            DB::unprepared('
                 ALTER TABLE elementos 
                 ADD CONSTRAINT chk_elementos_identificador 
                 CHECK (nro_lia IS NOT NULL OR nro_unsj IS NOT NULL);
-            ");
+            ');
         }
     }
 
@@ -82,12 +82,12 @@ return new class extends Migration
         $driver = DB::getDriverName();
 
         if ($driver === 'sqlite') {
-            DB::unprepared("DROP INDEX IF EXISTS idx_elementos_nro_lia_unique;");
-            DB::unprepared("DROP INDEX IF EXISTS idx_elementos_nro_unsj_unique;");
-            DB::unprepared("DROP TRIGGER IF EXISTS trigger_elementos_check_identificadores_insert;");
-            DB::unprepared("DROP TRIGGER IF EXISTS trigger_elementos_check_identificadores_update;");
+            DB::unprepared('DROP INDEX IF EXISTS idx_elementos_nro_lia_unique;');
+            DB::unprepared('DROP INDEX IF EXISTS idx_elementos_nro_unsj_unique;');
+            DB::unprepared('DROP TRIGGER IF EXISTS trigger_elementos_check_identificadores_insert;');
+            DB::unprepared('DROP TRIGGER IF EXISTS trigger_elementos_check_identificadores_update;');
         } elseif ($driver === 'mysql') {
-            DB::unprepared("ALTER TABLE elementos DROP CONSTRAINT IF EXISTS chk_elementos_identificador;");
+            DB::unprepared('ALTER TABLE elementos DROP CONSTRAINT IF EXISTS chk_elementos_identificador;');
             Schema::table('elementos', function (Blueprint $table) {
                 $table->dropUnique('idx_elementos_nro_lia_unique');
                 $table->dropUnique('idx_elementos_nro_unsj_unique');

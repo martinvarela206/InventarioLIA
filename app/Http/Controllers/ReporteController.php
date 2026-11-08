@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Elemento;
-use App\Enums\EstadoElemento;
-use App\Models\Movimiento;
-use App\Models\Ubicacion;
-use App\Models\Tipo;
 use App\Models\Atributo;
+use App\Models\Elemento;
+use App\Models\Movimiento;
 use App\Models\ReporteConfigurado;
+use App\Models\Tipo;
+use App\Models\Ubicacion;
+use App\Support\CsvSanitizer;
 use Carbon\Carbon;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Database\Seeders\ReporteConfiguradoSeeder;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReporteController extends Controller
 {
@@ -48,7 +49,7 @@ class ReporteController extends Controller
     public function index(): View
     {
         if (ReporteConfigurado::count() === 0) {
-            (new \Database\Seeders\ReporteConfiguradoSeeder())->run();
+            (new ReporteConfiguradoSeeder)->run();
         }
 
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
@@ -66,17 +67,17 @@ class ReporteController extends Controller
     {
         if ($request->filled('columnas_ocultas')) {
             $ocultas = array_filter(array_map('trim', explode(',', $request->input('columnas_ocultas'))));
-            if (!empty($ocultas) && !empty($data['columnas'])) {
+            if (! empty($ocultas) && ! empty($data['columnas'])) {
                 $indicesOcultos = [];
                 foreach ($data['columnas'] as $idx => $nombre) {
                     if (in_array($nombre, $ocultas)) {
                         $indicesOcultos[] = $idx;
                     }
                 }
-                if (!empty($indicesOcultos)) {
-                    $data['columnas'] = array_values(array_filter($data['columnas'], fn($c, $i) => !in_array($i, $indicesOcultos), ARRAY_FILTER_USE_BOTH));
-                    $data['filas'] = collect($data['filas'])->map(function($fila) use ($indicesOcultos) {
-                        return array_values(array_filter((array)$fila, fn($v, $i) => !in_array($i, $indicesOcultos), ARRAY_FILTER_USE_BOTH));
+                if (! empty($indicesOcultos)) {
+                    $data['columnas'] = array_values(array_filter($data['columnas'], fn ($c, $i) => ! in_array($i, $indicesOcultos), ARRAY_FILTER_USE_BOTH));
+                    $data['filas'] = collect($data['filas'])->map(function ($fila) use ($indicesOcultos) {
+                        return array_values(array_filter((array) $fila, fn ($v, $i) => ! in_array($i, $indicesOcultos), ARRAY_FILTER_USE_BOTH));
                     })->all();
                 }
             }
@@ -92,7 +93,7 @@ class ReporteController extends Controller
         $this->filtrarColumnasOcultas($data, $request);
 
         $columnasOcultasIniciales = $request->has('columnas_ocultas')
-            ? array_filter(array_map('trim', explode(',', (string)$request->input('columnas_ocultas'))))
+            ? array_filter(array_map('trim', explode(',', (string) $request->input('columnas_ocultas'))))
             : ($data['columnasOcultasDefecto'] ?? []);
 
         return view('reportes.show', array_merge($data, [
@@ -110,7 +111,7 @@ class ReporteController extends Controller
         $data = $this->obtenerDatosReporte($tipo, $request);
 
         // Si la petición no especificó columnas_ocultas expresas, aplicar las columnas ocultas por defecto
-        if (!$request->has('columnas_ocultas') && !empty($data['columnasOcultasDefecto'])) {
+        if (! $request->has('columnas_ocultas') && ! empty($data['columnasOcultasDefecto'])) {
             $request->merge(['columnas_ocultas' => implode(',', $data['columnasOcultasDefecto'])]);
         }
 
@@ -121,7 +122,7 @@ class ReporteController extends Controller
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . str_replace(' ', '_', $titulo) . '_' . date('Ymd_His') . '.csv"',
+            'Content-Disposition' => 'attachment; filename="'.str_replace(' ', '_', $titulo).'_'.date('Ymd_His').'.csv"',
             'Pragma' => 'no-cache',
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Expires' => '0',
@@ -137,7 +138,7 @@ class ReporteController extends Controller
             fputcsv($handle, $columnas, ';');
 
             foreach ($filas as $fila) {
-                fputcsv($handle, \App\Support\CsvSanitizer::sanitizeRow($fila), ';');
+                fputcsv($handle, CsvSanitizer::sanitizeRow($fila), ';');
             }
 
             fclose($handle);
@@ -158,8 +159,8 @@ class ReporteController extends Controller
         if ($request->filled('puesto')) {
             $puesto = trim($request->input('puesto'));
             $query->where(function ($q) use ($puesto) {
-                $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
-                  ->orWhere('puesto', $puesto);
+                $q->whereHas('ultimoMovimiento', fn ($mq) => $mq->where('puesto', $puesto))
+                    ->orWhere('puesto', $puesto);
             });
         }
 
@@ -184,6 +185,7 @@ class ReporteController extends Controller
         ?string $ubicacionForzada = null,
         ?string $obsForzada = null
     ): array {
+        /** @var Movimiento|null $u */
         $u = $el->ultimoMovimiento;
         $situacion = $situacionForzada;
         if ($situacion === null) {
@@ -233,13 +235,17 @@ class ReporteController extends Controller
         switch ($tipo) {
             case 'inventario-completo':
                 $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
-                if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
-                if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+                if ($request->filled('tipo_id')) {
+                    $query->where('tipo_id', $request->tipo_id);
+                }
+                if ($request->filled('ubicacion_id')) {
+                    $query->whereHas('ultimoMovimiento', fn ($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+                }
                 if ($request->filled('puesto')) {
                     $puesto = trim($request->input('puesto'));
                     $query->where(function ($q) use ($puesto) {
-                        $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
-                          ->orWhere('puesto', $puesto);
+                        $q->whereHas('ultimoMovimiento', fn ($mq) => $mq->where('puesto', $puesto))
+                            ->orWhere('puesto', $puesto);
                     });
                 }
 
@@ -259,13 +265,17 @@ class ReporteController extends Controller
 
             case 'operativos':
                 $query = Elemento::disponibles()->with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
-                if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
-                if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+                if ($request->filled('tipo_id')) {
+                    $query->where('tipo_id', $request->tipo_id);
+                }
+                if ($request->filled('ubicacion_id')) {
+                    $query->whereHas('ultimoMovimiento', fn ($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+                }
                 if ($request->filled('puesto')) {
                     $puesto = trim($request->input('puesto'));
                     $query->where(function ($q) use ($puesto) {
-                        $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
-                          ->orWhere('puesto', $puesto);
+                        $q->whereHas('ultimoMovimiento', fn ($mq) => $mq->where('puesto', $puesto))
+                            ->orWhere('puesto', $puesto);
                     });
                 }
 
@@ -285,15 +295,18 @@ class ReporteController extends Controller
 
             case 'prestados':
                 $query = Elemento::prestadosActivos()->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.usuario', 'valoresAtributos.atributo']);
-                if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
+                if ($request->filled('tipo_id')) {
+                    $query->where('tipo_id', $request->tipo_id);
+                }
 
                 $items = $query->orderBy('id', 'asc')->get();
                 $filas = $items->map(function ($el) use ($atributos) {
                     $u = $el->ultimoMovimiento;
                     $fechaSalida = $u?->fecha_prestamo ? Carbon::parse($u->fecha_prestamo)->format('d/m/Y') : '-';
-                    $dias = $u?->fecha_prestamo ? Carbon::parse($u->fecha_prestamo)->diffInDays(now()) . ' días' : '-';
+                    $dias = $u?->fecha_prestamo ? Carbon::parse($u->fecha_prestamo)->diffInDays(now()).' días' : '-';
                     $sol = $u?->solicitante ? "{$u->solicitante} (Salida: {$fechaSalida} - {$dias})" : '-';
                     $coment = $u?->comentario ?: ($el->observaciones ?: ($el->descripcion_texto ?? '-'));
+
                     return $this->construirFilaElemento($el, $atributos, 'Prestado', $sol, null, $coment);
                 });
 
@@ -310,13 +323,16 @@ class ReporteController extends Controller
             case 'bajas':
                 $query = Elemento::obsoletos()->with(['tipo', 'ultimoMovimiento.ubicacion', 'ultimoMovimiento.usuario', 'valoresAtributos.atributo']);
 
-                if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
+                if ($request->filled('tipo_id')) {
+                    $query->where('tipo_id', $request->tipo_id);
+                }
 
                 $items = $query->orderBy('id', 'asc')->get();
                 $filas = $items->map(function ($el) use ($atributos) {
                     $u = $el->ultimoMovimiento;
                     $sol = $u?->usuario?->nombre ? "Registrado por: {$u->usuario->nombre}" : '-';
                     $coment = $u?->comentario ?: ($el->observaciones ?: ($el->descripcion_texto ?? '-'));
+
                     return $this->construirFilaElemento($el, $atributos, 'Basura Tecnológica', $sol, 'Depósito / Descarte', $coment);
                 });
 
@@ -331,8 +347,8 @@ class ReporteController extends Controller
 
             case 'historial-reparaciones':
             case 'tickets':
-                $nroLia = trim((string)$request->input('nro_lia', ''));
-                $nroUnsj = trim((string)$request->input('nro_unsj', ''));
+                $nroLia = trim((string) $request->input('nro_lia', ''));
+                $nroUnsj = trim((string) $request->input('nro_unsj', ''));
                 $elementoId = $request->input('elemento_id');
 
                 $elemento = null;
@@ -377,31 +393,31 @@ class ReporteController extends Controller
                             'fecha' => $movPrevio->fecha,
                             'tipo' => 'Ubicación Previa a Taller',
                             'estado' => 'Ubicación Operativa Histórica',
-                            'ubicacion' => "{$movPrevio->ubicacion?->nombre} (" . ($movPrevio->puesto ?: 'S/P') . ")",
+                            'ubicacion' => "{$movPrevio->ubicacion?->nombre} (".($movPrevio->puesto ?: 'S/P').')',
                             'responsable' => $movPrevio->usuario?->nombre ?? 'Sistema',
                             'detalle' => $movPrevio->comentario ?: 'Movimiento anterior al reporte de falla',
                         ]);
                     }
 
-                    if ($ultimoPrestamo && (!$movPrevio || $ultimoPrestamo->id !== $movPrevio->id)) {
+                    if ($ultimoPrestamo && (! $movPrevio || $ultimoPrestamo->id !== $movPrevio->id)) {
                         $consolidado->push([
                             'fecha' => $ultimoPrestamo->fecha,
                             'tipo' => 'Último Préstamo Registrado',
                             'estado' => $ultimoPrestamo->fecha_devolucion ? 'Devuelto' : 'Prestado Activo',
                             'ubicacion' => 'Préstamo a Terceros / Cátedra',
                             'responsable' => $ultimoPrestamo->solicitante ?: 'Docente externo',
-                            'detalle' => "Salida: " . ($ultimoPrestamo->fecha_prestamo ? Carbon::parse($ultimoPrestamo->fecha_prestamo)->format('d/m/Y') : '-') . 
-                                         ($ultimoPrestamo->fecha_devolucion ? " | Retorno: " . Carbon::parse($ultimoPrestamo->fecha_devolucion)->format('d/m/Y') : ''),
+                            'detalle' => 'Salida: '.($ultimoPrestamo->fecha_prestamo ? Carbon::parse($ultimoPrestamo->fecha_prestamo)->format('d/m/Y') : '-').
+                                         ($ultimoPrestamo->fecha_devolucion ? ' | Retorno: '.Carbon::parse($ultimoPrestamo->fecha_devolucion)->format('d/m/Y') : ''),
                         ]);
                     }
 
                     foreach ($movimientosReparacion as $mr) {
                         $consolidado->push([
                             'fecha' => $mr->fecha,
-                            'tipo' => 'Ticket de Reparación #' . $mr->id,
+                            'tipo' => 'Ticket de Reparación #'.$mr->id,
                             'estado' => ucfirst($mr->estado_ticket ?: 'Abierto'),
-                            'ubicacion' => "{$mr->ubicacion?->nombre} (" . ($mr->puesto ?: 'S/P') . ")",
-                            'responsable' => "Reportado por: " . ($mr->solicitante ?: ($mr->usuario?->nombre ?? 'Sistema')),
+                            'ubicacion' => "{$mr->ubicacion?->nombre} (".($mr->puesto ?: 'S/P').')',
+                            'responsable' => 'Reportado por: '.($mr->solicitante ?: ($mr->usuario?->nombre ?? 'Sistema')),
                             'detalle' => $mr->comentario,
                         ]);
                     }
@@ -411,7 +427,7 @@ class ReporteController extends Controller
                             'fecha' => $mb->fecha,
                             'tipo' => 'Baja Patrimonial',
                             'estado' => 'Basura Tecnológica',
-                            'ubicacion' => "{$mb->ubicacion?->nombre} (" . ($mb->puesto ?: 'Descarte') . ")",
+                            'ubicacion' => "{$mb->ubicacion?->nombre} (".($mb->puesto ?: 'Descarte').')',
                             'responsable' => $mb->usuario?->nombre ?? 'Técnico LIA',
                             'detalle' => $mb->comentario,
                         ]);
@@ -430,7 +446,7 @@ class ReporteController extends Controller
 
                     return [
                         'titulo' => "Historial Consolidado de Tickets: {$elemento->nro_lia}",
-                        'subtitulo' => "Auditoría de reparaciones, bajas, sala previa y último préstamo de {$elemento->marca} {$elemento->modelo} (" . ucfirst($elemento->tipo?->nombre ?? 'Activo') . ")",
+                        'subtitulo' => "Auditoría de reparaciones, bajas, sala previa y último préstamo de {$elemento->marca} {$elemento->modelo} (".ucfirst($elemento->tipo?->nombre ?? 'Activo').')',
                         'columnas' => ['Fecha / Hora', 'Concepto / Operación', 'Estado', 'Ubicación / Sala', 'Responsable / Informante', 'Detalle Técnico / Solución'],
                         'filas' => $filas,
                         'total' => count($filas),
@@ -445,6 +461,7 @@ class ReporteController extends Controller
                 $filas = $items->map(function ($m) {
                     $el = $m->elemento;
                     $estado = $m->tipo_movimiento === 'baja' ? 'Baja / Basura Tec.' : ($m->estado_ticket ? ucfirst($m->estado_ticket) : 'En Taller');
+
                     return [
                         $el?->tipo?->nombre ?? 'N/A',
                         $el?->nro_lia ?? '-',
@@ -496,6 +513,7 @@ class ReporteController extends Controller
                 $filas = $items->map(function ($m) {
                     $el = $m->elemento;
                     $situacion = $m->esPrestamo() ? 'Préstamo externo' : 'Movimiento interno';
+
                     return [
                         $el?->tipo?->nombre ?? 'N/A',
                         $el?->nro_lia ?? '-',
@@ -505,7 +523,7 @@ class ReporteController extends Controller
                         $m->ubicacion?->nombre ?? 'Préstamo externo',
                         $m->puesto ?? '-',
                         $situacion,
-                        $m->solicitante ? "{$m->solicitante} (Desde: " . Carbon::parse($m->fecha_prestamo)->format('d/m/Y') . ")" : '-',
+                        $m->solicitante ? "{$m->solicitante} (Desde: ".Carbon::parse($m->fecha_prestamo)->format('d/m/Y').')' : '-',
                         $m->comentario ?? '-',
                     ];
                 });
@@ -529,7 +547,8 @@ class ReporteController extends Controller
                     ->get();
 
                 $filas = $items->map(function ($el) use ($atributos) {
-                    $sol = "Alta: " . Carbon::parse($el->fecha_adquisicion)->format('d/m/Y');
+                    $sol = 'Alta: '.Carbon::parse($el->fecha_adquisicion)->format('d/m/Y');
+
                     return $this->construirFilaElemento($el, $atributos, 'Registrado', $sol, null, $el->observaciones ?? '-');
                 });
 
@@ -554,14 +573,15 @@ class ReporteController extends Controller
                 $columnasMov = ['Fecha', 'Tipo Movimiento', 'Elemento (LIA/UNSJ)', 'Dispositivo', 'Ubicación / Puesto', 'Situación', 'Responsable', 'Solicitante / Comentario'];
                 $filas = $items->map(function ($m) {
                     $el = $m->elemento;
-                    $ident = "LIA: " . ($el?->nro_lia ?? '-') . " | UNSJ: " . ($el?->nro_unsj ?? '-');
-                    $disp = ($el?->tipo?->nombre ?? '') . " " . ($el?->marca ?? '') . " " . ($el?->modelo ?? '');
+                    $ident = 'LIA: '.($el?->nro_lia ?? '-').' | UNSJ: '.($el?->nro_unsj ?? '-');
+                    $disp = ($el?->tipo?->nombre ?? '').' '.($el?->marca ?? '').' '.($el?->modelo ?? '');
+
                     return [
                         Carbon::parse($m->fecha)->format('d/m/Y H:i'),
                         $m->tipo_movimiento === 'externo_prestamo' ? 'Préstamo Externo' : 'Traslado Interno',
                         $ident,
                         trim($disp),
-                        ($m->ubicacion?->nombre ?? 'Préstamo') . ($m->puesto ? " ({$m->puesto})" : ''),
+                        ($m->ubicacion?->nombre ?? 'Préstamo').($m->puesto ? " ({$m->puesto})" : ''),
                         $m->esPrestamo() ? 'Prestado' : 'En Sala',
                         $m->usuario?->nombre ?? 'Sistema',
                         $m->solicitante ? "Solicitante: {$m->solicitante}" : ($m->comentario ?? '-'),
@@ -612,14 +632,14 @@ class ReporteController extends Controller
                     ->whereBetween('fecha', [$desde, $hasta])
                     ->where(function ($q) {
                         $q->where('comentario', 'like', '%dona%')
-                          ->orWhere('solicitante', 'like', '%dona%');
+                            ->orWhere('solicitante', 'like', '%dona%');
                     })
                     ->get();
 
                 $elementosDonados = Elemento::whereBetween('fecha_adquisicion', [$desde, $hasta])
                     ->where(function ($q) {
                         $q->where('observaciones', 'like', '%dona%')
-                          ->orWhere('descripcion', 'like', '%dona%');
+                            ->orWhere('descripcion', 'like', '%dona%');
                     })
                     ->with(['tipo', 'ultimoMovimiento.ubicacion'])
                     ->get();
@@ -634,7 +654,7 @@ class ReporteController extends Controller
                         $el->tipo?->nombre ?? 'Activo',
                         $el->nro_lia ?? '-',
                         $el->nro_unsj ?? '-',
-                        trim(($el->marca ?? '') . ' ' . ($el->modelo ?? '')),
+                        trim(($el->marca ?? '').' '.($el->modelo ?? '')),
                         $u?->ubicacion?->nombre ?? ($el->puesto ?: 'Depósito'),
                         'Alta por Donación',
                         'Donación Recibida',
@@ -649,7 +669,7 @@ class ReporteController extends Controller
                         $el?->tipo?->nombre ?? 'Activo',
                         $el?->nro_lia ?? '-',
                         $el?->nro_unsj ?? '-',
-                        trim(($el?->marca ?? '') . ' ' . ($el?->modelo ?? '')),
+                        trim(($el?->marca ?? '').' '.($el?->modelo ?? '')),
                         $m->ubicacion?->nombre ?? 'Destino Externo',
                         'Transferencia / Donación',
                         $m->solicitante ?: 'Donación Institucional',
@@ -678,10 +698,11 @@ class ReporteController extends Controller
                 $columnasIngreso = ['Fecha Ingreso', 'Nro LIA', 'Nro UNSJ', 'Tipo', 'Marca y Modelo', 'Ubicación Actual', 'Puesto', 'Estado / Situación', 'Garantía', 'Observaciones'];
 
                 $filas = $items->map(function ($el) {
+                    /** @var Movimiento|null $u */
                     $u = $el->ultimoMovimiento;
                     $situacion = 'En Sala / Operativo';
-                    if ($u?->esPrestamo() && !$u?->fecha_devolucion) {
-                        $situacion = 'Prestado (' . $u->diasPrestado() . ' d)';
+                    if ($u?->esPrestamo() && ! $u?->fecha_devolucion) {
+                        $situacion = 'Prestado ('.$u->diasPrestado().' d)';
                     } elseif ($el->tipo?->nombre === 'basura tecnologica') {
                         $situacion = 'Basura Tecnológica';
                     }
@@ -697,7 +718,7 @@ class ReporteController extends Controller
                         $el->nro_lia ?? '-',
                         $el->nro_unsj ?? '-',
                         $el->tipo?->nombre ?? 'N/A',
-                        trim(($el->marca ?? '') . ' ' . ($el->modelo ?? '')),
+                        trim(($el->marca ?? '').' '.($el->modelo ?? '')),
                         $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo Externo' : 'Sin asignar'),
                         $u?->puesto ?: ($el->puesto ?? '-'),
                         $situacion,
@@ -733,16 +754,16 @@ class ReporteController extends Controller
                     $esVencida = $venc->isPast();
                     $estado = $esVencida ? 'Vencida' : 'Vigente';
                     $relativo = $esVencida
-                        ? 'Venció hace ' . $venc->diffForHumans($hoy, ['parts' => 1, 'syntax' => Carbon::DIFF_ABSOLUTE])
-                        : 'Vence en ' . $hoy->diffForHumans($venc, ['parts' => 1, 'syntax' => Carbon::DIFF_ABSOLUTE]);
+                        ? 'Venció hace '.$venc->diffForHumans($hoy, ['parts' => 1, 'syntax' => Carbon::DIFF_ABSOLUTE])
+                        : 'Vence en '.$hoy->diffForHumans($venc, ['parts' => 1, 'syntax' => Carbon::DIFF_ABSOLUTE]);
 
                     return [
                         $venc->format('d/m/Y'),
                         $el->nro_lia ?? '-',
                         $el->nro_unsj ?? '-',
                         $el->tipo?->nombre ?? 'N/A',
-                        trim(($el->marca ?? '') . ' ' . ($el->modelo ?? '')),
-                        ($u?->ubicacion?->nombre ?? 'Sin asignar') . ($u?->puesto ? " ({$u->puesto})" : ''),
+                        trim(($el->marca ?? '').' '.($el->modelo ?? '')),
+                        ($u?->ubicacion?->nombre ?? 'Sin asignar').($u?->puesto ? " ({$u->puesto})" : ''),
                         $estado,
                         $relativo,
                         $el->observaciones ?: ($el->descripcion_texto ?? '-'),
@@ -767,10 +788,11 @@ class ReporteController extends Controller
                 $columnasTraza = ['Fecha / Hora', 'Tipo Evento', 'Ubicación / Puesto', 'Situación', 'Solicitante / Préstamo', 'Notas'];
                 $filas = $items->map(function ($m, $idx) {
                     $actualTag = ($idx === 0) ? ' ★ Actual' : '';
+
                     return [
                         Carbon::parse($m->fecha)->format('d/m/Y H:i'),
-                        ($m->tipo_movimiento === 'externo_prestamo' ? 'Préstamo Externo' : 'Movimiento Interno') . $actualTag,
-                        ($m->ubicacion?->nombre ?? 'Préstamo') . ($m->puesto ? " ({$m->puesto})" : ''),
+                        ($m->tipo_movimiento === 'externo_prestamo' ? 'Préstamo Externo' : 'Movimiento Interno').$actualTag,
+                        ($m->ubicacion?->nombre ?? 'Préstamo').($m->puesto ? " ({$m->puesto})" : ''),
                         $m->esPrestamo() ? 'Prestado' : 'En Sala',
                         $m->solicitante ?: '-',
                         $m->comentario ?: '-',
@@ -798,16 +820,22 @@ class ReporteController extends Controller
                 }
 
                 $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
-                if ($request->filled('tipo_id')) $query->where('tipo_id', $request->tipo_id);
-                if ($request->filled('ubicacion_id')) $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+                if ($request->filled('tipo_id')) {
+                    $query->where('tipo_id', $request->tipo_id);
+                }
+                if ($request->filled('ubicacion_id')) {
+                    $query->whereHas('ultimoMovimiento', fn ($q) => $q->where('ubicacion_id', $request->ubicacion_id));
+                }
                 if ($request->filled('puesto')) {
                     $puesto = trim($request->input('puesto'));
                     $query->where(function ($q) use ($puesto) {
-                        $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
-                          ->orWhere('puesto', $puesto);
+                        $q->whereHas('ultimoMovimiento', fn ($mq) => $mq->where('puesto', $puesto))
+                            ->orWhere('puesto', $puesto);
                     });
                 }
-                if ($request->filled('anio')) $query->where('anio_compra', $request->anio);
+                if ($request->filled('anio')) {
+                    $query->where('anio_compra', $request->anio);
+                }
 
                 $items = $query->orderBy('id', 'asc')->get();
                 $filas = $items->map(function ($el) use ($atributos) {
@@ -839,14 +867,14 @@ class ReporteController extends Controller
 
         // 1. Resolución robusta de Tipo: soporta tipo_id, tipo (nombre o slug) o filtro search coincidente
         $tipoId = $request->input('tipo_id', $filtros['tipo_id'] ?? ($filtros['tipo'] ?? null));
-        if (!empty($tipoId) && !is_numeric($tipoId)) {
+        if (! empty($tipoId) && ! is_numeric($tipoId)) {
             $tipoModel = Tipo::where('nombre', $tipoId)->orWhere('slug', $tipoId)->first();
             $tipoId = $tipoModel?->id;
         }
 
         // 2. Resolución de Ubicación: sólo filtra si se especifica expresamente (no fuerza ubicacion_id = 1)
         $ubicacionId = $request->input('ubicacion_id', $filtros['ubicacion_id'] ?? ($filtros['ubicacion'] ?? null));
-        if (!empty($ubicacionId) && !is_numeric($ubicacionId)) {
+        if (! empty($ubicacionId) && ! is_numeric($ubicacionId)) {
             $ubModel = Ubicacion::where('nombre', $ubicacionId)->orWhere('slug', $ubicacionId)->first();
             $ubicacionId = $ubModel?->id;
         }
@@ -861,7 +889,7 @@ class ReporteController extends Controller
 
         // Si search o filtro fijo coincide con un tipo de activo y no hay tipoId explícito,
         // resolver como filtro específico por tipo_id para encontrar todos los activos del tipo
-        if (!empty($search) && empty($tipoId)) {
+        if (! empty($search) && empty($tipoId)) {
             $terminoNormalizado = strtolower(trim($search));
             $tipoCoincidente = Tipo::where('nombre', $terminoNormalizado)
                 ->orWhere('nombre', rtrim($terminoNormalizado, 's'))
@@ -877,23 +905,23 @@ class ReporteController extends Controller
 
         $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo']);
 
-        if (!empty($tipoId)) {
+        if (! empty($tipoId)) {
             $query->where('tipo_id', $tipoId);
         }
 
-        if (!empty($ubicacionId)) {
-            $query->whereHas('ultimoMovimiento', fn($q) => $q->where('ubicacion_id', $ubicacionId));
+        if (! empty($ubicacionId)) {
+            $query->whereHas('ultimoMovimiento', fn ($q) => $q->where('ubicacion_id', $ubicacionId));
         }
 
-        if (!empty($puesto)) {
+        if (! empty($puesto)) {
             $puesto = trim($puesto);
             $query->where(function ($q) use ($puesto) {
-                $q->whereHas('ultimoMovimiento', fn($mq) => $mq->where('puesto', $puesto))
-                  ->orWhere('puesto', $puesto);
+                $q->whereHas('ultimoMovimiento', fn ($mq) => $mq->where('puesto', $puesto))
+                    ->orWhere('puesto', $puesto);
             });
         }
 
-        if (!empty($situacion)) {
+        if (! empty($situacion)) {
             if ($situacion === 'operativo') {
                 $query->disponibles();
             } elseif ($situacion === 'prestado') {
@@ -901,36 +929,36 @@ class ReporteController extends Controller
             } elseif ($situacion === 'baja') {
                 $query->bajas();
             } elseif ($situacion === 'en_reparacion') {
-                $query->whereHas('ultimoMovimiento', fn($q) => $q->where('tipo_movimiento', 'reparacion')->whereNull('fecha_devolucion'));
+                $query->whereHas('ultimoMovimiento', fn ($q) => $q->where('tipo_movimiento', 'reparacion')->whereNull('fecha_devolucion'));
             }
         }
 
-        if (!empty($anio)) {
+        if (! empty($anio)) {
             $query->where('anio_compra', $anio);
         }
 
-        if (!empty($search)) {
+        if (! empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('nro_lia', 'like', "%{$search}%")
-                  ->orWhere('nro_unsj', 'like', "%{$search}%")
-                  ->orWhere('marca', 'like', "%{$search}%")
-                  ->orWhere('modelo', 'like', "%{$search}%")
-                  ->orWhere('observaciones', 'like', "%{$search}%")
-                  ->orWhereHas('tipo', function ($qt) use ($search) {
-                      $qt->where('nombre', 'like', "%{$search}%");
-                  });
+                    ->orWhere('nro_unsj', 'like', "%{$search}%")
+                    ->orWhere('marca', 'like', "%{$search}%")
+                    ->orWhere('modelo', 'like', "%{$search}%")
+                    ->orWhere('observaciones', 'like', "%{$search}%")
+                    ->orWhereHas('tipo', function ($qt) use ($search) {
+                        $qt->where('nombre', 'like', "%{$search}%");
+                    });
             });
         }
 
-        if (!empty($nroLia)) {
+        if (! empty($nroLia)) {
             $query->where('nro_lia', 'like', "%{$nroLia}%");
         }
 
-        if (!empty($fechaDesde) && !empty($fechaHasta)) {
+        if (! empty($fechaDesde) && ! empty($fechaHasta)) {
             $query->whereBetween('fecha_adquisicion', [$fechaDesde, $fechaHasta]);
-        } elseif (!empty($fechaDesde)) {
+        } elseif (! empty($fechaDesde)) {
             $query->where('fecha_adquisicion', '>=', $fechaDesde);
-        } elseif (!empty($fechaHasta)) {
+        } elseif (! empty($fechaHasta)) {
             $query->where('fecha_adquisicion', '<=', $fechaHasta);
         }
 
@@ -960,12 +988,15 @@ class ReporteController extends Controller
         }
 
         // 2. Si especificó N° LIA y/o N° UNSJ
-        $nroLia = trim((string)$request->input('nro_lia', ''));
-        $nroUnsj = trim((string)$request->input('nro_unsj', ''));
+        $nroLia = trim((string) $request->input('nro_lia', ''));
+        $nroUnsj = trim((string) $request->input('nro_unsj', ''));
 
         if ($nroLia !== '' && $nroUnsj !== '') {
             $el = Elemento::conEstado()->where('nro_lia', $nroLia)->where('nro_unsj', $nroUnsj)->first();
-            if ($el) return $el;
+            if ($el) {
+                return $el;
+            }
+
             return null; // Si se buscó explícitamente y no coincide, no hacer fallback ciego
         }
 

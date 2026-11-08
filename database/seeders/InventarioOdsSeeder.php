@@ -12,8 +12,8 @@ class InventarioOdsSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command?->info("Importando inventario oficial completo desde archivo ODS...");
-        
+        $this->command?->info('Importando inventario oficial completo desde archivo ODS...');
+
         Artisan::call('inventario:import-ods', [
             '--fresh' => true,
         ], $this->command?->getOutput());

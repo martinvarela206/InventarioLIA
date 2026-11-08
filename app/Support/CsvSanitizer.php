@@ -14,19 +14,19 @@ class CsvSanitizer
      */
     public static function sanitizeField(mixed $value): mixed
     {
-        if (!is_string($value) || $value === '') {
+        if (! is_string($value) || $value === '') {
             return $value;
         }
 
         $firstChar = $value[0];
         if (in_array($firstChar, self::DANGEROUS_PREFIXES, true)) {
-            return "'" . $value;
+            return "'".$value;
         }
 
         // Si comienza con espacios y luego con un prefijo de fórmula
-        $trimmedSpaces = ltrim($value, " ");
+        $trimmedSpaces = ltrim($value, ' ');
         if ($trimmedSpaces !== '' && in_array($trimmedSpaces[0], self::DANGEROUS_PREFIXES, true)) {
-            return "'" . $value;
+            return "'".$value;
         }
 
         return $value;
@@ -35,7 +35,7 @@ class CsvSanitizer
     /**
      * Sanitiza una fila completa de datos CSV.
      *
-     * @param array<int|string, mixed> $row
+     * @param  array<int|string, mixed>  $row
      * @return array<int|string, mixed>
      */
     public static function sanitizeRow(array $row): array

@@ -2,16 +2,16 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Actions\Ubicaciones\ReubicarActivosLoteAction;
+use App\Enums\EstadoElemento;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
-use App\Enums\EstadoElemento;
-use App\Actions\Ubicaciones\ReubicarActivosLoteAction;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Tests\TestCase;
 
 class ReubicarActivosLoteActionTest extends TestCase
 {
@@ -26,7 +26,7 @@ class ReubicarActivosLoteActionTest extends TestCase
     public function test_reubicacion_en_lote_a_destino_comun_saca_activos_de_limbo(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         // Sala archivada / histórica
         $salaVieja = Ubicacion::create([
@@ -67,7 +67,7 @@ class ReubicarActivosLoteActionTest extends TestCase
     public function test_reubicacion_discriminada_permite_destinos_y_puestos_diferentes(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $salaA = Ubicacion::create(['nombre' => 'Sala Servidores', 'activa' => true]);
         $salaB = Ubicacion::create(['nombre' => 'Depósito Central', 'activa' => true]);
@@ -101,7 +101,7 @@ class ReubicarActivosLoteActionTest extends TestCase
     public function test_rechaza_reubicar_a_sala_inactiva(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
         $salaInactiva = Ubicacion::create(['nombre' => 'Sala Inactiva Destino', 'activa' => false]);
 
         $el = Elemento::create(['nro_lia' => 'TST-DEST-INACT', 'tipo_id' => $tipo->id, 'modelo' => 'PC']);
@@ -115,7 +115,7 @@ class ReubicarActivosLoteActionTest extends TestCase
     public function test_rechaza_reubicar_activo_en_baja(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
         $salaDestino = Ubicacion::create(['nombre' => 'Sala Valida', 'activa' => true]);
 
         $el = Elemento::create(['nro_lia' => 'TST-REUB-BAJA', 'tipo_id' => $tipo->id, 'modelo' => 'PC Quemada']);

@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Middleware\CheckAppAdmin;
+use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\CheckUserAdmin;
+use App\Http\Middleware\EnsureHasOperationalRole;
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,19 +19,19 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\SecurityHeaders::class,
+            SecurityHeaders::class,
         ]);
 
         $middleware->api(append: [
-            \App\Http\Middleware\EnsureUserIsActive::class,
+            EnsureUserIsActive::class,
         ]);
 
         $middleware->alias([
-            'user_admin' => \App\Http\Middleware\CheckUserAdmin::class,
-            'app_admin' => \App\Http\Middleware\CheckAppAdmin::class,
-            'role' => \App\Http\Middleware\CheckRole::class,
-            'has_permissions' => \App\Http\Middleware\EnsureHasOperationalRole::class,
-            'active_user' => \App\Http\Middleware\EnsureUserIsActive::class,
+            'user_admin' => CheckUserAdmin::class,
+            'app_admin' => CheckAppAdmin::class,
+            'role' => CheckRole::class,
+            'has_permissions' => EnsureHasOperationalRole::class,
+            'active_user' => EnsureUserIsActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

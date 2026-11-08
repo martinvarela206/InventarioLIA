@@ -2,8 +2,8 @@
 
 namespace App\Actions\Ubicaciones;
 
-use App\Models\Ubicacion;
 use App\Models\Elemento;
+use App\Models\Ubicacion;
 use App\Models\Usuario;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -15,6 +15,7 @@ class RenombrarUbicacionAction
      * y archivando la original como histórica, pasando sus activos a estado de limbo.
      *
      * @return array{ubicacion_antigua: Ubicacion, nueva_ubicacion: Ubicacion, renombro: bool, activos_en_limbo: int}
+     *
      * @throws ValidationException
      */
     public function execute(int|Ubicacion $ubicacion, string $nuevoNombre, ?string $descripcion = null, ?Usuario $usuario = null): array
@@ -55,8 +56,8 @@ class RenombrarUbicacionAction
             // Contar activos actualmente asignados a la sala antigua
             $activosCount = Elemento::whereHas('ultimoMovimiento', function ($q) use ($ubiAntigua) {
                 $q->where('ubicacion_id', $ubiAntigua->id)
-                  ->whereNotIn('tipo_movimiento', ['baja']);
-            })->whereDoesntHave('tipo', fn($t) => $t->where('nombre', 'basura tecnologica'))->count();
+                    ->whereNotIn('tipo_movimiento', ['baja']);
+            })->whereDoesntHave('tipo', fn ($t) => $t->where('nombre', 'basura tecnologica'))->count();
 
             // 1. Archivar la ubicación antigua como histórica
             $ubiAntigua->update([

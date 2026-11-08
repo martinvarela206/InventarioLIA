@@ -2,18 +2,17 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Actions\Movimientos\RegistrarPrestamoAction;
+use App\Enums\EstadoElemento;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
-use App\Models\Rol;
-use App\Enums\EstadoElemento;
-use App\Actions\Movimientos\RegistrarPrestamoAction;
-use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
+use Tests\TestCase;
 
 class RegistrarPrestamoActionTest extends TestCase
 {
@@ -29,7 +28,7 @@ class RegistrarPrestamoActionTest extends TestCase
     {
         $tipo = Tipo::first();
         $ubicacion = Ubicacion::where('activa', true)->first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-PREST-01',
@@ -64,7 +63,7 @@ class RegistrarPrestamoActionTest extends TestCase
     public function test_accion_rechaza_prestar_activo_en_baja(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-PREST-BAJA',
@@ -90,7 +89,7 @@ class RegistrarPrestamoActionTest extends TestCase
     public function test_accion_rechaza_prestar_activo_en_reparacion(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-PREST-REP',
@@ -117,7 +116,7 @@ class RegistrarPrestamoActionTest extends TestCase
     public function test_accion_rechaza_prestar_activo_en_limbo(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $salaInactiva = Ubicacion::create([
             'nombre' => 'Sala Desmantelada 99',
@@ -149,7 +148,7 @@ class RegistrarPrestamoActionTest extends TestCase
     public function test_accion_rechaza_prestar_activo_ya_prestado(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-PREST-DUPL',
@@ -178,7 +177,7 @@ class RegistrarPrestamoActionTest extends TestCase
     public function test_rechaza_prestamo_sin_solicitante_o_con_fecha_futura(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-PREST-FUTURO',
@@ -209,7 +208,7 @@ class RegistrarPrestamoActionTest extends TestCase
     public function test_controller_bloquea_traslado_interno_de_activo_prestado(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
         $ubicacion = Ubicacion::where('activa', true)->first();
 
         $elemento = Elemento::create([
@@ -240,7 +239,7 @@ class RegistrarPrestamoActionTest extends TestCase
     public function test_request_rechaza_tipos_movimiento_no_autorizados(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $elemento = Elemento::create([
             'nro_lia' => 'TST-REQ-BLOQ',

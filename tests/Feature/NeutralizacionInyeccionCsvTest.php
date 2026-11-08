@@ -17,7 +17,9 @@ class NeutralizacionInyeccionCsvTest extends TestCase
     use RefreshDatabase;
 
     protected Usuario $revisor;
+
     protected Ubicacion $ubicacion;
+
     protected Tipo $tipo;
 
     protected function setUp(): void
@@ -35,9 +37,9 @@ class NeutralizacionInyeccionCsvTest extends TestCase
     public function test_csv_sanitizer_neutraliza_prefijos_peligrosos(): void
     {
         $this->assertEquals("'=cmd|' /C calc'!A0", CsvSanitizer::sanitizeField("=cmd|' /C calc'!A0"));
-        $this->assertEquals("'+12345", CsvSanitizer::sanitizeField("+12345"));
-        $this->assertEquals("'-100", CsvSanitizer::sanitizeField("-100"));
-        $this->assertEquals("'@SUM(A1:A10)", CsvSanitizer::sanitizeField("@SUM(A1:A10)"));
+        $this->assertEquals("'+12345", CsvSanitizer::sanitizeField('+12345'));
+        $this->assertEquals("'-100", CsvSanitizer::sanitizeField('-100'));
+        $this->assertEquals("'@SUM(A1:A10)", CsvSanitizer::sanitizeField('@SUM(A1:A10)'));
         $this->assertEquals("'\tTabulado", CsvSanitizer::sanitizeField("\tTabulado"));
         $this->assertEquals("'\rRetorno", CsvSanitizer::sanitizeField("\rRetorno"));
 

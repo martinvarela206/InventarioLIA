@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Usuario;
-use App\Models\Rol;
-use App\Models\Carrera;
 use App\Models\Cargo;
-use App\Models\UsuarioTrayectoria;
+use App\Models\Carrera;
 use App\Models\Movimiento;
 use App\Models\ReporteConfigurado;
-use Illuminate\Http\Request;
-use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
+use App\Models\Rol;
+use App\Models\TicketComentario;
+use App\Models\Usuario;
+use App\Models\UsuarioTrayectoria;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\View\View;
 
 class UserController extends Controller
 {
@@ -37,14 +39,15 @@ class UserController extends Controller
             $buscar = $request->buscar;
             $query->where(function ($q) use ($buscar) {
                 $q->where('nombre', 'like', "%{$buscar}%")
-                  ->orWhere('email', 'like', "%{$buscar}%")
-                  ->orWhere('dni', 'like', "%{$buscar}%");
+                    ->orWhere('email', 'like', "%{$buscar}%")
+                    ->orWhere('dni', 'like', "%{$buscar}%");
             });
         }
 
         $users = $query->paginate(20)->withQueryString();
         $roles = Rol::all();
         $exColaboradoresElegibles = Usuario::elegiblesBorradoHuella();
+
         return view('users.index', compact('users', 'roles', 'exColaboradoresElegibles'));
     }
 
@@ -58,6 +61,7 @@ class UserController extends Controller
         $roles = Rol::all();
         $carreras = Carrera::orderBy('nombre')->get();
         $cargos = Cargo::activos()->orderBy('orden')->orderBy('nombre')->get();
+
         return view('users.edit', compact('user', 'roles', 'carreras', 'cargos'));
     }
 
@@ -68,8 +72,8 @@ class UserController extends Controller
         }
         $validated = $request->validate([
             'nombre' => 'required|string|max:100',
-            'email' => 'required|email|max:150|unique:usuarios,email,' . $user->id,
-            'dni' => 'nullable|string|max:15|unique:usuarios,dni,' . $user->id,
+            'email' => 'required|email|max:150|unique:usuarios,email,'.$user->id,
+            'dni' => 'nullable|string|max:15|unique:usuarios,dni,'.$user->id,
             'fecha_nacimiento' => 'nullable|date',
             'carrera_id' => 'nullable|exists:carreras,id',
             'cargo_id' => 'nullable|exists:cargos,id',
@@ -90,7 +94,7 @@ class UserController extends Controller
             $actor = auth()->user();
 
             // Blindaje anti-escalada: solo un app_admin puede otorgar o revocar el rol app_admin
-            if ($appAdminRol && (!$actor || !$actor->isAppAdmin())) {
+            if ($appAdminRol && (! $actor || ! $actor->isAppAdmin())) {
                 $teniaAppAdmin = $user->hasRole('app_admin');
                 $quiereAppAdmin = in_array($appAdminRol->id, $rolesInput);
                 if ($teniaAppAdmin !== $quiereAppAdmin) {
@@ -99,7 +103,7 @@ class UserController extends Controller
             }
 
             // Prevenir que un user_admin modifique sus propios roles en update masivo
-            if ($actor && $user->id === $actor->id && !$actor->isAppAdmin()) {
+            if ($actor && $user->id === $actor->id && ! $actor->isAppAdmin()) {
                 $rolesInput = $user->roles()->pluck('roles.id')->toArray();
             }
 
@@ -109,7 +113,7 @@ class UserController extends Controller
             $rolesDespues = $user->fresh()->roles()->pluck('rol')->toArray();
 
             if ($rolesAntes != $rolesDespues) {
-                Log::info("AUDITORIA_ROLES: Sincronización de roles en actualización de usuario", [
+                Log::info('AUDITORIA_ROLES: Sincronización de roles en actualización de usuario', [
                     'actor_id' => $actor?->id,
                     'actor_email' => $actor?->email,
                     'target_id' => $user->id,
@@ -127,7 +131,7 @@ class UserController extends Controller
     public function toggleRole(Request $request, Usuario $user): JsonResponse
     {
         $request->validate([
-            'role' => 'required|exists:roles,rol'
+            'role' => 'required|exists:roles,rol',
         ]);
 
         $roleName = $request->role;
@@ -135,18 +139,18 @@ class UserController extends Controller
         $actor = auth()->user();
 
         // 1. Solo app_admin puede tocar el rol app_admin
-        if ($roleName === 'app_admin' && (!$actor || !$actor->isAppAdmin())) {
+        if ($roleName === 'app_admin' && (! $actor || ! $actor->isAppAdmin())) {
             return response()->json([
                 'message' => 'Solo un administrador general (app_admin) puede asignar o revocar el rol app_admin.',
-                'status' => 'error'
+                'status' => 'error',
             ], 403);
         }
 
         // 2. Prevenir autoasignación o alteración de roles propios por parte de user_admin
-        if ($actor && $user->id === $actor->id && !$actor->isAppAdmin()) {
+        if ($actor && $user->id === $actor->id && ! $actor->isAppAdmin()) {
             return response()->json([
                 'message' => 'No tienes permisos para modificar tus propios roles.',
-                'status' => 'error'
+                'status' => 'error',
             ], 403);
         }
 
@@ -167,7 +171,7 @@ class UserController extends Controller
             $status = 'assigned';
         }
 
-        Log::info("AUDITORIA_ROLES: Cambio individual de rol", [
+        Log::info('AUDITORIA_ROLES: Cambio individual de rol', [
             'actor_id' => $actor?->id,
             'actor_email' => $actor?->email,
             'target_id' => $user->id,
@@ -182,16 +186,16 @@ class UserController extends Controller
 
     public function toggleActivo(Request $request, Usuario $user): RedirectResponse
     {
-        $user->activo = !$user->activo;
+        $user->activo = ! $user->activo;
         $user->save();
 
-        if (!$user->activo) {
+        if (! $user->activo) {
             // Revocar tokens Sanctum activos
             $user->tokens()->delete();
 
             // Purgar sesiones persistidas en base de datos si existe la tabla
-            if (\Illuminate\Support\Facades\Schema::hasTable('sessions')) {
-                \Illuminate\Support\Facades\DB::table('sessions')
+            if (Schema::hasTable('sessions')) {
+                DB::table('sessions')
                     ->where('user_id', $user->id)
                     ->delete();
             }
@@ -208,6 +212,7 @@ class UserController extends Controller
         }
 
         $estado = $user->activo ? 'activada' : 'desactivada';
+
         return redirect()->route('users.index')->with('success', "Cuenta del usuario {$user->nombre} {$estado}.");
     }
 
@@ -215,6 +220,7 @@ class UserController extends Controller
     {
         $user->load('trayectorias');
         $cargos = Cargo::activos()->orderBy('orden')->orderBy('nombre')->get();
+
         return view('users.trayectoria', compact('user', 'cargos'));
     }
 
@@ -256,7 +262,7 @@ class UserController extends Controller
                     ->with('error', 'La huella digital de este usuario ya ha sido borrada previamente.');
             }
 
-            if ($userLocked->activo || !$userLocked->isExPersonalMayor6Anios()) {
+            if ($userLocked->activo || ! $userLocked->isExPersonalMayor6Anios()) {
                 abort(422, 'El usuario no cumple con los requisitos legales de elegibilidad (desvinculación mayor a 6 años) para borrado de huella digital conforme a la Ley 25.326.');
             }
 
@@ -287,13 +293,13 @@ class UserController extends Controller
         $ticketsCreados = Movimiento::tickets()
             ->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
-                  ->orWhere('solicitante', $user->nombre);
+                    ->orWhere('solicitante', $user->nombre);
             })
             ->with(['elemento.tipo', 'ubicacion'])
             ->orderBy('id', 'desc')
             ->get();
 
-        $ticketComentarios = \App\Models\TicketComentario::where('user_id', $user->id)
+        $ticketComentarios = TicketComentario::where('user_id', $user->id)
             ->with(['ticket.elemento.tipo', 'ticket.ubicacion'])
             ->orderBy('id', 'desc')
             ->get();
@@ -311,9 +317,9 @@ class UserController extends Controller
 
         // 3. Trazabilidad en Movimientos de Inventario
         $movimientos = Movimiento::where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                  ->orWhere('solicitante', $user->nombre);
-            })
+            $q->where('user_id', $user->id)
+                ->orWhere('solicitante', $user->nombre);
+        })
             ->with(['elemento.tipo', 'ubicacion'])
             ->orderBy('id', 'desc')
             ->get();

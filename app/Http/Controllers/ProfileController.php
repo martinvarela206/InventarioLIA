@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cargo;
+use App\Models\Carrera;
+use App\Models\Usuario;
+use App\Services\ImageSanitizer;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
-
-use App\Models\Carrera;
-use App\Models\Cargo;
 use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
 
 class ProfileController extends Controller
 {
@@ -19,7 +23,7 @@ class ProfileController extends Controller
      */
     public function edit(): View
     {
-        if (!auth()->user()->hasRole('registered')) {
+        if (! auth()->user()->hasRole('registered')) {
             abort(403, 'Requiere el rol registered para gestionar su perfil personal.');
         }
 
@@ -38,10 +42,10 @@ class ProfileController extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
-        /** @var \App\Models\Usuario $user */
+        /** @var Usuario $user */
         $user = auth()->user();
 
-        if (!$user->hasRole('registered')) {
+        if (! $user->hasRole('registered')) {
             abort(403, 'Requiere el rol registered para gestionar su perfil personal.');
         }
 
@@ -74,15 +78,15 @@ class ProfileController extends Controller
 
         // Gestión de Foto de Perfil
         if ($request->boolean('eliminar_foto')) {
-            if ($user->foto_path && !str_starts_with($user->foto_path, '/assets/')) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->foto_path);
+            if ($user->foto_path && ! str_starts_with($user->foto_path, '/assets/')) {
+                Storage::disk('public')->delete($user->foto_path);
             }
             $user->foto_path = null;
         } elseif ($request->hasFile('foto')) {
-            if ($user->foto_path && !str_starts_with($user->foto_path, '/assets/')) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->foto_path);
+            if ($user->foto_path && ! str_starts_with($user->foto_path, '/assets/')) {
+                Storage::disk('public')->delete($user->foto_path);
             }
-            $user->foto_path = \App\Services\ImageSanitizer::sanitizeAndStore($request->file('foto'), 'avatares', 'public');
+            $user->foto_path = ImageSanitizer::sanitizeAndStore($request->file('foto'), 'avatares', 'public');
         }
 
         if ($request->filled('carrera_id')) {
@@ -116,8 +120,8 @@ class ProfileController extends Controller
             }
 
             // Invalidar otras sesiones de base de datos
-            if (\Illuminate\Support\Facades\Schema::hasTable('sessions')) {
-                \Illuminate\Support\Facades\DB::table('sessions')
+            if (Schema::hasTable('sessions')) {
+                DB::table('sessions')
                     ->where('user_id', $user->id)
                     ->where('id', '!=', session()->getId())
                     ->delete();

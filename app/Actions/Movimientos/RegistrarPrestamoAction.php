@@ -2,13 +2,13 @@
 
 namespace App\Actions\Movimientos;
 
+use App\Enums\EstadoElemento;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Usuario;
-use App\Enums\EstadoElemento;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Carbon\Carbon;
 
 class RegistrarPrestamoAction
 {
@@ -21,7 +21,7 @@ class RegistrarPrestamoAction
     {
         $elementoId = $elemento instanceof Elemento ? $elemento->id : $elemento;
         $actor = $usuario ?? auth()->user();
-        if (!$actor) {
+        if (! $actor) {
             throw new \InvalidArgumentException('Se requiere un usuario responsable identificado para registrar la operación patrimonial.');
         }
 
@@ -62,14 +62,14 @@ class RegistrarPrestamoAction
                 ]);
             }
 
-            $solicitante = trim((string)($datos['solicitante'] ?? ''));
+            $solicitante = trim((string) ($datos['solicitante'] ?? ''));
             if ($solicitante === '') {
                 throw ValidationException::withMessages([
                     'solicitante' => 'El solicitante del préstamo es obligatorio.',
                 ]);
             }
 
-            $fechaPrestamo = !empty($datos['fecha_prestamo'])
+            $fechaPrestamo = ! empty($datos['fecha_prestamo'])
                 ? Carbon::parse($datos['fecha_prestamo'])->toDateString()
                 : now()->toDateString();
 
@@ -79,7 +79,7 @@ class RegistrarPrestamoAction
                 ]);
             }
 
-            $fechaMovimiento = !empty($datos['fecha'])
+            $fechaMovimiento = ! empty($datos['fecha'])
                 ? Carbon::parse($datos['fecha'])
                 : now();
 

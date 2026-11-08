@@ -27,7 +27,7 @@ class AdjuntoController extends Controller
 
         $disk = Storage::disk('local')->exists($adjunto->archivo_path) ? 'local' : 'public';
 
-        if (!Storage::disk($disk)->exists($adjunto->archivo_path)) {
+        if (! Storage::disk($disk)->exists($adjunto->archivo_path)) {
             abort(404, 'Adjunto no encontrado.');
         }
 
@@ -55,7 +55,7 @@ class AdjuntoController extends Controller
 
         $disk = Storage::disk('local')->exists($adjunto->archivo_path) ? 'local' : 'public';
 
-        if (!Storage::disk($disk)->exists($adjunto->archivo_path)) {
+        if (! Storage::disk($disk)->exists($adjunto->archivo_path)) {
             abort(404, 'Adjunto no encontrado.');
         }
 

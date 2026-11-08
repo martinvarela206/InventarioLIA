@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ElementoController;
 use App\Http\Controllers\MovimientoController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'active_user'])->group(function () {
     Route::get('/user', function (Request $request) {

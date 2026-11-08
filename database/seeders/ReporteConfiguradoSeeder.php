@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\ReporteConfigurado;
+use Illuminate\Database\Seeder;
 
 class ReporteConfiguradoSeeder extends Seeder
 {

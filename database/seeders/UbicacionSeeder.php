@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Ubicacion;
+use Illuminate\Database\Seeder;
 
 class UbicacionSeeder extends Seeder
 {

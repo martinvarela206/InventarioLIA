@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Usuario;
-use App\Models\Rol;
-use App\Models\Carrera;
 use App\Models\Cargo;
+use App\Models\Carrera;
+use App\Models\Rol;
+use App\Models\Usuario;
+use App\Services\ImageSanitizer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 
@@ -18,6 +18,7 @@ class RegisterController extends Controller
     {
         $carreras = Carrera::activas()->orderBy('nombre')->get();
         $cargos = Cargo::activos()->orderBy('orden')->orderBy('nombre')->get();
+
         return view('auth.register', compact('carreras', 'cargos'));
     }
 
@@ -32,11 +33,11 @@ class RegisterController extends Controller
                 'max:150',
                 'unique:usuarios',
                 function ($attribute, $value, $fail) {
-                    $enforce = config('auth.enforce_institutional_domain', false) || (app()->isProduction() && !defined('PHPUNIT_COMPOSER_INSTALL'));
+                    $enforce = config('auth.enforce_institutional_domain', false) || (app()->isProduction() && ! defined('PHPUNIT_COMPOSER_INSTALL'));
                     if ($enforce) {
-                        $domain = substr(strrchr($value, "@"), 1);
+                        $domain = substr(strrchr($value, '@'), 1);
                         $allowedDomain = config('auth.institutional_domain', 'unsj.edu.ar');
-                        if ($domain !== $allowedDomain && !str_ends_with($domain, '.' . $allowedDomain)) {
+                        if ($domain !== $allowedDomain && ! str_ends_with($domain, '.'.$allowedDomain)) {
                             $fail('El correo electrónico debe pertenecer al dominio institucional (@unsj.edu.ar).');
                         }
                     }
@@ -55,7 +56,7 @@ class RegisterController extends Controller
         ]);
 
         $fotoPath = $request->hasFile('foto')
-            ? \App\Services\ImageSanitizer::sanitizeAndStore($request->file('foto'), 'avatares', 'public')
+            ? ImageSanitizer::sanitizeAndStore($request->file('foto'), 'avatares', 'public')
             : null;
 
         $user = Usuario::create([

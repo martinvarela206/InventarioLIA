@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Auditoria;
 use App\Models\Elemento;
-use App\Models\Movimiento;
 use App\Models\Rol;
 use App\Models\Tipo;
 use App\Models\Ubicacion;

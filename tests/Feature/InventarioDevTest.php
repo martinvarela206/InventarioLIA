@@ -2,19 +2,39 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\Area;
+use App\Models\Atributo;
+use App\Models\Auditoria;
+use App\Models\AuditoriaDetalle;
+use App\Models\AvisoSeguridad;
+use App\Models\Cargo;
+use App\Models\Carrera;
 use App\Models\Elemento;
+use App\Models\ElementoAtributoValor;
 use App\Models\Movimiento;
+use App\Models\PersonalLia;
+use App\Models\ReporteConfigurado;
+use App\Models\Rol;
+use App\Models\TicketComentario;
+use App\Models\TicketMensaje;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
-use App\Models\Rol;
 use App\Models\Usuario;
-use App\Models\Atributo;
-use App\Models\ReporteConfigurado;
 use Carbon\Carbon;
+use Database\Seeders\AppAdminSeeder;
+use Database\Seeders\AtributoSeeder;
+use Database\Seeders\ReporteConfiguradoSeeder;
+use Database\Seeders\RoleSeeder;
+use Database\Seeders\TipoSeeder;
+use Database\Seeders\UbicacionSeeder;
+use Database\Seeders\UserSeeder;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Tests\TestCase;
 
 class InventarioDevTest extends TestCase
 {
@@ -24,11 +44,11 @@ class InventarioDevTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\RoleSeeder::class);
-        $this->seed(\Database\Seeders\TipoSeeder::class);
-        $this->seed(\Database\Seeders\AtributoSeeder::class);
-        $this->seed(\Database\Seeders\UbicacionSeeder::class);
-        $this->seed(\Database\Seeders\AppAdminSeeder::class);
+        $this->seed(RoleSeeder::class);
+        $this->seed(TipoSeeder::class);
+        $this->seed(AtributoSeeder::class);
+        $this->seed(UbicacionSeeder::class);
+        $this->seed(AppAdminSeeder::class);
     }
 
     public function test_catalogo_tipos_posee_las_19_categorias(): void
@@ -318,7 +338,7 @@ class InventarioDevTest extends TestCase
         ]);
         $admin->roles()->attach(Rol::where('rol', 'item_admin')->first());
 
-        $atributoExistente = \App\Models\Atributo::where('nombre', 'Procesador')->first();
+        $atributoExistente = Atributo::where('nombre', 'Procesador')->first();
         $this->assertNotNull($atributoExistente);
 
         // Crear nuevo tipo con atributo existente y dos nuevos al vuelo en simultáneo
@@ -377,8 +397,8 @@ class InventarioDevTest extends TestCase
 
         $tipo = Tipo::where('nombre', 'computadora')->first();
         $ubicacion = Ubicacion::first();
-        $attrCpu = \App\Models\Atributo::where('nombre', 'Procesador')->first();
-        $attrRam = \App\Models\Atributo::where('nombre', 'RAM')->first();
+        $attrCpu = Atributo::where('nombre', 'Procesador')->first();
+        $attrRam = Atributo::where('nombre', 'RAM')->first();
 
         $response = $this->actingAs($admin)->post(route('elementos.store'), [
             'nro_lia' => '5001',
@@ -627,7 +647,7 @@ class InventarioDevTest extends TestCase
         $responseStore->assertRedirect(route('app_admin.carreras'));
         $this->assertDatabaseHas('carreras', ['nombre' => 'Ingeniería en Inteligencia Artificial', 'activa' => true]);
 
-        $carrera = \App\Models\Carrera::where('nombre', 'Ingeniería en Inteligencia Artificial')->first();
+        $carrera = Carrera::where('nombre', 'Ingeniería en Inteligencia Artificial')->first();
 
         // 3. Registrar un usuario asociado a dicha carrera
         $alumno = Usuario::create([
@@ -1387,7 +1407,7 @@ class InventarioDevTest extends TestCase
 
     public function test_modelo_y_persistencia_de_reportes_configurados(): void
     {
-        $this->seed(\Database\Seeders\ReporteConfiguradoSeeder::class);
+        $this->seed(ReporteConfiguradoSeeder::class);
 
         // 1. Verificar catálogo sembrado con los 11 reportes oficiales
         $this->assertEquals(11, ReporteConfigurado::count());
@@ -1509,7 +1529,7 @@ class InventarioDevTest extends TestCase
 
     public function test_modulo_gestion_de_reportes_en_app_admin(): void
     {
-        $this->seed(\Database\Seeders\ReporteConfiguradoSeeder::class);
+        $this->seed(ReporteConfiguradoSeeder::class);
 
         $appAdmin = Usuario::create([
             'nombre' => 'App Admin Gerente',
@@ -1629,7 +1649,7 @@ class InventarioDevTest extends TestCase
 
     public function test_motor_de_reportes_dinamicos_y_hub_de_reportes_personalizados(): void
     {
-        $this->seed(\Database\Seeders\ReporteConfiguradoSeeder::class);
+        $this->seed(ReporteConfiguradoSeeder::class);
 
         $appAdmin = Usuario::create([
             'nombre' => 'App Admin Dynamic',
@@ -1770,7 +1790,7 @@ class InventarioDevTest extends TestCase
     public function test_reporte_configurado_de_fuentes_y_resolucion_de_filtros_de_tipo_y_ubicacion(): void
     {
         $revisor = Usuario::where('email', 'martin@lia.com')->first();
-        if (!$revisor) {
+        if (! $revisor) {
             $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
             $revisor = Usuario::factory()->create([
                 'nombre' => 'Martin Varela',
@@ -1863,7 +1883,7 @@ class InventarioDevTest extends TestCase
     public function test_filtrado_multidimensional_por_puesto_de_trabajo_en_inventario_y_reportes(): void
     {
         $admin = Usuario::where('email', 'admin@lia.com')->first();
-        if (!$admin) {
+        if (! $admin) {
             $rolAdmin = Rol::firstOrCreate(['rol' => 'app_admin']);
             $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
             $admin = Usuario::factory()->create([
@@ -1955,7 +1975,7 @@ class InventarioDevTest extends TestCase
     public function test_columna_compuesta_de_especificaciones_hardware_en_inventario_y_reportes(): void
     {
         $admin = Usuario::where('email', 'admin@lia.com')->first();
-        if (!$admin) {
+        if (! $admin) {
             $rolAdmin = Rol::firstOrCreate(['rol' => 'app_admin']);
             $rolRev = Rol::firstOrCreate(['rol' => 'rev']);
             $admin = Usuario::factory()->create([
@@ -1991,9 +2011,9 @@ class InventarioDevTest extends TestCase
             'fecha' => now(),
         ]);
 
-        \App\Models\ElementoAtributoValor::create(['elemento_id' => $pc->id, 'atributo_id' => $attrProc->id, 'valor' => 'i5-10400']);
-        \App\Models\ElementoAtributoValor::create(['elemento_id' => $pc->id, 'atributo_id' => $attrRam->id, 'valor' => '16']);
-        \App\Models\ElementoAtributoValor::create(['elemento_id' => $pc->id, 'atributo_id' => $attrDisco->id, 'valor' => '480 SSD']);
+        ElementoAtributoValor::create(['elemento_id' => $pc->id, 'atributo_id' => $attrProc->id, 'valor' => 'i5-10400']);
+        ElementoAtributoValor::create(['elemento_id' => $pc->id, 'atributo_id' => $attrRam->id, 'valor' => '16']);
+        ElementoAtributoValor::create(['elemento_id' => $pc->id, 'atributo_id' => $attrDisco->id, 'valor' => '480 SSD']);
 
         // 1. Probar método sintetizado directo
         $pc->load('valoresAtributos.atributo');
@@ -2129,7 +2149,7 @@ class InventarioDevTest extends TestCase
         $res->assertDontSee('Reportes Oficiales del Sistema');
 
         // 2. Administrador puede desactivar u ordenar cualquier reporte inicial gestionado en reportes_configurados
-        $reporteInicial = \App\Models\ReporteConfigurado::where('slug', 'bajas-basura')->first();
+        $reporteInicial = ReporteConfigurado::where('slug', 'bajas-basura')->first();
         if ($reporteInicial) {
             $resDelete = $this->actingAs($admin)->delete(route('app_admin.reportes.destroy', $reporteInicial->id));
             $resDelete->assertRedirect(route('app_admin.reportes'));
@@ -2143,16 +2163,16 @@ class InventarioDevTest extends TestCase
 
     public function test_matriz_escalonada_de_permisos_tickets_rev_vs_subtec_vs_tec(): void
     {
-        $this->seed(\Database\Seeders\RoleSeeder::class);
-        $this->seed(\Database\Seeders\TipoSeeder::class);
-        $this->seed(\Database\Seeders\UbicacionSeeder::class);
+        $this->seed(RoleSeeder::class);
+        $this->seed(TipoSeeder::class);
+        $this->seed(UbicacionSeeder::class);
 
-        $rolRev = \App\Models\Rol::where('rol', 'rev')->firstOrFail();
-        $rolSubTec = \App\Models\Rol::where('rol', 'subtec')->firstOrFail();
-        $rolTec = \App\Models\Rol::where('rol', 'tec')->firstOrFail();
-        $rolReg = \App\Models\Rol::where('rol', 'registered')->firstOrFail();
+        $rolRev = Rol::where('rol', 'rev')->firstOrFail();
+        $rolSubTec = Rol::where('rol', 'subtec')->firstOrFail();
+        $rolTec = Rol::where('rol', 'tec')->firstOrFail();
+        $rolReg = Rol::where('rol', 'registered')->firstOrFail();
 
-        $userRev = \App\Models\Usuario::create([
+        $userRev = Usuario::create([
             'email' => 'revisor_test@lia.com',
             'nombre' => 'Revisor Ticket Test',
             'password' => bcrypt('secret123'),
@@ -2160,7 +2180,7 @@ class InventarioDevTest extends TestCase
         ]);
         $userRev->roles()->sync([$rolReg->id, $rolRev->id]);
 
-        $userSubTec = \App\Models\Usuario::create([
+        $userSubTec = Usuario::create([
             'email' => 'subtec_test@lia.com',
             'nombre' => 'SubTec Ticket Test',
             'password' => bcrypt('secret123'),
@@ -2168,7 +2188,7 @@ class InventarioDevTest extends TestCase
         ]);
         $userSubTec->roles()->sync([$rolReg->id, $rolSubTec->id]);
 
-        $userTec = \App\Models\Usuario::create([
+        $userTec = Usuario::create([
             'email' => 'tec_test@lia.com',
             'nombre' => 'Tec Ticket Test',
             'password' => bcrypt('secret123'),
@@ -2176,8 +2196,8 @@ class InventarioDevTest extends TestCase
         ]);
         $userTec->roles()->sync([$rolReg->id, $rolTec->id]);
 
-        $ubicacion = \App\Models\Ubicacion::first();
-        $elemento = \App\Models\Elemento::create([
+        $ubicacion = Ubicacion::first();
+        $elemento = Elemento::create([
             'nro_lia' => 'TICK-SUBTEC-01',
             'tipo_id' => 1,
             'marca' => 'Dell',
@@ -2187,7 +2207,7 @@ class InventarioDevTest extends TestCase
             'activo' => true,
         ]);
 
-        \App\Models\Movimiento::create([
+        Movimiento::create([
             'elemento_id' => $elemento->id,
             'tipo_movimiento' => 'interno',
             'ubicacion_id' => $ubicacion->id,
@@ -2205,7 +2225,7 @@ class InventarioDevTest extends TestCase
         ]);
         $resStore->assertRedirect(route('dashboard.index'));
 
-        $ticket = \App\Models\Movimiento::where('elemento_id', $elemento->id)
+        $ticket = Movimiento::where('elemento_id', $elemento->id)
             ->where('tipo_movimiento', 'reparacion')
             ->firstOrFail();
         $this->assertEquals('abierto', $ticket->estado_ticket);
@@ -2235,12 +2255,12 @@ class InventarioDevTest extends TestCase
         $resRevCerrar->assertStatus(403);
 
         // 5. SUBTEC puede solucionar el ticket
-        $conteoMovimientosAntes = \App\Models\Movimiento::count();
+        $conteoMovimientosAntes = Movimiento::count();
         $resSubTecSolucionar = $this->actingAs($userSubTec)->post(route('tickets.solucionar', $ticket->id), [
             'solucion' => 'Se desarmó cooler frontal, limpieza con alcohol isopropílico y lubricación con aceite sintético. Pruebas térmicas OK.',
         ]);
         $resSubTecSolucionar->assertRedirect(route('tickets.show', $ticket->id));
-        
+
         $ticket->refresh();
         $this->assertEquals('solucionado', $ticket->estado_ticket);
         $this->assertDatabaseHas('ticket_comentarios', [
@@ -2250,7 +2270,7 @@ class InventarioDevTest extends TestCase
         ]);
 
         // REGLA ESTRICTA: El SubTec NUNCA registra movimientos asociados al ticket
-        $conteoMovimientosDespues = \App\Models\Movimiento::count();
+        $conteoMovimientosDespues = Movimiento::count();
         $this->assertEquals($conteoMovimientosAntes, $conteoMovimientosDespues, 'El SubTec no debe generar ningún registro en la tabla movimientos.');
 
         // 6. SUBTEC NUNCA puede cerrar formalmente el ticket (debe recibir 403)
@@ -2283,34 +2303,34 @@ class InventarioDevTest extends TestCase
 
     public function test_seeder_cuentas_reales_roles_y_anonimizacion_ley_25326(): void
     {
-        $this->seed(\Database\Seeders\RoleSeeder::class);
-        $this->seed(\Database\Seeders\UserSeeder::class);
+        $this->seed(RoleSeeder::class);
+        $this->seed(UserSeeder::class);
 
         // 1. Verificación de cuentas oficiales
-        $flavia = \App\Models\Usuario::where('email', 'flavia@lia.com')->firstOrFail();
+        $flavia = Usuario::where('email', 'flavia@lia.com')->firstOrFail();
         $this->assertTrue($flavia->hasRole(['user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev', 'registered']));
 
-        $marcelo = \App\Models\Usuario::where('email', 'marcelo@lia.com')->firstOrFail();
+        $marcelo = Usuario::where('email', 'marcelo@lia.com')->firstOrFail();
         $this->assertTrue($marcelo->hasRole('subtec'));
         $this->assertTrue($marcelo->hasRole('tec'));
         $this->assertTrue($marcelo->hasRole('rev'));
         $this->assertFalse($marcelo->hasRole('user_admin'));
 
-        $cristina = \App\Models\Usuario::where('email', 'cristina@lia.com')->firstOrFail();
+        $cristina = Usuario::where('email', 'cristina@lia.com')->firstOrFail();
         $this->assertTrue($cristina->hasRole('user_admin'));
         $this->assertTrue($cristina->hasRole('app_admin'));
         $this->assertFalse($cristina->hasRole('tec'));
 
-        $martin = \App\Models\Usuario::where('email', 'martin@lia.com')->firstOrFail();
+        $martin = Usuario::where('email', 'martin@lia.com')->firstOrFail();
         $this->assertTrue($martin->hasRole('rev'));
         $this->assertFalse($martin->hasRole('tec'));
 
         // 2. Verificación de casos > 6 años
-        $carlos = \App\Models\Usuario::where('email', 'carlos.gomez@ex-lia.com')->firstOrFail();
+        $carlos = Usuario::where('email', 'carlos.gomez@ex-lia.com')->firstOrFail();
         $this->assertFalse($carlos->activo);
         $this->assertTrue($carlos->isExPersonalMayor6Anios());
 
-        $laura = \App\Models\Usuario::where('email', 'laura.martinez@ex-lia.com')->firstOrFail();
+        $laura = Usuario::where('email', 'laura.martinez@ex-lia.com')->firstOrFail();
         $this->assertFalse($laura->activo);
         $this->assertTrue($laura->isExPersonalMayor6Anios());
 
@@ -2328,7 +2348,7 @@ class InventarioDevTest extends TestCase
         $this->assertTrue($carlos->esAnonimizado());
         $this->assertNull($carlos->dni);
         $this->assertNull($carlos->whatsapp);
-        $this->assertTrue(str_starts_with($carlos->email, 'historico_' . $carlos->id) || str_starts_with($carlos->email, 'anonimo_' . $carlos->id));
+        $this->assertTrue(str_starts_with($carlos->email, 'historico_'.$carlos->id) || str_starts_with($carlos->email, 'anonimo_'.$carlos->id));
         $this->assertCount(0, $carlos->roles);
 
         // Su historial de trayectorias permanece íntegro sin quebrar claves foráneas
@@ -2341,18 +2361,18 @@ class InventarioDevTest extends TestCase
 
     public function test_modulo_de_reportes_de_auditoria_y_trazabilidad_por_usuario(): void
     {
-        $this->seed(\Database\Seeders\RoleSeeder::class);
-        $this->seed(\Database\Seeders\UserSeeder::class);
-        $this->seed(\Database\Seeders\TipoSeeder::class);
-        $this->seed(\Database\Seeders\UbicacionSeeder::class);
+        $this->seed(RoleSeeder::class);
+        $this->seed(UserSeeder::class);
+        $this->seed(TipoSeeder::class);
+        $this->seed(UbicacionSeeder::class);
 
-        $flavia = \App\Models\Usuario::where('email', 'flavia@lia.com')->firstOrFail();
-        $marcelo = \App\Models\Usuario::where('email', 'marcelo@lia.com')->firstOrFail();
-        $martin = \App\Models\Usuario::where('email', 'martin@lia.com')->firstOrFail();
-        $juan = \App\Models\Usuario::where('email', 'juan.perez@lia.com')->firstOrFail();
+        $flavia = Usuario::where('email', 'flavia@lia.com')->firstOrFail();
+        $marcelo = Usuario::where('email', 'marcelo@lia.com')->firstOrFail();
+        $martin = Usuario::where('email', 'martin@lia.com')->firstOrFail();
+        $juan = Usuario::where('email', 'juan.perez@lia.com')->firstOrFail();
 
-        $ubicacion = \App\Models\Ubicacion::first();
-        $elemento = \App\Models\Elemento::create([
+        $ubicacion = Ubicacion::first();
+        $elemento = Elemento::create([
             'nro_lia' => 'REP-USER-01',
             'tipo_id' => 1,
             'marca' => 'HP',
@@ -2363,7 +2383,7 @@ class InventarioDevTest extends TestCase
         ]);
 
         // Registrar actividad vinculada a Marcelo (un movimiento regular y un ticket)
-        \App\Models\Movimiento::create([
+        Movimiento::create([
             'elemento_id' => $elemento->id,
             'tipo_movimiento' => 'interno',
             'ubicacion_id' => $ubicacion->id,
@@ -2373,7 +2393,7 @@ class InventarioDevTest extends TestCase
             'comentario' => 'Asignación regular por Marcelo',
         ]);
 
-        $ticket = \App\Models\Movimiento::create([
+        $ticket = Movimiento::create([
             'elemento_id' => $elemento->id,
             'tipo_movimiento' => 'reparacion',
             'estado_ticket' => 'abierto',
@@ -2385,7 +2405,7 @@ class InventarioDevTest extends TestCase
             'comentario' => 'Revisión técnica de memoria RAM',
         ]);
 
-        \App\Models\TicketComentario::create([
+        TicketComentario::create([
             'ticket_id' => $ticket->id,
             'user_id' => $marcelo->id,
             'mensaje' => 'Diagnóstico: Módulo DDR4 con pines limpios, prueba MemTest OK.',
@@ -2439,13 +2459,13 @@ class InventarioDevTest extends TestCase
         ]);
         $rev->roles()->sync([$rolReg->id, $rolRev->id]);
 
-        $tipo = \App\Models\Tipo::firstOrCreate(['nombre' => 'Laptop']);
-        $ubicacion = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Redes']);
+        $tipo = Tipo::firstOrCreate(['nombre' => 'Laptop']);
+        $ubicacion = Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Redes']);
 
-        $areaHw = \App\Models\Area::firstOrCreate(['codigo' => 'HW'], ['nombre' => 'Hardware', 'color' => '#f97316', 'activo' => true]);
-        $areaSw = \App\Models\Area::firstOrCreate(['codigo' => 'SW'], ['nombre' => 'Software', 'color' => '#3b82f6', 'activo' => true]);
+        $areaHw = Area::firstOrCreate(['codigo' => 'HW'], ['nombre' => 'Hardware', 'color' => '#f97316', 'activo' => true]);
+        $areaSw = Area::firstOrCreate(['codigo' => 'SW'], ['nombre' => 'Software', 'color' => '#3b82f6', 'activo' => true]);
 
-        $elemento = \App\Models\Elemento::create([
+        $elemento = Elemento::create([
             'nro_lia' => 'LIA-AREA-TEST',
             'tipo_id' => $tipo->id,
             'marca' => 'Dell',
@@ -2464,7 +2484,7 @@ class InventarioDevTest extends TestCase
         ]);
         $resStore->assertRedirect(route('dashboard.index'));
 
-        $ticket = \App\Models\Movimiento::where('elemento_id', $elemento->id)
+        $ticket = Movimiento::where('elemento_id', $elemento->id)
             ->where('tipo_movimiento', 'reparacion')
             ->first();
         $this->assertNotNull($ticket);
@@ -2500,7 +2520,7 @@ class InventarioDevTest extends TestCase
 
     public function test_modulo_tickets_colaborativo_tipo_foro_y_adjuntos_en_hilo(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        Storage::fake('public');
 
         $rolTec = Rol::firstOrCreate(['rol' => 'tec']);
         $rolSubTec = Rol::firstOrCreate(['rol' => 'subtec']);
@@ -2523,10 +2543,10 @@ class InventarioDevTest extends TestCase
         ]);
         $rev->roles()->sync([$rolReg->id, $rolRev->id]);
 
-        $tipo = \App\Models\Tipo::first();
-        $ubicacion = \App\Models\Ubicacion::first();
+        $tipo = Tipo::first();
+        $ubicacion = Ubicacion::first();
 
-        $elemento = \App\Models\Elemento::create([
+        $elemento = Elemento::create([
             'nro_lia' => 'LIA-FORO-01',
             'tipo_id' => $tipo->id,
             'marca' => 'Lenovo',
@@ -2536,7 +2556,7 @@ class InventarioDevTest extends TestCase
             'activo' => true,
         ]);
 
-        $ticket = \App\Models\Movimiento::create([
+        $ticket = Movimiento::create([
             'elemento_id' => $elemento->id,
             'tipo_movimiento' => 'reparacion',
             'estado_ticket' => 'abierto',
@@ -2549,7 +2569,7 @@ class InventarioDevTest extends TestCase
         ]);
 
         // 1. Revisor publica mensaje con foto adjunta en el hilo
-        $fotoRev = \Illuminate\Http\UploadedFile::fake()->image('fuente_quemada.jpg', 150, 150);
+        $fotoRev = UploadedFile::fake()->image('fuente_quemada.jpg', 150, 150);
         $resPostRev = $this->actingAs($rev)->post(route('tickets.comentar', $ticket->id), [
             'mensaje' => 'Adjunto foto del fusible de la fuente de poder chamuscado.',
             'fotos' => [$fotoRev],
@@ -2562,7 +2582,7 @@ class InventarioDevTest extends TestCase
             'mensaje' => 'Adjunto foto del fusible de la fuente de poder chamuscado.',
         ]);
 
-        $comentarioRev = \App\Models\TicketComentario::where('ticket_id', $ticket->id)
+        $comentarioRev = TicketComentario::where('ticket_id', $ticket->id)
             ->where('user_id', $rev->id)
             ->first();
         $this->assertNotNull($comentarioRev);
@@ -2570,7 +2590,7 @@ class InventarioDevTest extends TestCase
         $this->assertEquals('fuente_quemada.jpg', $comentarioRev->adjuntos->first()->nombre_original);
 
         // 2. Técnico responde en el foro con otra foto
-        $fotoTec = \Illuminate\Http\UploadedFile::fake()->image('reemplazo_fusible.jpg', 150, 150);
+        $fotoTec = UploadedFile::fake()->image('reemplazo_fusible.jpg', 150, 150);
         $resPostTec = $this->actingAs($tec)->post(route('tickets.comentar', $ticket->id), [
             'mensaje' => 'Recibido en banco de pruebas. Se reemplaza fusible y se testean voltajes de 12V y 5V.',
             'fotos' => [$fotoTec],
@@ -2578,7 +2598,7 @@ class InventarioDevTest extends TestCase
         $resPostTec->assertRedirect(route('tickets.show', $ticket->id));
 
         // 3. Verificación de TicketMensaje como modelo
-        $mensajesForo = \App\Models\TicketMensaje::where('ticket_id', $ticket->id)->orderBy('id')->get();
+        $mensajesForo = TicketMensaje::where('ticket_id', $ticket->id)->orderBy('id')->get();
         $this->assertCount(2, $mensajesForo);
 
         // 4. Renderizado del foro en la vista tickets.show
@@ -2605,11 +2625,11 @@ class InventarioDevTest extends TestCase
         ]);
         $tec->roles()->sync([$rolReg->id, $rolTec->id]);
 
-        $tipo = \App\Models\Tipo::first();
-        $salaOrigen = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Laboratorio 1']);
-        $salaTaller = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Taller de Hardware']);
+        $tipo = Tipo::first();
+        $salaOrigen = Ubicacion::firstOrCreate(['nombre' => 'Laboratorio 1']);
+        $salaTaller = Ubicacion::firstOrCreate(['nombre' => 'Taller de Hardware']);
 
-        $elemento = \App\Models\Elemento::create([
+        $elemento = Elemento::create([
             'nro_lia' => 'LIA-MOV-LINK-01',
             'tipo_id' => $tipo->id,
             'marca' => 'HP',
@@ -2619,7 +2639,7 @@ class InventarioDevTest extends TestCase
             'activo' => true,
         ]);
 
-        $ticket = \App\Models\Movimiento::create([
+        $ticket = Movimiento::create([
             'elemento_id' => $elemento->id,
             'tipo_movimiento' => 'reparacion',
             'estado_ticket' => 'abierto',
@@ -2641,7 +2661,7 @@ class InventarioDevTest extends TestCase
         $resPost->assertRedirect(route('tickets.show', $ticket->id));
 
         // 2. Verificar existencia del movimiento enlazado al ticket
-        $movimientoGenerado = \App\Models\Movimiento::where('elemento_id', $elemento->id)
+        $movimientoGenerado = Movimiento::where('elemento_id', $elemento->id)
             ->where('tipo_movimiento', 'interno')
             ->where('ubicacion_id', $salaTaller->id)
             ->where('ticket_id', $ticket->id)
@@ -2651,7 +2671,7 @@ class InventarioDevTest extends TestCase
         $this->assertEquals($ticket->id, $movimientoGenerado->ticket_id);
 
         // 3. Verificar que el comentario en el hilo apunta al movimiento_id
-        $comentario = \App\Models\TicketComentario::where('ticket_id', $ticket->id)
+        $comentario = TicketComentario::where('ticket_id', $ticket->id)
             ->where('user_id', $tec->id)
             ->first();
         $this->assertNotNull($comentario);
@@ -2664,7 +2684,7 @@ class InventarioDevTest extends TestCase
         $resShow->assertSee('📦 Traslado Físico Vinculado');
         $resShow->assertSee('Taller de Hardware');
         $resShow->assertSee('Banco 03');
-        $resShow->assertSee('Movimiento #' . $movimientoGenerado->id);
+        $resShow->assertSee('Movimiento #'.$movimientoGenerado->id);
     }
 
     public function test_arquitectura_datos_y_persistencia_incremental_de_auditorias(): void
@@ -2680,10 +2700,10 @@ class InventarioDevTest extends TestCase
         ]);
         $auditor->roles()->sync([$rolReg->id, $rolRev->id]);
 
-        $tipo = \App\Models\Tipo::first();
-        $sala = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Sistemas']);
+        $tipo = Tipo::first();
+        $sala = Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Sistemas']);
 
-        $elemento1 = \App\Models\Elemento::create([
+        $elemento1 = Elemento::create([
             'nro_lia' => 'LIA-AUD-01',
             'tipo_id' => $tipo->id,
             'marca' => 'Dell',
@@ -2693,7 +2713,7 @@ class InventarioDevTest extends TestCase
             'activo' => true,
         ]);
 
-        $elemento2 = \App\Models\Elemento::create([
+        $elemento2 = Elemento::create([
             'nro_lia' => 'LIA-AUD-02',
             'tipo_id' => $tipo->id,
             'marca' => 'Dell',
@@ -2711,7 +2731,7 @@ class InventarioDevTest extends TestCase
         $resStore->assertStatus(200);
         $resStore->assertJson(['success' => true]);
 
-        $auditoria = \App\Models\Auditoria::where('ubicacion_id', $sala->id)->where('estado', 'en_progreso')->first();
+        $auditoria = Auditoria::where('ubicacion_id', $sala->id)->where('estado', 'en_progreso')->first();
         $this->assertNotNull($auditoria);
         $this->assertEquals('en_progreso', $auditoria->estado);
 
@@ -2774,10 +2794,10 @@ class InventarioDevTest extends TestCase
         ]);
         $auditor->roles()->sync([$rolReg->id, $rolRev->id]);
 
-        $tipo = \App\Models\Tipo::first();
-        $sala = \App\Models\Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Redes y Puestos']);
+        $tipo = Tipo::first();
+        $sala = Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Redes y Puestos']);
 
-        $elementoPuesto = \App\Models\Elemento::create([
+        $elementoPuesto = Elemento::create([
             'nro_lia' => 'LIA-PUESTO-01',
             'tipo_id' => $tipo->id,
             'marca' => 'Dell',
@@ -2787,7 +2807,7 @@ class InventarioDevTest extends TestCase
             'activo' => true,
         ]);
 
-        \App\Models\Movimiento::create([
+        Movimiento::create([
             'elemento_id' => $elementoPuesto->id,
             'tipo_movimiento' => 'interno',
             'ubicacion_id' => $sala->id,
@@ -2810,7 +2830,7 @@ class InventarioDevTest extends TestCase
         $resView->assertSee('Puesto 01');
         $resView->assertSee('LIA-PUESTO-01');
 
-        $auditoria = \App\Models\Auditoria::where('ubicacion_id', $sala->id)->first();
+        $auditoria = Auditoria::where('ubicacion_id', $sala->id)->first();
         $this->assertNotNull($auditoria);
 
         // 2. Apertura de Ticket In Situ derivado de inconsistencia
@@ -2830,14 +2850,14 @@ class InventarioDevTest extends TestCase
         $ticketId = $resTicket->json('ticket_id');
         $this->assertNotNull($ticketId);
 
-        $ticket = \App\Models\Movimiento::find($ticketId);
+        $ticket = Movimiento::find($ticketId);
         $this->assertNotNull($ticket);
         $this->assertEquals('reparacion', $ticket->tipo_movimiento);
         $this->assertEquals('abierto', $ticket->estado_ticket);
         $this->assertStringContainsString('ROTURA', $ticket->comentario);
 
         // 3. Verificar detalle de auditoría actualizado
-        $detalle = \App\Models\AuditoriaDetalle::where('auditoria_id', $auditoria->id)
+        $detalle = AuditoriaDetalle::where('auditoria_id', $auditoria->id)
             ->where('elemento_id', $elementoPuesto->id)
             ->first();
         $this->assertNotNull($detalle);
@@ -2868,7 +2888,7 @@ class InventarioDevTest extends TestCase
         $lab2 = Ubicacion::firstOrCreate(['nombre' => 'Laboratorio Beta Audit'], ['descripcion' => 'Sala 2']);
 
         // Crear auditoría 1 (en Lab 1 por auditor con inconsistencia)
-        $auditoria1 = \App\Models\Auditoria::create([
+        $auditoria1 = Auditoria::create([
             'ubicacion_id' => $lab1->id,
             'user_id' => $auditor->id,
             'fecha' => now()->subDays(2),
@@ -2895,14 +2915,14 @@ class InventarioDevTest extends TestCase
             'comentario' => '[AUDITORÍA INCONSISTENCIA - ROTURA] Pantalla rota',
         ]);
 
-        \App\Models\AuditoriaDetalle::create([
+        AuditoriaDetalle::create([
             'auditoria_id' => $auditoria1->id,
             'elemento_id' => $elementoOk->id,
             'puesto' => 'Puesto 02',
             'estado' => 'ok',
         ]);
 
-        \App\Models\AuditoriaDetalle::create([
+        AuditoriaDetalle::create([
             'auditoria_id' => $auditoria1->id,
             'elemento_id' => $elementoRotura->id,
             'puesto' => 'Puesto 01',
@@ -2913,7 +2933,7 @@ class InventarioDevTest extends TestCase
         ]);
 
         // Crear auditoría 2 (en Lab 2 por otro auditor sin inconsistencias)
-        $auditoria2 = \App\Models\Auditoria::create([
+        $auditoria2 = Auditoria::create([
             'ubicacion_id' => $lab2->id,
             'user_id' => $otroAuditor->id,
             'fecha' => now()->subDay(),
@@ -3009,7 +3029,7 @@ class InventarioDevTest extends TestCase
             'activo' => true,
         ]);
 
-        $aviso = \App\Models\AvisoSeguridad::where('titulo', 'Cierre de Sesión Obligatorio')->first();
+        $aviso = AvisoSeguridad::where('titulo', 'Cierre de Sesión Obligatorio')->first();
         $this->assertNotNull($aviso);
 
         // 4. Actualizar el aviso
@@ -3041,7 +3061,7 @@ class InventarioDevTest extends TestCase
     public function test_panel_carrusel_flotante_concientizacion_en_landing_y_welcome_registered(): void
     {
         // 1. Crear avisos de prueba (uno activo y uno inactivo)
-        $avisoActivo = \App\Models\AvisoSeguridad::create([
+        $avisoActivo = AvisoSeguridad::create([
             'titulo' => 'Consejo Activo de Prueba Ciberseguridad',
             'descripcion' => 'Recomendación vigente para toda la comunidad académica del LIA.',
             'severidad' => 'warning',
@@ -3050,7 +3070,7 @@ class InventarioDevTest extends TestCase
             'activo' => true,
         ]);
 
-        $avisoInactivo = \App\Models\AvisoSeguridad::create([
+        $avisoInactivo = AvisoSeguridad::create([
             'titulo' => 'Aviso Oculto Desactivado Test',
             'descripcion' => 'Este consejo no debe figurar en ningún carrusel público ni de bienvenida.',
             'severidad' => 'info',
@@ -3289,57 +3309,57 @@ class InventarioDevTest extends TestCase
     public function test_comando_artisan_de_backup_de_base_de_datos_y_rotacion_de_dumps(): void
     {
         $backupDir = storage_path('app/backups_test');
-        \Illuminate\Support\Facades\File::deleteDirectory($backupDir);
-        \Illuminate\Support\Facades\File::makeDirectory($backupDir, 0755, true);
+        File::deleteDirectory($backupDir);
+        File::makeDirectory($backupDir, 0755, true);
 
         // 1. Ejecutar el comando de respaldo
-        $exitCode = \Illuminate\Support\Facades\Artisan::call('app:backup-database', [
+        $exitCode = Artisan::call('app:backup-database', [
             '--keep' => 3,
             '--path' => $backupDir,
         ]);
         $this->assertEquals(0, $exitCode);
 
         // 2. Verificar que se haya creado el archivo SQL
-        $files = \Illuminate\Support\Facades\File::files($backupDir);
+        $files = File::files($backupDir);
         $this->assertCount(1, $files);
 
         $dumpFile = $files[0];
         $this->assertStringStartsWith('backup_', $dumpFile->getFilename());
         $this->assertEquals('sql', $dumpFile->getExtension());
 
-        $content = \Illuminate\Support\Facades\File::get($dumpFile->getPathname());
+        $content = File::get($dumpFile->getPathname());
         $this->assertStringContainsString('Respaldo Automatizado Sistema LIA', $content);
         $this->assertGreaterThan(50, strlen($content));
 
         // 3. Probar la rotación automática con límite de 3 archivos
         // Simular 3 archivos adicionales con marcas de tiempo anteriores
         for ($i = 1; $i <= 4; $i++) {
-            $dummyPath = $backupDir . DIRECTORY_SEPARATOR . "backup_inventario_lia_2026-01-0{$i}_000000.sql";
-            \Illuminate\Support\Facades\File::put($dummyPath, "-- Dummy dump {$i}");
+            $dummyPath = $backupDir.DIRECTORY_SEPARATOR."backup_inventario_lia_2026-01-0{$i}_000000.sql";
+            File::put($dummyPath, "-- Dummy dump {$i}");
             touch($dummyPath, time() - (86400 * (10 - $i)));
         }
 
         // Ahora hay 5 archivos en el directorio
-        $this->assertCount(5, \Illuminate\Support\Facades\File::files($backupDir));
+        $this->assertCount(5, File::files($backupDir));
 
         // 4. Volver a ejecutar el comando con rotación --keep=3
-        $exitCodeRotate = \Illuminate\Support\Facades\Artisan::call('app:backup-database', [
+        $exitCodeRotate = Artisan::call('app:backup-database', [
             '--keep' => 3,
             '--path' => $backupDir,
         ]);
         $this->assertEquals(0, $exitCodeRotate);
 
         // 5. Verificar que se podaron los excedentes y quedaron exactamente 3 archivos
-        $remainingFiles = \Illuminate\Support\Facades\File::files($backupDir);
+        $remainingFiles = File::files($backupDir);
         $this->assertCount(3, $remainingFiles);
 
         // Limpieza del directorio de prueba
-        \Illuminate\Support\Facades\File::deleteDirectory($backupDir);
+        File::deleteDirectory($backupDir);
     }
 
     public function test_politica_de_complejidad_de_contrasenas_exclusiva_de_produccion(): void
     {
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        $this->withoutMiddleware(ValidateCsrfToken::class);
 
         // 1. En entorno de desarrollo/testing (no producción): contraseña corta (4 caracteres) es válida
         $this->assertFalse(app()->isProduction());
@@ -3467,7 +3487,7 @@ class InventarioDevTest extends TestCase
         $resStore->assertRedirect(route('app_admin.cargos'));
         $this->assertDatabaseHas('cargos', ['nombre' => 'Investigador Principal LIA']);
 
-        $cargo = \App\Models\Cargo::where('nombre', 'Investigador Principal LIA')->first();
+        $cargo = Cargo::where('nombre', 'Investigador Principal LIA')->first();
 
         // Update
         $resUpdate = $this->actingAs($appAdmin)->put(route('app_admin.cargos.update', $cargo->id), [
@@ -3490,7 +3510,7 @@ class InventarioDevTest extends TestCase
         $cargo->update(['activo' => true]);
 
         // 2. Selección en perfil de usuario (profile.edit y update)
-        $carrera = \App\Models\Carrera::first();
+        $carrera = Carrera::first();
         $resProfile = $this->actingAs($appAdmin)->get(route('profile.edit'));
         $resProfile->assertStatus(200);
         $resProfile->assertSee('id="carrera_id"', false);
@@ -3541,7 +3561,7 @@ class InventarioDevTest extends TestCase
 
     public function test_gestion_de_foto_de_perfil_en_usuario_registro_y_landing_page(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        Storage::fake('public');
 
         // 1. Fallback por defecto a placeholder
         $usuario = Usuario::create([
@@ -3554,7 +3574,7 @@ class InventarioDevTest extends TestCase
         $this->assertStringContainsString('placeholder-user.png', $usuario->foto_url);
 
         // 2. Subida de foto en profile.update
-        $file = \Illuminate\Http\UploadedFile::fake()->image('mi_foto.jpg', 150, 150);
+        $file = UploadedFile::fake()->image('mi_foto.jpg', 150, 150);
 
         $resUpdate = $this->actingAs($usuario)->put(route('profile.update'), [
             'nombre' => 'Colaborador Fotogénico',
@@ -3564,8 +3584,8 @@ class InventarioDevTest extends TestCase
 
         $usuario->refresh();
         $this->assertNotNull($usuario->foto_path);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($usuario->foto_path);
-        $this->assertStringContainsString('storage/' . $usuario->foto_path, $usuario->foto_url);
+        Storage::disk('public')->assertExists($usuario->foto_path);
+        $this->assertStringContainsString('storage/'.$usuario->foto_path, $usuario->foto_url);
 
         // 3. Navbar muestra el avatar fotográfico
         $resNavbar = $this->actingAs($usuario)->get(route('profile.edit'));
@@ -3573,7 +3593,7 @@ class InventarioDevTest extends TestCase
         $resNavbar->assertSee($usuario->foto_url, false);
 
         // 4. PersonalLia resuelve la foto dinámicamente desde el usuario vinculado
-        $personal = \App\Models\PersonalLia::create([
+        $personal = PersonalLia::create([
             'user_id' => $usuario->id,
             'comentario' => 'Docente Investigador',
             'orden' => 10,
@@ -3591,15 +3611,15 @@ class InventarioDevTest extends TestCase
 
         $usuario->refresh();
         $this->assertNull($usuario->foto_path);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing($fotoGuardada);
+        Storage::disk('public')->assertMissing($fotoGuardada);
         $this->assertStringContainsString('placeholder-user.png', $usuario->foto_url);
 
         // 6. Anonimización por Ley 25.326 purga la foto física si existiese
-        $file2 = \Illuminate\Http\UploadedFile::fake()->image('foto_legajo.png', 120, 120);
+        $file2 = UploadedFile::fake()->image('foto_legajo.png', 120, 120);
         $usuario->update([
-            'foto_path' => $file2->store('avatares', 'public')
+            'foto_path' => $file2->store('avatares', 'public'),
         ]);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($usuario->foto_path);
+        Storage::disk('public')->assertExists($usuario->foto_path);
 
         $usuario->anonimizarHuellaDigital();
         $this->assertNull($usuario->foto_path);
@@ -3607,25 +3627,25 @@ class InventarioDevTest extends TestCase
 
     public function test_unificacion_autoridades_y_personal_lia_con_usuarios_del_sistema(): void
     {
-        $appAdmin = \App\Models\Usuario::where('email', 'admin@app.com')->first();
-        if (!$appAdmin) {
-            $appAdmin = \App\Models\Usuario::factory()->create([
+        $appAdmin = Usuario::where('email', 'admin@app.com')->first();
+        if (! $appAdmin) {
+            $appAdmin = Usuario::factory()->create([
                 'nombre' => 'Admin App Test',
                 'email' => 'admin_test@lia.com',
                 'password' => bcrypt('password123'),
                 'activo' => true,
             ]);
-            $rolAppAdmin = \App\Models\Rol::firstOrCreate(['rol' => 'app_admin']);
+            $rolAppAdmin = Rol::firstOrCreate(['rol' => 'app_admin']);
             $appAdmin->roles()->syncWithoutDetaching([$rolAppAdmin->id]);
         }
 
         // 1. Crear un usuario institucional con cargo oficial y foto
-        $cargoCoordinador = \App\Models\Cargo::firstOrCreate(
+        $cargoCoordinador = Cargo::firstOrCreate(
             ['nombre' => 'Coordinador de Laboratorios Avanzados'],
             ['descripcion' => 'Coordinación técnica', 'activo' => true]
         );
 
-        $investigador = \App\Models\Usuario::factory()->create([
+        $investigador = Usuario::factory()->create([
             'nombre' => 'Dra. Romina Valenzuela',
             'email' => 'rvalenzuela@lia.unsj.edu.ar',
             'password' => bcrypt('password123'),
@@ -3648,7 +3668,7 @@ class InventarioDevTest extends TestCase
         ]);
         $resStore->assertRedirect(route('app_admin.personal'));
 
-        $personal = \App\Models\PersonalLia::where('user_id', $investigador->id)->first();
+        $personal = PersonalLia::where('user_id', $investigador->id)->first();
         $this->assertNotNull($personal);
         $this->assertEquals('Dra. Romina Valenzuela', $personal->nombre);
         $this->assertEquals('Coordinador de Laboratorios Avanzados', $personal->cargo);
@@ -3657,14 +3677,14 @@ class InventarioDevTest extends TestCase
 
         // 2.b. Prevención de duplicados: El usuario ya asignado no debe figurar en el dropdown de nuevo personal
         $resPersonalViewAfter = $this->actingAs($appAdmin)->get(route('app_admin.personal'));
-        $resPersonalViewAfter->assertDontSee('<option value="' . $investigador->id . '"', false);
+        $resPersonalViewAfter->assertDontSee('<option value="'.$investigador->id.'"', false);
 
         // 2.c. Intento de re-asignar el mismo usuario es rechazado por regla unique
         $resStoreDuplicate = $this->actingAs($appAdmin)->post(route('app_admin.personal.store'), [
             'user_id' => $investigador->id,
         ]);
         $resStoreDuplicate->assertSessionHasErrors(['user_id']);
-        $this->assertEquals(1, \App\Models\PersonalLia::where('user_id', $investigador->id)->count());
+        $this->assertEquals(1, PersonalLia::where('user_id', $investigador->id)->count());
 
         // 3. Landing page renderiza los datos en vivo derivados del usuario
         $resLanding = $this->get('/');
@@ -3675,7 +3695,7 @@ class InventarioDevTest extends TestCase
         $resLanding->assertSee('rvalenzuela@lia.unsj.edu.ar');
 
         // 4. Actualización en tiempo real: el usuario cambia su nombre, cargo oficial, email y avatar
-        $cargoDirectora = \App\Models\Cargo::firstOrCreate(
+        $cargoDirectora = Cargo::firstOrCreate(
             ['nombre' => 'Directora de Área Científica'],
             ['descripcion' => 'Dirección de proyectos', 'activo' => true]
         );
@@ -3708,14 +3728,14 @@ class InventarioDevTest extends TestCase
 
         // 5. Exclusión por usuario inactivo (activo = false)
         $investigador->update(['activo' => false]);
-        $this->assertEquals(0, \App\Models\PersonalLia::activos()->where('user_id', $investigador->id)->count());
+        $this->assertEquals(0, PersonalLia::activos()->where('user_id', $investigador->id)->count());
 
         $resLandingInactivo = $this->get('/');
         $resLandingInactivo->assertDontSee('Dra. Romina Valenzuela PhD');
 
         // 6. Reactivación del usuario (activo = true) vuelve a habilitarlo en la portada y consulta
         $investigador->update(['activo' => true]);
-        $this->assertEquals(1, \App\Models\PersonalLia::activos()->where('user_id', $investigador->id)->count());
+        $this->assertEquals(1, PersonalLia::activos()->where('user_id', $investigador->id)->count());
 
         $resLandingReactivado = $this->get('/');
         $resLandingReactivado->assertSee('Dra. Romina Valenzuela PhD');
@@ -3723,7 +3743,7 @@ class InventarioDevTest extends TestCase
         // 7. Exclusión por huella digital borrada (huella_borrada = true)
         $investigador->anonimizarHuellaDigital();
         $this->assertTrue($investigador->fresh()->huella_borrada);
-        $this->assertEquals(0, \App\Models\PersonalLia::activos()->where('user_id', $investigador->id)->count());
+        $this->assertEquals(0, PersonalLia::activos()->where('user_id', $investigador->id)->count());
 
         $resLandingHuella = $this->get('/');
         $resLandingHuella->assertDontSee('Dra. Romina Valenzuela PhD');
@@ -3732,16 +3752,9 @@ class InventarioDevTest extends TestCase
         $personalId = $personal->id;
         $investigador->delete();
 
-        $personalRefreshed = \App\Models\PersonalLia::find($personalId);
+        $personalRefreshed = PersonalLia::find($personalId);
         $this->assertNotNull($personalRefreshed);
         $this->assertNull($personalRefreshed->user_id);
-        $this->assertEquals(0, \App\Models\PersonalLia::activos()->where('id', $personalId)->count());
+        $this->assertEquals(0, PersonalLia::activos()->where('id', $personalId)->count());
     }
 }
-
-
-
-
-
-
-

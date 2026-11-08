@@ -2,17 +2,16 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Actions\Movimientos\RegistrarDevolucionAction;
+use App\Enums\EstadoElemento;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
-use App\Enums\EstadoElemento;
-use App\Actions\Movimientos\RegistrarDevolucionAction;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
-use Carbon\Carbon;
+use Tests\TestCase;
 
 class RegistrarDevolucionActionTest extends TestCase
 {
@@ -27,7 +26,7 @@ class RegistrarDevolucionActionTest extends TestCase
     public function test_accion_registra_devolucion_exitosa_y_restaura_estado_operativo(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
         $ubicacionRetorno = Ubicacion::where('activa', true)->first();
 
         $elemento = Elemento::create([
@@ -71,7 +70,7 @@ class RegistrarDevolucionActionTest extends TestCase
     public function test_accion_rechaza_devolver_prestamo_ya_devuelto_previniendo_doble_clic(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
         $ubicacion = Ubicacion::where('activa', true)->first();
 
         $elemento = Elemento::create([
@@ -101,7 +100,7 @@ class RegistrarDevolucionActionTest extends TestCase
     public function test_accion_rechaza_devolucion_sobre_movimiento_no_prestamo(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
         $ubicacion = Ubicacion::where('activa', true)->first();
 
         $elemento = Elemento::create([
@@ -129,7 +128,7 @@ class RegistrarDevolucionActionTest extends TestCase
     public function test_accion_rechaza_devolver_a_sala_inactiva(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
 
         $salaInactiva = Ubicacion::create([
             'nombre' => 'Sala Desmantelada 10',
@@ -163,7 +162,7 @@ class RegistrarDevolucionActionTest extends TestCase
     public function test_accion_rechaza_fecha_devolucion_futura_o_previa_al_prestamo(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
         $ubicacion = Ubicacion::where('activa', true)->first();
 
         $elemento = Elemento::create([
@@ -206,7 +205,7 @@ class RegistrarDevolucionActionTest extends TestCase
     public function test_accion_rechaza_ejecucion_sin_usuario_responsable(): void
     {
         $tipo = Tipo::first();
-        $tec = Usuario::whereHas('roles', fn($q) => $q->where('rol', 'tec'))->first();
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
         $ubicacion = Ubicacion::where('activa', true)->first();
 
         $elemento = Elemento::create([

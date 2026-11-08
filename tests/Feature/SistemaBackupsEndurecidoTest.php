@@ -42,7 +42,7 @@ class SistemaBackupsEndurecidoTest extends TestCase
         $files = File::files($this->backupDir);
         $this->assertNotEmpty($files);
 
-        $sqlFiles = array_filter($files, fn($f) => $f->getExtension() === 'sql');
+        $sqlFiles = array_filter($files, fn ($f) => $f->getExtension() === 'sql');
         $this->assertCount(1, $sqlFiles);
 
         $firstSql = reset($sqlFiles);
@@ -52,12 +52,12 @@ class SistemaBackupsEndurecidoTest extends TestCase
 
         // 3. Simular acumulación para probar rotación independiente
         for ($i = 1; $i <= 3; $i++) {
-            $dummySql = $this->backupDir . DIRECTORY_SEPARATOR . "backup_db_2026-01-0{$i}_000000.sql";
+            $dummySql = $this->backupDir.DIRECTORY_SEPARATOR."backup_db_2026-01-0{$i}_000000.sql";
             File::put($dummySql, "-- Dummy SQL {$i}");
             touch($dummySql, time() - (86400 * (10 - $i)));
 
-            $dummyZip = $this->backupDir . DIRECTORY_SEPARATOR . "backup_adjuntos_2026-01-0{$i}_000000.zip";
-            File::put($dummyZip, "PK...dummy");
+            $dummyZip = $this->backupDir.DIRECTORY_SEPARATOR."backup_adjuntos_2026-01-0{$i}_000000.zip";
+            File::put($dummyZip, 'PK...dummy');
             touch($dummyZip, time() - (86400 * (10 - $i)));
         }
 
@@ -70,8 +70,8 @@ class SistemaBackupsEndurecidoTest extends TestCase
         $this->assertEquals(0, $exitCode2);
 
         $filesAfter = File::files($this->backupDir);
-        $sqlAfter = array_filter($filesAfter, fn($f) => $f->getExtension() === 'sql');
-        $zipAfter = array_filter($filesAfter, fn($f) => $f->getExtension() === 'zip');
+        $sqlAfter = array_filter($filesAfter, fn ($f) => $f->getExtension() === 'sql');
+        $zipAfter = array_filter($filesAfter, fn ($f) => $f->getExtension() === 'zip');
 
         // Deben conservarse a lo sumo 2 dumps SQL y 2 zips
         $this->assertCount(2, $sqlAfter);

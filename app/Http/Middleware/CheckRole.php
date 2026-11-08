@@ -16,10 +16,11 @@ class CheckRole
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             if ($request->expectsJson() || $request->is('api/*')) {
                 abort(401, 'No autenticado.');
             }
+
             return redirect()->route('login');
         }
 
@@ -29,10 +30,11 @@ class CheckRole
         }
 
         // Si el usuario se encuentra inactivo, no puede ejercer roles operativos en el inventario
-        if (!$user->activo && !in_array('registered', $roles, true)) {
+        if (! $user->activo && ! in_array('registered', $roles, true)) {
             if ($request->expectsJson() || $request->is('api/*')) {
                 abort(403, 'Cuenta inactiva.');
             }
+
             return redirect()->route('bienvenida');
         }
 

@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Elemento;
 use App\Models\Movimiento;
 use App\Models\Ubicacion;
-use App\Models\Tipo;
+use App\Models\Usuario;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -27,7 +26,7 @@ class DashboardController extends Controller
         $totalElementos = Elemento::count();
 
         $totalPrestados = $ultimosMovimientos->filter(function ($m) {
-            return !empty($m->fecha_prestamo) && empty($m->fecha_devolucion);
+            return ! empty($m->fecha_prestamo) && empty($m->fecha_devolucion);
         })->count();
 
         $totalObsoletos = $ultimosMovimientos->filter(function ($m) {
@@ -50,6 +49,7 @@ class DashboardController extends Controller
         $conteosPorUbicacion = $ultimosMovimientos->groupBy('ubicacion_id');
         $distribucionSalas = Ubicacion::all()->map(function ($ubicacion) use ($conteosPorUbicacion) {
             $count = isset($conteosPorUbicacion[$ubicacion->id]) ? $conteosPorUbicacion[$ubicacion->id]->count() : 0;
+
             return [
                 'id' => $ubicacion->id,
                 'nombre' => $ubicacion->nombre,
@@ -66,7 +66,7 @@ class DashboardController extends Controller
             ->get();
 
         $exColaboradoresElegibles = (auth()->check() && auth()->user()->hasRole('user_admin'))
-            ? \App\Models\Usuario::elegiblesBorradoHuella()
+            ? Usuario::elegiblesBorradoHuella()
             : collect();
 
         return view('dashboard.index', compact(

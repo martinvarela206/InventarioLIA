@@ -2,13 +2,13 @@
 
 namespace App\Actions\Movimientos;
 
-use App\Models\Movimiento;
 use App\Models\Elemento;
+use App\Models\Movimiento;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Carbon\Carbon;
 
 class RegistrarDevolucionAction
 {
@@ -21,7 +21,7 @@ class RegistrarDevolucionAction
     {
         $movimientoId = $movimiento instanceof Movimiento ? $movimiento->id : $movimiento;
         $actor = $usuario ?? auth()->user();
-        if (!$actor) {
+        if (! $actor) {
             throw new \InvalidArgumentException('Se requiere un usuario responsable identificado para registrar la operación patrimonial.');
         }
 
@@ -38,7 +38,7 @@ class RegistrarDevolucionAction
             $prestamo = Movimiento::where('id', $prestamoMeta->id)->lockForUpdate()->firstOrFail();
 
             // 3. Validar que el movimiento sea efectivamente un préstamo externo
-            if (!$prestamo->esPrestamo()) {
+            if (! $prestamo->esPrestamo()) {
                 throw ValidationException::withMessages([
                     'movimiento_id' => 'El movimiento especificado no corresponde a un préstamo externo y no puede devolverse.',
                 ]);
@@ -54,21 +54,21 @@ class RegistrarDevolucionAction
 
             // 5. Validar ubicación de reingreso (debe existir y estar activa)
             $ubicacionId = $datos['ubicacion_id'] ?? null;
-            if (!$ubicacionId) {
+            if (! $ubicacionId) {
                 throw ValidationException::withMessages([
                     'ubicacion_id' => 'La ubicación de reingreso es obligatoria.',
                 ]);
             }
 
             $ubicacion = Ubicacion::where('id', $ubicacionId)->first();
-            if (!$ubicacion || !$ubicacion->activa) {
+            if (! $ubicacion || ! $ubicacion->activa) {
                 throw ValidationException::withMessages([
                     'ubicacion_id' => 'La ubicación seleccionada para el reingreso no está activa o se encuentra archivada.',
                 ]);
             }
 
             // 5. Validar fecha de devolución
-            $fechaDev = !empty($datos['fecha_devolucion'])
+            $fechaDev = ! empty($datos['fecha_devolucion'])
                 ? Carbon::parse($datos['fecha_devolucion'])->toDateString()
                 : now()->toDateString();
 
@@ -93,8 +93,8 @@ class RegistrarDevolucionAction
 
             // 7. Crear el nuevo movimiento interno de reingreso al laboratorio
             $comentario = 'Reingreso de préstamo externo.';
-            if (!empty($datos['comentario'])) {
-                $comentario .= ' ' . trim($datos['comentario']);
+            if (! empty($datos['comentario'])) {
+                $comentario .= ' '.trim($datos['comentario']);
             }
 
             return Movimiento::create([

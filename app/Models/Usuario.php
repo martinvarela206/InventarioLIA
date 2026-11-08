@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Laravel\Sanctum\HasApiTokens;
 
 class Usuario extends Authenticatable
 {
@@ -56,17 +59,17 @@ class Usuario extends Authenticatable
         return $this->belongsToMany(Rol::class, 'usuario_roles', 'user_id', 'rol_id');
     }
 
-    public function carreraRelacion(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function carreraRelacion(): BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'carrera_id');
     }
 
-    public function cargo(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function cargo(): BelongsTo
     {
         return $this->belongsTo(Cargo::class, 'cargo_id');
     }
 
-    public function cargoRelacion(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function cargoRelacion(): BelongsTo
     {
         return $this->cargo();
     }
@@ -81,6 +84,7 @@ class Usuario extends Authenticatable
         if ($this->esHistorico()) {
             return 'Ex Colaborador Histórico';
         }
+
         return $this->cargoRelacion?->nombre;
     }
 
@@ -95,8 +99,10 @@ class Usuario extends Authenticatable
             if (str_starts_with($this->foto_path, 'http://') || str_starts_with($this->foto_path, 'https://') || str_starts_with($this->foto_path, '/assets/')) {
                 return $this->foto_path;
             }
-            return asset('storage/' . $this->foto_path);
+
+            return asset('storage/'.$this->foto_path);
         }
+
         return asset('assets/placeholder-user.png');
     }
 
@@ -116,7 +122,7 @@ class Usuario extends Authenticatable
 
         // 1. Verificación directa por fecha_egreso
         if ($this->fecha_egreso) {
-            $fechaEgreso = $this->fecha_egreso instanceof \Carbon\Carbon ? $this->fecha_egreso : \Carbon\Carbon::parse($this->fecha_egreso);
+            $fechaEgreso = $this->fecha_egreso instanceof Carbon ? $this->fecha_egreso : Carbon::parse($this->fecha_egreso);
             if ($fechaEgreso->diffInYears(now()) >= 6) {
                 return true;
             }
@@ -130,7 +136,8 @@ class Usuario extends Authenticatable
         }
 
         if ($ultima && $ultima->fecha_fin) {
-            $fechaFin = $ultima->fecha_fin instanceof \Carbon\Carbon ? $ultima->fecha_fin : \Carbon\Carbon::parse($ultima->fecha_fin);
+            $fechaFin = $ultima->fecha_fin instanceof Carbon ? $ultima->fecha_fin : Carbon::parse($ultima->fecha_fin);
+
             return $fechaFin->diffInYears(now()) >= 6;
         }
 
@@ -153,18 +160,18 @@ class Usuario extends Authenticatable
                 // Caso A: fecha_egreso explícita <= 6 años atrás
                 $q->where(function ($q2) use ($seisAniosAtras) {
                     $q2->whereNotNull('fecha_egreso')
-                       ->where('fecha_egreso', '<=', $seisAniosAtras);
+                        ->where('fecha_egreso', '<=', $seisAniosAtras);
                 })
                 // Caso B: fecha_egreso nula, pero con historial de trayectorias donde la última cerró hace >= 6 años
-                ->orWhere(function ($q2) use ($seisAniosAtras) {
-                    $q2->whereNull('fecha_egreso')
-                       ->whereHas('trayectorias', function ($t) use ($seisAniosAtras) {
-                           $t->whereNotNull('fecha_fin')->where('fecha_fin', '<=', $seisAniosAtras);
-                       })
-                       ->whereDoesntHave('trayectorias', function ($t) use ($seisAniosAtras) {
-                           $t->whereNull('fecha_fin')->orWhere('fecha_fin', '>', $seisAniosAtras);
-                       });
-                });
+                    ->orWhere(function ($q2) use ($seisAniosAtras) {
+                        $q2->whereNull('fecha_egreso')
+                            ->whereHas('trayectorias', function ($t) use ($seisAniosAtras) {
+                                $t->whereNotNull('fecha_fin')->where('fecha_fin', '<=', $seisAniosAtras);
+                            })
+                            ->whereDoesntHave('trayectorias', function ($t) use ($seisAniosAtras) {
+                                $t->whereNull('fecha_fin')->orWhere('fecha_fin', '>', $seisAniosAtras);
+                            });
+                    });
             });
     }
 
@@ -199,9 +206,9 @@ class Usuario extends Authenticatable
         $this->cargo_id = null;
 
         // Borrar foto de perfil física si existe en storage
-        if ($this->foto_path && !str_starts_with($this->foto_path, '/assets/')) {
+        if ($this->foto_path && ! str_starts_with($this->foto_path, '/assets/')) {
             try {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($this->foto_path);
+                Storage::disk('public')->delete($this->foto_path);
             } catch (\Throwable $e) {
                 // Log and continue
             }
@@ -210,7 +217,7 @@ class Usuario extends Authenticatable
 
         $this->nombre = "Usuario Histórico #{$id}";
         $this->email = "historico_{$id}@lia.local";
-        $this->password = bcrypt(\Illuminate\Support\Str::random(40));
+        $this->password = bcrypt(Str::random(40));
         $this->remember_token = null;
         $this->activo = false;
         $this->huella_borrada = true;
@@ -224,11 +231,11 @@ class Usuario extends Authenticatable
         $this->tokens()->delete();
 
         // Anonimizar referencias de solicitante en movimientos para proteger datos personales (Ley 25.326)
-        if (!empty($nombreOriginal)) {
+        if (! empty($nombreOriginal)) {
             Movimiento::where('solicitante', $nombreOriginal)
                 ->update(['solicitante' => "Ex-colaborador anonimizado #{$id}"]);
         }
-        if (!empty($dniOriginal)) {
+        if (! empty($dniOriginal)) {
             Movimiento::where('solicitante', 'like', "%{$dniOriginal}%")
                 ->update(['solicitante' => "Ex-colaborador anonimizado #{$id}"]);
         }
@@ -241,7 +248,7 @@ class Usuario extends Authenticatable
 
     public function esAnonimizado(): bool
     {
-        return (bool)$this->huella_borrada;
+        return (bool) $this->huella_borrada;
     }
 
     public function esHistorico(): bool
@@ -284,6 +291,7 @@ class Usuario extends Authenticatable
     public function refresh()
     {
         $this->flushRolesCache();
+
         return parent::refresh();
     }
 
@@ -292,6 +300,7 @@ class Usuario extends Authenticatable
         if ($relation === 'roles') {
             $this->rolesCache = null;
         }
+
         return parent::setRelation($relation, $value);
     }
 
@@ -299,9 +308,9 @@ class Usuario extends Authenticatable
     {
         $roleList = is_array($role) ? $role : func_get_args();
         // Compatibilidad bidireccional durante la transición item_admin <-> asset_admin
-        if (in_array('item_admin', $roleList, true) && !in_array('asset_admin', $roleList, true)) {
+        if (in_array('item_admin', $roleList, true) && ! in_array('asset_admin', $roleList, true)) {
             $roleList[] = 'asset_admin';
-        } elseif (in_array('asset_admin', $roleList, true) && !in_array('item_admin', $roleList, true)) {
+        } elseif (in_array('asset_admin', $roleList, true) && ! in_array('item_admin', $roleList, true)) {
             $roleList[] = 'item_admin';
         }
 
@@ -311,6 +320,7 @@ class Usuario extends Authenticatable
                 return true;
             }
         }
+
         return false;
     }
 
@@ -411,9 +421,10 @@ class Usuario extends Authenticatable
      */
     public function hasActivePermissions(): bool
     {
-        if (!$this->activo) {
+        if (! $this->activo) {
             return false;
         }
+
         return $this->hasRole(['rev', 'subtec', 'tec', 'asset_admin', 'user_admin', 'app_admin']);
     }
 
@@ -423,6 +434,7 @@ class Usuario extends Authenticatable
     public function isOnlyRegistered(): bool
     {
         $roles = $this->roles->pluck('rol');
+
         return $roles->contains('registered') && $roles->diff(['registered'])->isEmpty();
     }
 

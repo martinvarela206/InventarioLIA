@@ -15,7 +15,7 @@ class UpdateElementoRequest extends FormRequest
 
     public function rules(): array
     {
-        $maxAnio = (int)date('Y') + 1;
+        $maxAnio = (int) date('Y') + 1;
 
         return [
             'nro_lia' => 'nullable|string|max:50|required_without:nro_unsj',
@@ -55,6 +55,7 @@ class UpdateElementoRequest extends FormRequest
 
             if ($cleanLia === null && $cleanUnsj === null) {
                 $validator->errors()->add('nro_lia', 'Debe ingresar al menos un identificador válido (Nro LIA o Nro UNSJ).');
+
                 return;
             }
 
