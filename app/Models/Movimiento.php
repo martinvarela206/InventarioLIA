@@ -183,6 +183,11 @@ class Movimiento extends Model
         return $this->tipo_movimiento === 'reparacion';
     }
 
+    public function esTicket(): bool
+    {
+        return $this->tipo_movimiento === 'reparacion';
+    }
+
     public function esBaja(): bool
     {
         return $this->tipo_movimiento === 'baja';

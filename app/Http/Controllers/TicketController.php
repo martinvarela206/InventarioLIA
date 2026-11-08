@@ -161,6 +161,10 @@ class TicketController extends Controller
             'areas',
         ])->findOrFail($id);
 
+        if (!$ticket->esTicket()) {
+            abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
+        }
+
         // Movimiento previo al ingreso del ticket para heredar ubicación original
         $movPrevio = Movimiento::where('elemento_id', $ticket->elemento_id)
             ->where('id', '<', $ticket->id)
@@ -197,6 +201,9 @@ class TicketController extends Controller
         ]);
 
         $ticket = Movimiento::findOrFail($id);
+        if (!$ticket->esTicket()) {
+            abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
+        }
         $user = Auth::user();
 
         $movimientoGenerado = null;
@@ -261,6 +268,9 @@ class TicketController extends Controller
         ]);
 
         $ticket = Movimiento::findOrFail($id);
+        if (!$ticket->esTicket()) {
+            abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
+        }
         $user = Auth::user();
 
         $ticket->areas()->syncWithoutDetaching([
@@ -298,6 +308,10 @@ class TicketController extends Controller
         try {
             DB::transaction(function () use ($id, $validated, $user, $request) {
                 $ticket = Movimiento::where('id', $id)->lockForUpdate()->firstOrFail();
+
+                if (!$ticket->esTicket()) {
+                    abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
+                }
 
                 if ($ticket->estado_ticket === 'resuelto' || $ticket->estado_ticket === 'baja') {
                     throw ValidationException::withMessages([
@@ -364,6 +378,11 @@ class TicketController extends Controller
             'ubicacion_id' => 'nullable|exists:ubicaciones,id',
             'puesto' => 'nullable|string|max:50',
         ]);
+
+        $ticket = Movimiento::findOrFail($id);
+        if (!$ticket->esTicket()) {
+            abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
+        }
 
         try {
             $movimientoResolucion = $resolverTicketAction->execute($id, $validated, $user);
