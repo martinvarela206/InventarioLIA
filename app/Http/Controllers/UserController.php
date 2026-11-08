@@ -14,6 +14,7 @@ use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -47,8 +48,13 @@ class UserController extends Controller
         return view('users.index', compact('users', 'roles', 'exColaboradoresElegibles'));
     }
 
-    public function edit(Usuario $user): View
+    public function edit(Usuario $user): View|RedirectResponse
     {
+        if ($user->huella_borrada) {
+            return redirect()->route('users.index')
+                ->with('error', 'El perfil de este usuario histórico ha sido anonimizado y no puede ser editado.');
+        }
+
         $roles = Rol::all();
         $carreras = Carrera::orderBy('nombre')->get();
         $cargos = Cargo::activos()->orderBy('orden')->orderBy('nombre')->get();
@@ -57,6 +63,9 @@ class UserController extends Controller
 
     public function update(Request $request, Usuario $user): RedirectResponse
     {
+        if ($user->huella_borrada) {
+            abort(403, 'Un usuario anonimizado con huella digital borrada no puede ser modificado.');
+        }
         $validated = $request->validate([
             'nombre' => 'required|string|max:100',
             'email' => 'required|email|max:150|unique:usuarios,email,' . $user->id,
@@ -236,16 +245,31 @@ class UserController extends Controller
      */
     public function anonimizar(Usuario $user): RedirectResponse
     {
-        if ($user->activo) {
+        return DB::transaction(function () use ($user) {
+            $userLocked = Usuario::where('id', $user->id)->lockForUpdate()->firstOrFail();
+
+            if ($userLocked->huella_borrada) {
+                return redirect()->route('users.index')
+                    ->with('error', 'La huella digital de este usuario ya ha sido borrada previamente.');
+            }
+
+            if ($userLocked->activo || !$userLocked->isExPersonalMayor6Anios()) {
+                abort(422, 'El usuario no cumple con los requisitos legales de elegibilidad (desvinculación mayor a 6 años) para borrado de huella digital conforme a la Ley 25.326.');
+            }
+
+            $id = $userLocked->id;
+            $userLocked->anonimizarHuellaDigital();
+
+            Log::info("AUDITORIA_FORENSE: Borrado de huella digital y anonimización de datos (Ley 25.326) ejecutado sobre el usuario #{$id}", [
+                'actor_id' => auth()->id(),
+                'actor_email' => auth()->user()?->email,
+                'target_id' => $id,
+                'fecha' => now()->toIso8601String(),
+            ]);
+
             return redirect()->route('users.index')
-                ->with('error', 'No se puede anonimizar un usuario que se encuentra activo en el sistema.');
-        }
-
-        $id = $user->id;
-        $user->anonimizarHuellaDigital();
-
-        return redirect()->route('users.index')
-            ->with('success', "Se ha borrado la huella digital del usuario #{$id} conforme a la Ley 25.326. Sus datos personales han sido anonimizados de forma irreversible.");
+                ->with('success', "Se ha borrado la huella digital del usuario #{$id} conforme a la Ley 25.326. Sus datos personales han sido anonimizados de forma irreversible.");
+        });
     }
 
     /**

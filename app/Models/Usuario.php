@@ -170,6 +170,8 @@ class Usuario extends Authenticatable
     public function anonimizarHuellaDigital(): bool
     {
         $id = $this->id;
+        $nombreOriginal = $this->nombre;
+        $dniOriginal = $this->dni;
 
         $this->dni = null;
         $this->whatsapp = null;
@@ -199,16 +201,28 @@ class Usuario extends Authenticatable
         // Revocar roles de gestión si tuviese asociados
         $this->roles()->detach();
 
+        // Revocar tokens Sanctum activos
+        $this->tokens()->delete();
+
+        // Anonimizar referencias de solicitante en movimientos para proteger datos personales (Ley 25.326)
+        if (!empty($nombreOriginal)) {
+            Movimiento::where('solicitante', $nombreOriginal)
+                ->update(['solicitante' => "Ex-colaborador anonimizado #{$id}"]);
+        }
+        if (!empty($dniOriginal)) {
+            Movimiento::where('solicitante', 'like', "%{$dniOriginal}%")
+                ->update(['solicitante' => "Ex-colaborador anonimizado #{$id}"]);
+        }
+
+        // Anonimizar notas personales en historial de trayectorias preservando estadísticas institucionales
+        $this->trayectorias()->update(['notas' => null]);
+
         return $this->save();
     }
 
     public function esAnonimizado(): bool
     {
-        return (bool)$this->huella_borrada
-            || str_starts_with((string)$this->email, 'historico_')
-            || str_starts_with((string)$this->email, 'anonimo_')
-            || str_starts_with((string)$this->nombre, 'Usuario Histórico')
-            || str_starts_with((string)$this->nombre, 'Usuario Anonimizado');
+        return (bool)$this->huella_borrada;
     }
 
     public function esHistorico(): bool

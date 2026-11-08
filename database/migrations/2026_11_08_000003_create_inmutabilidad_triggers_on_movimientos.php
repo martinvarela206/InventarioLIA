@@ -33,14 +33,14 @@ return new class extends Migration
                     OLD.fecha IS NOT NEW.fecha OR
                     OLD.ubicacion_id IS NOT NEW.ubicacion_id OR
                     OLD.puesto IS NOT NEW.puesto OR
-                    OLD.solicitante IS NOT NEW.solicitante OR
                     OLD.fecha_prestamo IS NOT NEW.fecha_prestamo OR
                     OLD.correccion_de_id IS NOT NEW.correccion_de_id OR
                     OLD.ticket_id IS NOT NEW.ticket_id OR
-                    OLD.comentario IS NOT NEW.comentario
+                    OLD.comentario IS NOT NEW.comentario OR
+                    (OLD.solicitante IS NOT NEW.solicitante AND NEW.solicitante NOT LIKE 'Ex-colaborador anonimizado%')
                 )
                 BEGIN
-                    SELECT RAISE(ABORT, 'Los movimientos del inventario son inmutables. Solo se permite actualizar fecha_devolucion y estado_ticket.');
+                    SELECT RAISE(ABORT, 'Los movimientos del inventario son inmutables patrimonialmente.');
                 END;
             ");
         } elseif ($driver === 'mysql') {
@@ -66,14 +66,14 @@ return new class extends Migration
                         NOT (OLD.fecha <=> NEW.fecha) OR
                         NOT (OLD.ubicacion_id <=> NEW.ubicacion_id) OR
                         NOT (OLD.puesto <=> NEW.puesto) OR
-                        NOT (OLD.solicitante <=> NEW.solicitante) OR
                         NOT (OLD.fecha_prestamo <=> NEW.fecha_prestamo) OR
                         NOT (OLD.correccion_de_id <=> NEW.correccion_de_id) OR
                         NOT (OLD.ticket_id <=> NEW.ticket_id) OR
-                        NOT (OLD.comentario <=> NEW.comentario)
+                        NOT (OLD.comentario <=> NEW.comentario) OR
+                        (NOT (OLD.solicitante <=> NEW.solicitante) AND NOT (NEW.solicitante LIKE 'Ex-colaborador anonimizado%'))
                     ) THEN
                         SIGNAL SQLSTATE '45000'
-                        SET MESSAGE_TEXT = 'Los movimientos del inventario son inmutables. Solo se permite actualizar fecha_devolucion y estado_ticket.';
+                        SET MESSAGE_TEXT = 'Los movimientos del inventario son inmutables patrimonialmente.';
                     END IF;
                 END;
             ");
