@@ -65,7 +65,13 @@ class TicketController extends Controller
         ]);
 
         $user = Auth::user();
-        $isTec = $user->hasRole('tec') || $user->hasRole('user_admin') || $user->hasRole('item_admin') || $user->hasRole('asset_admin');
+        $isTec = $user->hasRole(['tec', 'subtec', 'user_admin', 'item_admin', 'asset_admin']);
+
+        // Para rol Revisor (solo lectura), se bloquea cualquier alteración física de ubicación
+        if (!$isTec) {
+            $validated['tipo_traslado'] = 'insitu';
+            unset($validated['ubicacion_id'], $validated['puesto']);
+        }
 
         // Para rol Revisor, el solicitante es estrictamente el usuario logueado
         $solicitante = $isTec

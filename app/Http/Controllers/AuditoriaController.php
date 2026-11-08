@@ -255,16 +255,22 @@ class AuditoriaController extends Controller
 
         $auditoria = Auditoria::with('ubicacion')->findOrFail($auditoriaId);
         $user = Auth::user();
-        $elemento = Elemento::findOrFail($validated['elemento_id']);
+        $elemento = Elemento::with('ultimoMovimiento')->findOrFail($validated['elemento_id']);
+        $isTec = $user && $user->hasRole(['tec', 'subtec', 'user_admin', 'item_admin', 'asset_admin']);
 
-        $ticket = DB::transaction(function () use ($auditoria, $user, $elemento, $validated) {
+        $ticket = DB::transaction(function () use ($auditoria, $user, $elemento, $validated, $isTec) {
             $motivo = strtoupper($validated['tipo_discrepancia']);
+
+            // Si el usuario es de solo lectura (rev), no puede mover el activo físicamente; se mantiene in-situ
+            $ubicacionTicket = $isTec ? $auditoria->ubicacion_id : ($elemento->ultimoMovimiento?->ubicacion_id ?? $auditoria->ubicacion_id);
+            $puestoTicket = $isTec ? ($validated['puesto'] ?? null) : ($elemento->ultimoMovimiento?->puesto ?? null);
+
             $movimiento = Movimiento::create([
                 'elemento_id' => $elemento->id,
                 'tipo_movimiento' => 'reparacion',
                 'estado_ticket' => 'abierto',
-                'ubicacion_id' => $auditoria->ubicacion_id,
-                'puesto' => $validated['puesto'] ?? null,
+                'ubicacion_id' => $ubicacionTicket,
+                'puesto' => $puestoTicket,
                 'user_id' => $user->id,
                 'fecha' => now(),
                 'solicitante' => $user->nombre ?: 'Auditoría Física',
