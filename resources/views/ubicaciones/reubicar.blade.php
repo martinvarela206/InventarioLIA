@@ -9,7 +9,7 @@
                 <span class="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-lg uppercase tracking-wider">
                     Asistente de Reubicación Patrimonial
                 </span>
-                <span class="text-xs text-gray-400 font-medium">• Exclusivo Administrador de Activos</span>
+                <span class="text-xs text-gray-400 font-medium">• Exclusivo Administrador de Activos (asset_admin)</span>
             </div>
             <h1 class="text-2xl font-black text-gray-900 tracking-tight">Reubicación de Activos en Limbo</h1>
             <p class="text-sm text-gray-600 mt-1">
@@ -96,12 +96,19 @@
 
         <!-- OPCIÓN 2: Reubicación Discriminada por Fila -->
         <div class="bg-white border border-gray-200 rounded-2xl shadow-2xs overflow-hidden">
-            <div class="p-6 border-b border-gray-100">
-                <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-1 flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 bg-blue-500 rounded-full inline-block"></span>
-                    <span>Opción 2: Reubicación Discriminada (Destinos Independientes)</span>
-                </h2>
-                <p class="text-xs text-gray-500">Defina individualmente el laboratorio o puesto de destino para cada activo.</p>
+            <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-1 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 bg-blue-500 rounded-full inline-block"></span>
+                        <span>Opción 2: Reubicación Discriminada (Destinos Independientes)</span>
+                    </h2>
+                    <p class="text-xs text-gray-500">Defina individualmente el laboratorio o puesto de destino para cada activo.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btn-copiar-primer-destino" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition-colors">
+                        Copiar primer destino a todas
+                    </button>
+                </div>
             </div>
 
             <form action="{{ route('ubicaciones.reubicar.store') }}" method="POST">
@@ -112,6 +119,7 @@
                             <tr>
                                 <th class="py-3 px-4">Identificador LIA / UNSJ</th>
                                 <th class="py-3 px-4">Tipo y Equipo</th>
+                                <th class="py-3 px-4">Estado</th>
                                 <th class="py-3 px-4">Puesto Anterior</th>
                                 <th class="py-3 px-4">Nuevo Destino</th>
                                 <th class="py-3 px-4">Nuevo Puesto</th>
@@ -131,11 +139,14 @@
                                     <span class="font-bold text-gray-800 block">{{ $activo->tipo?->nombre }}</span>
                                     <span class="text-gray-500 text-[11px]">{{ $activo->marca }} {{ $activo->modelo }}</span>
                                 </td>
+                                <td class="py-3.5 px-4">
+                                    <x-elemento-status-badge :elemento="$activo" />
+                                </td>
                                 <td class="py-3.5 px-4 text-gray-500">
                                     {{ $activo->ultimoMovimiento?->puesto ?: 'S/P' }}
                                 </td>
                                 <td class="py-3.5 px-4">
-                                    <select name="items[{{ $idx }}][ubicacion_id]" class="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-white focus:ring-1 focus:ring-amber-400 focus:outline-none">
+                                    <select name="items[{{ $idx }}][ubicacion_id]" class="destino-select w-full px-2.5 py-1.5 border rounded-lg text-xs bg-white focus:ring-1 focus:ring-amber-400 focus:outline-none">
                                         @foreach($ubicacionesActivas as $u)
                                             <option value="{{ $u->id }}" {{ $destinoSugerido?->id == $u->id ? 'selected' : '' }}>
                                                 {{ $u->nombre }}
@@ -162,4 +173,21 @@
         </div>
     @endif
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnCopiar = document.getElementById('btn-copiar-primer-destino');
+        if (btnCopiar) {
+            btnCopiar.addEventListener('click', function() {
+                const selects = document.querySelectorAll('.destino-select');
+                if (selects.length > 1) {
+                    const firstVal = selects[0].value;
+                    selects.forEach((sel, idx) => {
+                        if (idx > 0) sel.value = firstVal;
+                    });
+                }
+            });
+        }
+    });
+</script>
 @endsection
