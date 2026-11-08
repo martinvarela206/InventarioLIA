@@ -322,4 +322,20 @@ class IntegridadReferencialTest extends TestCase
             'estado' => 'inconsistencia',
         ]);
     }
+
+    public function test_ubicacion_soporta_archivado_logico_y_filtro_de_activas(): void
+    {
+        $sala = Ubicacion::create([
+            'nombre' => 'Sala Antigua Histórica',
+            'descripcion' => 'Espacio que será clausurado',
+        ]);
+
+        $this->assertTrue($sala->fresh()->activa);
+
+        $sala->update(['activa' => false]);
+        $this->assertFalse($sala->fresh()->activa);
+
+        $activas = Ubicacion::activas()->pluck('id');
+        $this->assertNotContains($sala->id, $activas);
+    }
 }

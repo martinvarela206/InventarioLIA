@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Ubicacion extends Model
@@ -14,7 +14,17 @@ class Ubicacion extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
+        'activa',
     ];
+
+    protected $casts = [
+        'activa' => 'boolean',
+    ];
+
+    public function scopeActivas(Builder $query): Builder
+    {
+        return $query->where('activa', true);
+    }
 
     public function movimientos(): HasMany
     {
