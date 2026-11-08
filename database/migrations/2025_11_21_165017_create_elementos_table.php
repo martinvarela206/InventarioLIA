@@ -26,6 +26,8 @@ return new class extends Migration
             $table->integer('cantidad')->default(1);
             $table->date('fecha_adquisicion')->nullable();
             $table->date('fecha_vencimiento_garantia')->nullable();
+            $table->softDeletes();
+            $table->foreignId('deleted_by')->nullable()->constrained('usuarios')->nullOnDelete();
 
             $table->unique(['nro_lia', 'nro_unsj']);
             $table->index('nro_lia');

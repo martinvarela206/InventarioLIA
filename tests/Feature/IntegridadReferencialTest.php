@@ -86,4 +86,45 @@ class IntegridadReferencialTest extends TestCase
         $this->expectException(QueryException::class);
         DB::table('usuarios')->where('id', $user->id)->delete();
     }
+
+    public function test_borrado_de_elemento_es_logico_y_preserva_movimientos_historicos(): void
+    {
+        [$user, $tipo, $ubicacion] = $this->crearDatosBase();
+        $admin = Usuario::where('email', 'admin@lia.unsj.edu.ar')->first() ?? $user;
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'LIA-SOFT-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Lenovo',
+        ]);
+
+        $movimiento = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $user->id,
+            'fecha' => now(),
+            'comentario' => 'Movimiento que debe sobrevivir al borrado logico',
+        ]);
+
+        $this->actingAs($admin);
+        $response = $this->delete(route('elementos.destroy', $elemento));
+        $response->assertRedirect(route('elementos.index'));
+
+        // El elemento no debe figurar en consultas estándar (SoftDeletes)
+        $this->assertNull(Elemento::find($elemento->id));
+
+        // Debe existir en withTrashed() con deleted_at y deleted_by
+        $archivado = Elemento::withTrashed()->find($elemento->id);
+        $this->assertNotNull($archivado);
+        $this->assertNotNull($archivado->deleted_at);
+        $this->assertEquals($admin->id, $archivado->deleted_by);
+
+        // El movimiento histórico debe seguir existiendo intacto
+        $this->assertDatabaseHas('movimientos', [
+            'id' => $movimiento->id,
+            'elemento_id' => $elemento->id,
+            'comentario' => 'Movimiento que debe sobrevivir al borrado logico',
+        ]);
+    }
 }

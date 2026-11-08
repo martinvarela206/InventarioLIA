@@ -421,12 +421,14 @@ class ElementoController extends Controller
     public function destroy(Elemento $elemento): RedirectResponse
     {
         if (!auth()->user()?->canManageElementos()) {
-            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+            abort(403, 'Acceso restringido a administradores de inventario.');
         }
 
+        $elemento->deleted_by = auth()->id();
+        $elemento->saveQuietly();
         $elemento->delete();
 
         return redirect()->route('elementos.index')
-            ->with('success', 'Elemento eliminado del inventario.');
+            ->with('success', 'Elemento archivado y retirado del catálogo activo correctamente.');
     }
 }

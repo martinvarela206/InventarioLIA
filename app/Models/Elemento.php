@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\ValidationException;
 use App\Presenters\ElementoPresenter;
 
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class Elemento extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'elementos';
     protected $primaryKey = 'id';
@@ -36,6 +37,7 @@ class Elemento extends Model
         'cantidad',
         'fecha_adquisicion',
         'fecha_vencimiento_garantia',
+        'deleted_by',
     ];
 
     protected $casts = [
@@ -44,7 +46,13 @@ class Elemento extends Model
         'descripcion' => 'array',
         'anio_compra' => 'integer',
         'cantidad' => 'integer',
+        'deleted_at' => 'datetime',
     ];
+
+    public function deletedBy(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'deleted_by');
+    }
 
     /**
      * Normaliza un identificador patrimonial (LIA o UNSJ), convirtiendo strings vacíos,
