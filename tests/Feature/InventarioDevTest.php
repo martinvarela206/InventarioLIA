@@ -2789,6 +2789,11 @@ class InventarioDevTest extends TestCase
             'comentario' => 'Asignado a Puesto 01',
         ]);
 
+        // Iniciar sesión de auditoría mediante POST formal (sin efectos colaterales en GET)
+        $this->actingAs($auditor)->post(route('auditorias.store'), [
+            'ubicacion_id' => $sala->id,
+        ]);
+
         // 1. Cargar pantalla interactiva de auditoría
         $resView = $this->actingAs($auditor)->get(route('auditorias.create', ['ubicacion_id' => $sala->id]));
         $resView->assertStatus(200);
