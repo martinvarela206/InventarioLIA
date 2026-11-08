@@ -263,4 +263,29 @@ class IntegridadReferencialTest extends TestCase
             'cantidad' => 1,
         ]);
     }
+
+    public function test_indices_compuestos_en_movimientos_existen_y_optimizan_subconsultas(): void
+    {
+        [$user, $tipo, $ubicacion] = $this->crearDatosBase();
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'LIA-INDEX-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+        ]);
+
+        Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $user->id,
+            'fecha' => now(),
+            'comentario' => 'Movimiento para validar indice compuesto',
+        ]);
+
+        // Verificar que la consulta correlacionada de latestOfMany resuelva correctamente
+        $elementoConUltimo = Elemento::with('ultimoMovimiento')->find($elemento->id);
+        $this->assertNotNull($elementoConUltimo->ultimoMovimiento);
+        $this->assertEquals($elemento->id, $elementoConUltimo->ultimoMovimiento->elemento_id);
+    }
 }
