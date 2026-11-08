@@ -18,8 +18,8 @@ class StoreElementoRequest extends FormRequest
         $maxAnio = (int)date('Y') + 1;
 
         return [
-            'nro_lia' => 'nullable|string|max:50',
-            'nro_unsj' => 'nullable|string|max:50',
+            'nro_lia' => 'nullable|string|max:50|required_without:nro_unsj',
+            'nro_unsj' => 'nullable|string|max:50|required_without:nro_lia',
             'tipo_id' => 'required|exists:tipos,id',
             'marca' => 'nullable|string|max:100',
             'modelo' => 'nullable|string|max:100',
@@ -36,19 +36,35 @@ class StoreElementoRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'nro_lia.required_without' => 'Debe ingresar al menos un número identificador (Nro LIA o Nro UNSJ).',
+            'nro_unsj.required_without' => 'Debe ingresar al menos un número identificador (Nro LIA o Nro UNSJ).',
+            'fecha_vencimiento_garantia.after_or_equal' => 'La fecha de vencimiento de garantía debe ser posterior o igual a la de adquisición.',
+        ];
+    }
+
     public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
             $cleanLia = Elemento::normalizarIdentificador($this->input('nro_lia'));
             $cleanUnsj = Elemento::normalizarIdentificador($this->input('nro_unsj'));
 
-            if ($cleanLia !== null && $cleanUnsj !== null) {
-                $exists = Elemento::where('nro_lia', $cleanLia)
-                    ->where('nro_unsj', $cleanUnsj)
-                    ->exists();
+            if ($cleanLia === null && $cleanUnsj === null) {
+                $validator->errors()->add('nro_lia', 'Debe ingresar al menos un identificador válido (Nro LIA o Nro UNSJ).');
+                return;
+            }
 
-                if ($exists) {
-                    $validator->errors()->add('nro_lia', 'Ya existe un elemento registrado con la misma combinación de Nro LIA y Nro UNSJ.');
+            if ($cleanLia !== null) {
+                if (Elemento::where('nro_lia', $cleanLia)->exists()) {
+                    $validator->errors()->add('nro_lia', "Ya existe un activo registrado con el Nro LIA '{$cleanLia}'.");
+                }
+            }
+
+            if ($cleanUnsj !== null) {
+                if (Elemento::where('nro_unsj', $cleanUnsj)->exists()) {
+                    $validator->errors()->add('nro_unsj', "Ya existe un activo registrado con el Nro UNSJ '{$cleanUnsj}'.");
                 }
             }
         });

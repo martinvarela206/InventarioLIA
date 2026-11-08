@@ -211,4 +211,56 @@ class IntegridadReferencialTest extends TestCase
             'estado_ticket' => 'cerrado',
         ]);
     }
+
+    public function test_validacion_rechaza_creacion_sin_nro_lia_ni_nro_unsj(): void
+    {
+        [$user, $tipo, $ubicacion] = $this->crearDatosBase();
+        $admin = Usuario::where('email', 'admin@lia.unsj.edu.ar')->first() ?? $user;
+
+        $this->actingAs($admin);
+        $response = $this->post(route('elementos.store'), [
+            'nro_lia' => null,
+            'nro_unsj' => null,
+            'tipo_id' => $tipo->id,
+            'cantidad' => 1,
+        ]);
+
+        $response->assertSessionHasErrors(['nro_lia']);
+    }
+
+    public function test_validacion_impide_duplicar_nro_lia_incluso_con_nro_unsj_nulo(): void
+    {
+        [$user, $tipo, $ubicacion] = $this->crearDatosBase();
+        $admin = Usuario::where('email', 'admin@lia.unsj.edu.ar')->first() ?? $user;
+
+        Elemento::create([
+            'nro_lia' => 'LIA-DUP-01',
+            'nro_unsj' => null,
+            'tipo_id' => $tipo->id,
+            'marca' => 'Dell',
+        ]);
+
+        $this->actingAs($admin);
+        $response = $this->post(route('elementos.store'), [
+            'nro_lia' => 'LIA-DUP-01',
+            'nro_unsj' => null,
+            'tipo_id' => $tipo->id,
+            'cantidad' => 1,
+        ]);
+
+        $response->assertSessionHasErrors(['nro_lia']);
+    }
+
+    public function test_base_de_datos_bloquea_insercion_sin_ningun_identificador(): void
+    {
+        [$user, $tipo, $ubicacion] = $this->crearDatosBase();
+
+        $this->expectException(QueryException::class);
+        DB::table('elementos')->insert([
+            'nro_lia' => null,
+            'nro_unsj' => null,
+            'tipo_id' => $tipo->id,
+            'cantidad' => 1,
+        ]);
+    }
 }
