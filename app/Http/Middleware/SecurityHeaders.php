@@ -27,14 +27,20 @@ class SecurityHeaders
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
-        // Directiva básica y flexible de Content-Security-Policy compatible con Vite, Tailwind y Google Fonts
-        $csp = "default-src 'self' https: data:; "
-            . "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; "
-            . "style-src 'self' 'unsafe-inline' https: fonts.googleapis.com; "
-            . "font-src 'self' https: data: fonts.gstatic.com; "
-            . "img-src 'self' data: https: blob:; "
-            . "connect-src 'self' https:;";
+        // HSTS (Strict-Transport-Security)
+        if ($request->isSecure() || app()->isProduction() || config('app.force_https', false)) {
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        }
+
+        // Directiva de Content-Security-Policy endurecida sin comodines inseguros
+        $csp = "default-src 'self'; "
+            . "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            . "style-src 'self' 'unsafe-inline' fonts.googleapis.com; "
+            . "font-src 'self' data: fonts.gstatic.com; "
+            . "img-src 'self' data: blob:; "
+            . "connect-src 'self';";
 
         if (!$response->headers->has('Content-Security-Policy')) {
             $response->headers->set('Content-Security-Policy', $csp);

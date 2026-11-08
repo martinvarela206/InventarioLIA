@@ -23,7 +23,6 @@ class AppAdminSeeder extends Seeder
             ['nombre' => 'Licenciatura en Astronomía', 'codigo' => 'LA', 'activa' => true],
             ['nombre' => 'Licenciatura en Biología', 'codigo' => 'LB', 'activa' => true],
             ['nombre' => 'Licenciatura en Ciencias Geológicas', 'codigo' => 'LCG', 'activa' => true],
-            ['nombre' => 'Analista Programador Universitario (Plan Anterior)', 'codigo' => 'APU-HIST', 'activa' => false], // Ejemplo histórico
         ];
 
         foreach ($carreras as $c) {
@@ -66,39 +65,48 @@ class AppAdminSeeder extends Seeder
             EspacioLia::firstOrCreate(['titulo' => $esp['titulo']], $esp);
         }
 
-        // 3. Personal Clave del LIA
-        $personal = [
-            [
-                'nombre' => 'Dra. María Elena Fernández',
-                'cargo' => 'Directora del LIA',
+        // 3. Personal Clave del LIA (Vinculado directamente a Usuarios Reales)
+        $flavia = Usuario::where('email', 'flavia@lia.com')->first();
+        $marcelo = Usuario::where('email', 'marcelo@lia.com')->first();
+        $cristina = Usuario::where('email', 'cristina@lia.com')->first();
+        $martin = Usuario::where('email', 'martin@lia.com')->first();
+
+        $personal = [];
+        if ($flavia) {
+            $personal[] = [
+                'user_id' => $flavia->id,
                 'comentario' => 'Supervisión general del laboratorio, vinculación institucional con decanato y cátedras, y gestión de convenios académicos.',
-                'email' => 'direccion.lia@unsj.edu.ar',
-                'foto_path' => '/assets/flavia.png',
                 'orden' => 1,
                 'activo' => true,
-            ],
-            [
-                'nombre' => 'Lic. Carlos A. Gómez',
-                'cargo' => 'Coordinador de Infraestructura y Redes',
+            ];
+        }
+        if ($marcelo) {
+            $personal[] = [
+                'user_id' => $marcelo->id,
                 'comentario' => 'A cargo de la conectividad por fibra, administración de servidores, políticas de backup y disponibilidad de salas.',
-                'email' => 'cgomez@exactas.unsj.edu.ar',
-                'foto_path' => '/assets/manuel.png',
                 'orden' => 2,
                 'activo' => true,
-            ],
-            [
-                'nombre' => 'Ing. Roberto D. Vega',
-                'cargo' => 'Encargado de Seguridad ante Emergencias',
-                'comentario' => 'Responsable del plan de evacuación, mantenimiento de extintores, seguridad eléctrica e higiene en el recinto del LIA.',
-                'email' => 'seguridad.lia@unsj.edu.ar',
-                'foto_path' => null,
+            ];
+        }
+        if ($cristina) {
+            $personal[] = [
+                'user_id' => $cristina->id,
+                'comentario' => 'Administración general, gestión de personal, trámites de compras y coordinación administrativa del departamento.',
                 'orden' => 3,
                 'activo' => true,
-            ],
-        ];
+            ];
+        }
+        if ($martin) {
+            $personal[] = [
+                'user_id' => $martin->id,
+                'comentario' => 'Desarrollo, revisión técnica y mantenimiento evolutivo del sistema informático de inventario patrimonial.',
+                'orden' => 4,
+                'activo' => true,
+            ];
+        }
 
         foreach ($personal as $p) {
-            PersonalLia::firstOrCreate(['nombre' => $p['nombre']], $p);
+            PersonalLia::updateOrCreate(['user_id' => $p['user_id']], $p);
         }
 
         // 4. Actividades del LIA (Posteos estilo feed / Instagram)

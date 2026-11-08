@@ -25,7 +25,8 @@ class ImportarInventarioOdsCommand extends Command
      */
     protected $signature = 'inventario:import-ods 
                             {--file= : Ruta al archivo ODS}
-                            {--fresh : Limpia las tablas de elementos y movimientos antes de importar}';
+                            {--fresh : Limpia las tablas de elementos y movimientos antes de importar}
+                            {--force : Forzar la ejecución del comando en entorno de producción}';
 
     /**
      * The console command description.
@@ -39,6 +40,17 @@ class ImportarInventarioOdsCommand extends Command
      */
     public function handle(): int
     {
+        if (app()->isProduction()) {
+            if (!$this->option('force')) {
+                $this->error('ACCESO DENEGADO: El importador masivo ODS no puede ejecutarse en producción sin la opción --force.');
+                return Command::FAILURE;
+            }
+            if ($this->option('fresh')) {
+                $this->error('OPERACIÓN ABORTADA: La opción --fresh está estrictamente prohibida en producción para preservar la trazabilidad e inmutabilidad.');
+                return Command::FAILURE;
+            }
+        }
+
         $filePath = $this->option('file') ?: base_path('DocsSistemaLia/material/Inventario LIA.ods');
 
         if (!file_exists($filePath)) {
@@ -50,10 +62,19 @@ class ImportarInventarioOdsCommand extends Command
 
         if ($this->option('fresh')) {
             $this->warn("Limpiando tablas 'movimientos' y 'elementos'...");
-            DB::statement('PRAGMA foreign_keys = OFF;');
+            $driver = DB::getDriverName();
+            if ($driver === 'sqlite') {
+                DB::statement('PRAGMA foreign_keys = OFF;');
+            } else {
+                DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
+            }
             Movimiento::truncate();
             Elemento::truncate();
-            DB::statement('PRAGMA foreign_keys = ON;');
+            if ($driver === 'sqlite') {
+                DB::statement('PRAGMA foreign_keys = ON;');
+            } else {
+                DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
+            }
         }
 
         $zip = new ZipArchive();
@@ -76,19 +97,29 @@ class ImportarInventarioOdsCommand extends Command
 
         $tables = $xml->xpath('//table:table');
 
-        // Pre-cargar catálogos
-        $defaultUser = Usuario::first() ?? Usuario::create([
-            'nombre' => 'Administrador Sistema',
-            'email' => 'admin@lia.unsj.edu.ar',
-            'password' => bcrypt('1234'),
-            'activo' => true,
-        ]);
+        // Pre-cargar catálogos y usuario por defecto
+        $defaultUser = Usuario::first();
+        if (!$defaultUser) {
+            $defaultPass = env('SEED_DEFAULT_PASSWORD', 'LiaSegura2026!');
+            $defaultUser = Usuario::create([
+                'nombre' => 'Administrador Sistema',
+                'email' => 'admin@lia.unsj.edu.ar',
+                'password' => bcrypt($defaultPass),
+                'activo' => true,
+            ]);
+            $rolAdmin = \App\Models\Rol::where('rol', 'app_admin')->first();
+            if ($rolAdmin) {
+                $defaultUser->roles()->attach($rolAdmin->id);
+            }
+        }
 
         $summary = [];
         $totalImportados = 0;
         $totalConLia = 0;
         $totalConUnsj = 0;
         $totalSinAmbos = 0;
+        $seenLia = [];
+        $seenUnsj = [];
         $seenTuples = [];
 
         foreach ($tables as $table) {
@@ -164,17 +195,32 @@ class ImportarInventarioOdsCommand extends Command
 
                 if ($nroLia !== null) $totalConLia++;
                 if ($nroUnsj !== null) $totalConUnsj++;
-                if ($nroLia === null && $nroUnsj === null) $totalSinAmbos++;
 
-                // Prevención de colisión en clave única compuesta (nro_lia, nro_unsj)
-                if ($nroLia !== null && $nroUnsj !== null) {
-                    $tupleKey = "{$nroLia}___{$nroUnsj}";
-                    if (isset($seenTuples[$tupleKey])) {
-                        // Si ya existe exactamente esa tupla, enriquecer observaciones
-                        $rawComentarios = ($rawComentarios ? $rawComentarios . ' | ' : '') . "Duplicado de planilla: {$nroLia} / {$nroUnsj}";
-                        $nroUnsj = null; // Mantener nro_lia pero disociar unsj para no violar índice único
+                // Si carece de ambos identificadores, asignar identificador patrimonial temporal para cumplir constraint
+                if ($nroLia === null && $nroUnsj === null) {
+                    $totalSinAmbos++;
+                    $nroLia = 'LIA-S-N-' . str_pad($totalSinAmbos, 3, '0', STR_PAD_LEFT);
+                    $rawComentarios = ($rawComentarios ? $rawComentarios . ' | ' : '') . 'Activo sin identificación en planilla original';
+                }
+
+                // Prevención estricta de colisión en índices únicos individuales
+                if ($nroLia !== null) {
+                    if (isset($seenLia[$nroLia])) {
+                        $seenLia[$nroLia]++;
+                        $rawComentarios = ($rawComentarios ? $rawComentarios . ' | ' : '') . "Nro LIA duplicado en planilla: {$nroLia}";
+                        $nroLia = "{$nroLia}-DUP-{$seenLia[$nroLia]}";
                     } else {
-                        $seenTuples[$tupleKey] = true;
+                        $seenLia[$nroLia] = 1;
+                    }
+                }
+
+                if ($nroUnsj !== null) {
+                    if (isset($seenUnsj[$nroUnsj])) {
+                        $seenUnsj[$nroUnsj]++;
+                        $rawComentarios = ($rawComentarios ? $rawComentarios . ' | ' : '') . "Nro UNSJ duplicado en planilla: {$nroUnsj}";
+                        $nroUnsj = "{$nroUnsj}-DUP-{$seenUnsj[$nroUnsj]}";
+                    } else {
+                        $seenUnsj[$nroUnsj] = 1;
                     }
                 }
 

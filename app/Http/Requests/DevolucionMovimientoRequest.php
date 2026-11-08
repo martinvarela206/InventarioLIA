@@ -14,7 +14,7 @@ class DevolucionMovimientoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'fecha_devolucion' => 'nullable|date',
+            'fecha_devolucion' => 'nullable|date|before_or_equal:today',
             'ubicacion_id' => 'required|exists:ubicaciones,id',
             'puesto' => 'nullable|string|max:50',
             'comentario' => 'nullable|string',

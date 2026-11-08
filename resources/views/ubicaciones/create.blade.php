@@ -9,7 +9,7 @@
             <span class="text-xs font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2.5 py-1 rounded-md">
                 Nuevo Espacio
             </span>
-            <span class="text-xs text-gray-500 font-semibold">item_admin</span>
+            <span class="text-xs text-gray-500 font-semibold">asset_admin</span>
         </div>
         <h1 class="text-2xl font-black text-gray-900 mt-1">Registrar Nuevo Espacio o Sala Física</h1>
         <p class="text-xs text-gray-500 mt-0.5">

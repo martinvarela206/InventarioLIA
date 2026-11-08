@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Usuario;
 use App\Models\Rol;
 use App\Models\Carrera;
+use App\Models\Cargo;
 use App\Models\UsuarioTrayectoria;
 use App\Models\Movimiento;
 use App\Models\ReporteConfigurado;
@@ -12,6 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -45,26 +48,36 @@ class UserController extends Controller
         return view('users.index', compact('users', 'roles', 'exColaboradoresElegibles'));
     }
 
-    public function edit(Usuario $user): View
+    public function edit(Usuario $user): View|RedirectResponse
     {
+        if ($user->huella_borrada) {
+            return redirect()->route('users.index')
+                ->with('error', 'El perfil de este usuario histórico ha sido anonimizado y no puede ser editado.');
+        }
+
         $roles = Rol::all();
         $carreras = Carrera::orderBy('nombre')->get();
-        $cargos = self::CARGOS_ESTANDAR;
+        $cargos = Cargo::activos()->orderBy('orden')->orderBy('nombre')->get();
         return view('users.edit', compact('user', 'roles', 'carreras', 'cargos'));
     }
 
     public function update(Request $request, Usuario $user): RedirectResponse
     {
+        if ($user->huella_borrada) {
+            abort(403, 'Un usuario anonimizado con huella digital borrada no puede ser modificado.');
+        }
         $validated = $request->validate([
             'nombre' => 'required|string|max:100',
             'email' => 'required|email|max:150|unique:usuarios,email,' . $user->id,
             'dni' => 'nullable|string|max:15|unique:usuarios,dni,' . $user->id,
             'fecha_nacimiento' => 'nullable|date',
-            'carrera' => 'nullable|string|max:100',
-            'cargo_actual' => 'nullable|string|max:50',
+            'carrera_id' => 'nullable|exists:carreras,id',
+            'cargo_id' => 'nullable|exists:cargos,id',
             'whatsapp' => 'nullable|string|max:30',
             'direccion' => 'nullable|string|max:255',
             'activo' => 'nullable|boolean',
+            'roles' => 'nullable|array',
+            'roles.*' => 'exists:roles,id',
         ]);
 
         $validated['activo'] = $request->has('activo');
@@ -72,7 +85,40 @@ class UserController extends Controller
         $user->update($validated);
 
         if ($request->has('roles')) {
-            $user->roles()->sync($request->roles);
+            $rolesInput = $request->input('roles', []);
+            $appAdminRol = Rol::where('rol', 'app_admin')->first();
+            $actor = auth()->user();
+
+            // Blindaje anti-escalada: solo un app_admin puede otorgar o revocar el rol app_admin
+            if ($appAdminRol && (!$actor || !$actor->isAppAdmin())) {
+                $teniaAppAdmin = $user->hasRole('app_admin');
+                $quiereAppAdmin = in_array($appAdminRol->id, $rolesInput);
+                if ($teniaAppAdmin !== $quiereAppAdmin) {
+                    abort(403, 'Solo un administrador general (app_admin) puede asignar o remover el rol app_admin.');
+                }
+            }
+
+            // Prevenir que un user_admin modifique sus propios roles en update masivo
+            if ($actor && $user->id === $actor->id && !$actor->isAppAdmin()) {
+                $rolesInput = $user->roles()->pluck('roles.id')->toArray();
+            }
+
+            $rolesAntes = $user->roles()->pluck('rol')->toArray();
+            $user->roles()->sync($rolesInput);
+            $user->flushRolesCache();
+            $rolesDespues = $user->fresh()->roles()->pluck('rol')->toArray();
+
+            if ($rolesAntes != $rolesDespues) {
+                Log::info("AUDITORIA_ROLES: Sincronización de roles en actualización de usuario", [
+                    'actor_id' => $actor?->id,
+                    'actor_email' => $actor?->email,
+                    'target_id' => $user->id,
+                    'target_email' => $user->email,
+                    'roles_anteriores' => $rolesAntes,
+                    'roles_nuevos' => $rolesDespues,
+                    'ip' => $request->ip(),
+                ]);
+            }
         }
 
         return redirect()->route('users.index')->with('success', 'Usuario y perfil actualizados correctamente.');
@@ -86,21 +132,50 @@ class UserController extends Controller
 
         $roleName = $request->role;
         $role = Rol::where('rol', $roleName)->firstOrFail();
+        $actor = auth()->user();
 
-        // Evitar que el administrador se auto-despoje del rol user_admin si es el único
-        if ($roleName === 'user_admin' && $user->id === auth()->id() && $user->hasRole('user_admin')) {
+        // 1. Solo app_admin puede tocar el rol app_admin
+        if ($roleName === 'app_admin' && (!$actor || !$actor->isAppAdmin())) {
+            return response()->json([
+                'message' => 'Solo un administrador general (app_admin) puede asignar o revocar el rol app_admin.',
+                'status' => 'error'
+            ], 403);
+        }
+
+        // 2. Prevenir autoasignación o alteración de roles propios por parte de user_admin
+        if ($actor && $user->id === $actor->id && !$actor->isAppAdmin()) {
+            return response()->json([
+                'message' => 'No tienes permisos para modificar tus propios roles.',
+                'status' => 'error'
+            ], 403);
+        }
+
+        // 3. Evitar que el administrador se auto-despoje del rol user_admin si es el único
+        if ($roleName === 'user_admin' && $user->id === $actor?->id && $user->hasRole('user_admin')) {
             return response()->json(['message' => 'No puedes remover tu propio rol de user_admin.', 'status' => 'error'], 422);
         }
 
         if ($user->hasRole($roleName)) {
             $user->roles()->detach($role->id);
+            $user->flushRolesCache();
             $message = "Rol {$roleName} removido correctamente.";
             $status = 'removed';
         } else {
             $user->roles()->attach($role->id);
+            $user->flushRolesCache();
             $message = "Rol {$roleName} asignado correctamente.";
             $status = 'assigned';
         }
+
+        Log::info("AUDITORIA_ROLES: Cambio individual de rol", [
+            'actor_id' => $actor?->id,
+            'actor_email' => $actor?->email,
+            'target_id' => $user->id,
+            'target_email' => $user->email,
+            'rol' => $roleName,
+            'accion' => $status,
+            'ip' => $request->ip(),
+        ]);
 
         return response()->json(['message' => $message, 'status' => $status]);
     }
@@ -110,6 +185,28 @@ class UserController extends Controller
         $user->activo = !$user->activo;
         $user->save();
 
+        if (!$user->activo) {
+            // Revocar tokens Sanctum activos
+            $user->tokens()->delete();
+
+            // Purgar sesiones persistidas en base de datos si existe la tabla
+            if (\Illuminate\Support\Facades\Schema::hasTable('sessions')) {
+                \Illuminate\Support\Facades\DB::table('sessions')
+                    ->where('user_id', $user->id)
+                    ->delete();
+            }
+
+            // Si el usuario desactivó su propia cuenta, cerrar sesión inmediatamente
+            if (auth()->id() === $user->id) {
+                auth()->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')
+                    ->withErrors(['login' => 'Has desactivado tu propia cuenta. Tu sesión ha finalizado.']);
+            }
+        }
+
         $estado = $user->activo ? 'activada' : 'desactivada';
         return redirect()->route('users.index')->with('success', "Cuenta del usuario {$user->nombre} {$estado}.");
     }
@@ -117,7 +214,7 @@ class UserController extends Controller
     public function trayectoria(Usuario $user): View
     {
         $user->load('trayectorias');
-        $cargos = self::CARGOS_ESTANDAR;
+        $cargos = Cargo::activos()->orderBy('orden')->orderBy('nombre')->get();
         return view('users.trayectoria', compact('user', 'cargos'));
     }
 
@@ -151,16 +248,31 @@ class UserController extends Controller
      */
     public function anonimizar(Usuario $user): RedirectResponse
     {
-        if ($user->activo) {
+        return DB::transaction(function () use ($user) {
+            $userLocked = Usuario::where('id', $user->id)->lockForUpdate()->firstOrFail();
+
+            if ($userLocked->huella_borrada) {
+                return redirect()->route('users.index')
+                    ->with('error', 'La huella digital de este usuario ya ha sido borrada previamente.');
+            }
+
+            if ($userLocked->activo || !$userLocked->isExPersonalMayor6Anios()) {
+                abort(422, 'El usuario no cumple con los requisitos legales de elegibilidad (desvinculación mayor a 6 años) para borrado de huella digital conforme a la Ley 25.326.');
+            }
+
+            $id = $userLocked->id;
+            $userLocked->anonimizarHuellaDigital();
+
+            Log::info("AUDITORIA_FORENSE: Borrado de huella digital y anonimización de datos (Ley 25.326) ejecutado sobre el usuario #{$id}", [
+                'actor_id' => auth()->id(),
+                'actor_email' => auth()->user()?->email,
+                'target_id' => $id,
+                'fecha' => now()->toIso8601String(),
+            ]);
+
             return redirect()->route('users.index')
-                ->with('error', 'No se puede anonimizar un usuario que se encuentra activo en el sistema.');
-        }
-
-        $id = $user->id;
-        $user->anonimizarHuellaDigital();
-
-        return redirect()->route('users.index')
-            ->with('success', "Se ha borrado la huella digital del usuario #{$id} conforme a la Ley 25.326. Sus datos personales han sido anonimizados de forma irreversible.");
+                ->with('success', "Se ha borrado la huella digital del usuario #{$id} conforme a la Ley 25.326. Sus datos personales han sido anonimizados de forma irreversible.");
+        });
     }
 
     /**

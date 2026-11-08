@@ -4,7 +4,7 @@
 <div class="min-h-[calc(100vh-64px)] flex flex-col justify-between">
     <div class="flex-grow flex items-center justify-center py-12">
         <div class="w-full max-w-md">
-            <form action="{{ route('register') }}" method="POST" class="bg-white shadow-md rounded-2xl px-8 pt-6 pb-8 mb-4 border border-gray-200">
+            <form action="{{ route('register') }}" method="POST" enctype="multipart/form-data" class="bg-white shadow-md rounded-2xl px-8 pt-6 pb-8 mb-4 border border-gray-200">
                 @csrf
                 <div class="flex justify-center mb-4">
                     @include('common.logo', ['variant' => 'dark', 'class' => 'w-16 h-16'])
@@ -32,13 +32,14 @@
                     @enderror
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="dni">
-                            DNI (Opcional)
-                        </label>
-                        <input class="w-full border rounded-xl px-3.5 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="dni" type="text" name="dni" value="{{ old('dni') }}" placeholder="35123456">
-                    </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="dni">
+                        DNI (Opcional)
+                    </label>
+                    <input class="w-full border rounded-xl px-3.5 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400" id="dni" type="text" name="dni" value="{{ old('dni') }}" placeholder="35123456">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                     <div>
                         <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="carrera_id">
                             Carrera Universitaria
@@ -51,6 +52,37 @@
                                 </option>
                             @endforeach
                         </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-xs font-bold uppercase mb-1" for="cargo_id">
+                            Cargo en el Laboratorio
+                        </label>
+                        <select class="w-full border rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 font-medium" id="cargo_id" name="cargo_id">
+                            <option value="">Selecciona tu cargo (opcional)...</option>
+                            @foreach($cargos as $cargo)
+                                <option value="{{ $cargo->id }}" {{ old('cargo_id') == $cargo->id ? 'selected' : '' }}>
+                                    {{ $cargo->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Foto de Perfil Opcional -->
+                <div class="mb-4 bg-amber-50/50 p-3.5 rounded-xl border border-amber-200/70 flex items-center gap-3.5">
+                    <img id="register-avatar-preview" src="{{ asset('assets/placeholder-user.png') }}" alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-amber-300 bg-white shadow-sm shrink-0">
+                    <div class="flex-1">
+                        <label class="block text-gray-700 text-xs font-bold uppercase mb-0.5">
+                            Fotografía de Perfil (Opcional)
+                        </label>
+                        <p class="text-[11px] text-gray-500 mb-1.5">Aparecerá en el portal si integras el personal.</p>
+                        <label class="cursor-pointer inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 shadow-sm transition-all">
+                            <span>Subir foto</span>
+                            <input type="file" name="foto" id="foto" accept="image/*" class="hidden" onchange="previewRegisterAvatar(event)">
+                        </label>
+                        @error('foto')
+                            <p class="text-red-500 text-[11px] mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
 
@@ -99,4 +131,20 @@
     </div>
     @include('common.footer')
 </div>
+
+<script>
+    function previewRegisterAvatar(event) {
+        const input = event.target;
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('register-avatar-preview');
+                if (preview) {
+                    preview.src = e.target.result;
+                }
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
 @endsection

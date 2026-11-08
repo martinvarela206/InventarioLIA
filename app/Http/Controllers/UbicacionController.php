@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Ubicacion;
 use App\Models\Movimiento;
+use App\Actions\Ubicaciones\RenombrarUbicacionAction;
+use App\Actions\Ubicaciones\ArchivarUbicacionAction;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class UbicacionController extends Controller
 {
@@ -75,44 +78,69 @@ class UbicacionController extends Controller
 
     /**
      * Actualiza los datos de la sala o espacio físico.
+     * Si el nombre cambia, archiva la ubicación previa y crea una nueva,
+     * enviando al asistente de reubicación si posee activos en limbo.
      */
-    public function update(Request $request, Ubicacion $ubicacione): RedirectResponse
+    public function update(Request $request, Ubicacion $ubicacione, RenombrarUbicacionAction $renombrarAction): RedirectResponse
     {
         $ubicacion = $ubicacione;
 
         $validated = $request->validate([
-            'nombre' => 'required|string|max:100|unique:ubicaciones,nombre,' . $ubicacion->id,
+            'nombre' => 'required|string|max:100',
             'descripcion' => 'nullable|string|max:255',
         ], [
             'nombre.required' => 'El nombre del espacio o sala es obligatorio.',
-            'nombre.unique' => 'Ya existe un espacio o sala con este nombre.',
             'nombre.max' => 'El nombre no puede superar los 100 caracteres.',
             'descripcion.max' => 'La descripción no puede superar los 255 caracteres.',
         ]);
 
-        $nombreAnterior = $ubicacion->nombre;
-        $ubicacion->update([
-            'nombre' => trim($validated['nombre']),
-            'descripcion' => !empty($validated['descripcion']) ? trim($validated['descripcion']) : null,
-        ]);
+        try {
+            $resultado = $renombrarAction->execute($ubicacion, $validated['nombre'], $validated['descripcion'] ?? null, auth()->user());
+        } catch (ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        }
+
+        if ($resultado['renombro']) {
+            if ($resultado['activos_en_limbo'] > 0) {
+                return redirect()->route('ubicaciones.reubicar', [
+                    'origen_id' => $resultado['ubicacion_antigua']->id,
+                    'sugerido_id' => $resultado['nueva_ubicacion']->id,
+                ])->with('warning', "Se ha creado la nueva sala \"{$resultado['nueva_ubicacion']->nombre}\" y archivado \"{$resultado['ubicacion_antigua']->nombre}\". Se detectaron {$resultado['activos_en_limbo']} activos en limbo que deben ser reubicados.");
+            }
+
+            return redirect()->route('ubicaciones.index')
+                ->with('success', "Se ha creado la nueva sala \"{$resultado['nueva_ubicacion']->nombre}\" y archivado la histórica \"{$resultado['ubicacion_antigua']->nombre}\".");
+        }
 
         return redirect()->route('ubicaciones.index')
-            ->with('success', "El espacio \"{$nombreAnterior}\" ha sido actualizado correctamente.");
+            ->with('success', "La información del espacio \"{$ubicacion->nombre}\" ha sido actualizada.");
     }
 
     /**
-     * Elimina un espacio físico garantizando la integridad de datos patrimoniales.
+     * Elimina o archiva un espacio físico garantizando la integridad de datos patrimoniales.
+     * Si posee historial de movimientos o activos, se archiva lógicamente y se envían los activos al limbo.
      */
-    public function destroy(Ubicacion $ubicacione): RedirectResponse
+    public function destroy(Ubicacion $ubicacione, ArchivarUbicacionAction $archivarAction): RedirectResponse
     {
         $ubicacion = $ubicacione;
 
-        // Comprobar si tiene movimientos históricos o activos asignados
         $tieneMovimientos = $ubicacion->movimientos()->exists();
 
         if ($tieneMovimientos) {
+            try {
+                $resultado = $archivarAction->execute($ubicacion, auth()->user());
+            } catch (ValidationException $e) {
+                return redirect()->route('ubicaciones.index')->withErrors($e->errors());
+            }
+
+            if ($resultado['activos_en_limbo'] > 0) {
+                return redirect()->route('ubicaciones.reubicar', [
+                    'origen_id' => $resultado['ubicacion']->id,
+                ])->with('warning', "La sala \"{$resultado['ubicacion']->nombre}\" ha sido archivada como histórica. Se detectaron {$resultado['activos_en_limbo']} activos en limbo que deben ser reubicados.");
+            }
+
             return redirect()->route('ubicaciones.index')
-                ->with('error', "No es posible eliminar el espacio \"{$ubicacion->nombre}\" porque posee historial de movimientos patrimoniales o activos asignados. Puedes editar su nombre o reubicar los equipos previamente.");
+                ->with('success', "La sala \"{$resultado['ubicacion']->nombre}\" ha sido archivada como histórica.");
         }
 
         $nombre = $ubicacion->nombre;

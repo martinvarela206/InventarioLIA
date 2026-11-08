@@ -3,6 +3,7 @@
 namespace App\Presenters;
 
 use App\Models\Elemento;
+use App\Enums\EstadoElemento;
 use Carbon\Carbon;
 
 class ElementoPresenter
@@ -25,29 +26,11 @@ class ElementoPresenter
     }
 
     /**
-     * Badge HTML con colores semánticos según el estado del último movimiento
+     * Badge HTML con colores semánticos según el estado canónico del activo
      */
     public function statusBadge(): string
     {
-        $ultimo = $this->elemento->ultimoMovimiento;
-        if (!$ultimo) {
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">Sin historial</span>';
-        }
-
-        if ($ultimo->tipo_movimiento === 'baja' || $this->elemento->tipo?->nombre === 'basura tecnologica') {
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">Basura Tecnológica</span>';
-        }
-
-        if ($ultimo->esTicketAbierto()) {
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">En Reparación</span>';
-        }
-
-        if ($ultimo->esPrestamo() && !$ultimo->fecha_devolucion) {
-            $dias = $ultimo->diasPrestado();
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">Prestado (' . $dias . ' d)</span>';
-        }
-
-        return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">En Sala / Operativo</span>';
+        return view('components.elemento-status-badge', ['elemento' => $this->elemento])->render();
     }
 
     /**
@@ -55,18 +38,7 @@ class ElementoPresenter
      */
     public function garantiaBadge(): string
     {
-        if (!$this->elemento->fecha_vencimiento_garantia) {
-            return '<span class="text-xs text-gray-500 italic">Sin datos de garantía</span>';
-        }
-
-        $vencimiento = Carbon::parse($this->elemento->fecha_vencimiento_garantia);
-        $hoy = Carbon::today();
-
-        if ($vencimiento->isPast()) {
-            return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Vencida hace ' . $vencimiento->diffForHumans($hoy, ['parts' => 1, 'syntax' => Carbon::DIFF_ABSOLUTE]) . '</span>';
-        }
-
-        return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Vigente (vence en ' . $hoy->diffForHumans($vencimiento, ['parts' => 1, 'syntax' => Carbon::DIFF_ABSOLUTE]) . ')</span>';
+        return view('components.elemento-garantia-badge', ['elemento' => $this->elemento])->render();
     }
 
     /**

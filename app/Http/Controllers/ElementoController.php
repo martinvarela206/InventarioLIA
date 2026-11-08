@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Elemento;
+use App\Enums\EstadoElemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
@@ -62,14 +63,16 @@ class ElementoController extends Controller
         }
 
         if ($request->filled('situacion')) {
-            if ($request->situacion === 'operativo') {
+            if ($request->situacion === 'operativo' || $request->situacion === 'disponible') {
                 $query->disponibles();
             } elseif ($request->situacion === 'prestado') {
                 $query->prestadosActivos();
-            } elseif ($request->situacion === 'baja') {
+            } elseif ($request->situacion === 'baja' || $request->situacion === 'obsoleto') {
                 $query->obsoletos();
             } elseif ($request->situacion === 'reparacion') {
                 $query->enReparacion();
+            } elseif ($request->situacion === 'limbo') {
+                $query->enLimbo();
             }
         }
 
@@ -123,44 +126,8 @@ class ElementoController extends Controller
     public function exportCsv(Request $request): StreamedResponse
     {
         $query = $this->construirConsultaInventario($request);
-        $items = $query->orderBy('id', 'asc')->get();
 
         $columnas = ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Especificaciones / Hardware', 'Nro Serie', 'Ubicación', 'Puesto', 'Situación', 'Solicitante / Préstamo', 'Garantía', 'Año Compra', 'Observaciones'];
-
-        $filas = $items->map(function ($el) {
-            $u = $el->ultimoMovimiento;
-            $situacion = 'En Sala';
-            if ($u?->esPrestamo() && !$u?->fecha_devolucion) {
-                $situacion = 'Prestado (' . $u->diasPrestado() . ' d)';
-            } elseif ($u?->tipo_movimiento === 'baja' || $el->tipo?->nombre === 'basura tecnologica') {
-                $situacion = 'Basura Tecnológica / De Baja';
-            } elseif ($u?->esTicketAbierto()) {
-                $situacion = 'En Reparación';
-            }
-
-            $garantia = 'Sin datos';
-            if ($el->fecha_vencimiento_garantia) {
-                $venc = Carbon::parse($el->fecha_vencimiento_garantia);
-                $garantia = $venc->isPast() ? 'Vencida (' . $venc->format('d/m/Y') . ')' : 'Vigente (' . $venc->format('d/m/Y') . ')';
-            }
-
-            return [
-                $el->tipo?->nombre ?? 'N/A',
-                $el->nro_lia ?? '-',
-                $el->nro_unsj ?? '-',
-                $el->marca ?? '-',
-                $el->modelo ?? '-',
-                $el->especificacionesSintetizadas(false),
-                $el->nro_serie ?? '-',
-                $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo Externo' : 'Sin asignar'),
-                $u?->puesto ?: ($el->puesto ?? '-'),
-                $situacion,
-                $u?->solicitante ?? '-',
-                $garantia,
-                $el->anio_compra ? (string)$el->anio_compra : '-',
-                $el->observaciones ?: ($el->descripcion_texto ?? '-'),
-            ];
-        });
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -170,13 +137,47 @@ class ElementoController extends Controller
             'Expires' => '0',
         ];
 
-        return response()->stream(function () use ($filas, $columnas) {
+        return response()->stream(function () use ($query, $columnas) {
             $handle = fopen('php://output', 'w');
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($handle, $columnas, ';');
-            foreach ($filas as $fila) {
-                fputcsv($handle, $fila, ';');
+
+            foreach ($query->with(['tipo', 'ultimoMovimiento.ubicacion'])->orderBy('id', 'asc')->lazy(250) as $el) {
+                $u = $el->ultimoMovimiento;
+                $situacion = match ($el->estado) {
+                    EstadoElemento::OPERATIVO => 'En Sala / Operativo',
+                    EstadoElemento::PRESTADO => 'Prestado (' . ($u?->diasPrestado() ?? 0) . ' d)',
+                    EstadoElemento::EN_REPARACION => 'En Reparación',
+                    EstadoElemento::EN_LIMBO_REUBICACION => 'En Limbo (Pendiente Reubicación)',
+                    EstadoElemento::BAJA => 'Basura Tecnológica / De Baja',
+                };
+
+                $garantia = 'Sin datos';
+                if ($el->fecha_vencimiento_garantia) {
+                    $venc = Carbon::parse($el->fecha_vencimiento_garantia);
+                    $garantia = $venc->isPast() ? 'Vencida (' . $venc->format('d/m/Y') . ')' : 'Vigente (' . $venc->format('d/m/Y') . ')';
+                }
+
+                $fila = [
+                    $el->tipo?->nombre ?? 'N/A',
+                    $el->nro_lia ?? '-',
+                    $el->nro_unsj ?? '-',
+                    $el->marca ?? '-',
+                    $el->modelo ?? '-',
+                    $el->especificacionesSintetizadas(false),
+                    $el->nro_serie ?? '-',
+                    $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo Externo' : 'Sin asignar'),
+                    $u?->puesto ?: ($el->puesto ?? '-'),
+                    $situacion,
+                    $u?->solicitante ?? '-',
+                    $garantia,
+                    $el->anio_compra ? (string)$el->anio_compra : '-',
+                    $el->observaciones ?: ($el->descripcion_texto ?? '-'),
+                ];
+
+                fputcsv($handle, \App\Support\CsvSanitizer::sanitizeRow($fila), ';');
             }
+
             fclose($handle);
         }, 200, $headers);
     }
@@ -187,7 +188,6 @@ class ElementoController extends Controller
     public function imprimir(Request $request): View
     {
         $query = $this->construirConsultaInventario($request);
-        $items = $query->with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo'])->orderBy('id', 'asc')->get();
 
         $atributos = ReporteController::obtenerAtributosDinamicos();
         $columnas = array_merge(
@@ -197,7 +197,10 @@ class ElementoController extends Controller
         );
         $columnasOcultasDefecto = ReporteController::obtenerColumnasOcultasDefecto($atributos);
 
-        $filas = $items->map(function ($el) use ($atributos) {
+        $filas = $query->with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo'])
+            ->orderBy('id', 'asc')
+            ->lazy(250)
+            ->map(function ($el) use ($atributos) {
             $u = $el->ultimoMovimiento;
             $situacion = 'En Sala';
             if ($u?->esPrestamo() && !$u?->fecha_devolucion) {
@@ -249,7 +252,7 @@ class ElementoController extends Controller
     public function create(): View
     {
         if (!auth()->user()?->canManageElementos()) {
-            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+            abort(403, 'Acceso restringido a administradores de inventario (asset_admin).');
         }
 
         $tipos = Tipo::with('atributos')->orderBy('nombre')->get();
@@ -264,7 +267,7 @@ class ElementoController extends Controller
     public function store(StoreElementoRequest $request): RedirectResponse
     {
         if (!auth()->user()?->canManageElementos()) {
-            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+            abort(403, 'Acceso restringido a administradores de inventario (asset_admin).');
         }
 
         $validated = $request->validated();
@@ -294,18 +297,9 @@ class ElementoController extends Controller
                 'fecha_vencimiento_garantia' => $validated['fecha_vencimiento_garantia'] ?? null,
             ]);
 
-            // Guardar atributos específicos dinámicos en la tabla pivot
+            // Sincronizar atributos técnicos dinámicos y tabla pivot
             if ($request->has('atributos') && is_array($request->atributos)) {
-                foreach ($request->atributos as $attrId => $valor) {
-                    $valLimpio = trim((string)$valor);
-                    if ($valLimpio !== '') {
-                        ElementoAtributoValor::create([
-                            'elemento_id' => $elemento->id,
-                            'atributo_id' => $attrId,
-                            'valor' => $valLimpio,
-                        ]);
-                    }
-                }
+                $elemento->sincronizarAtributosTecnicos($request->atributos);
             }
 
             // GARANTIZAR MOVIMIENTO INICIAL AUTOMÁTICO
@@ -317,7 +311,7 @@ class ElementoController extends Controller
                 'tipo_movimiento' => 'interno',
                 'ubicacion_id' => $ubicacionId,
                 'puesto' => $validated['puesto'] ?? null,
-                'user_id' => auth()->id() ?? Usuario::first()->id,
+                'user_id' => auth()->id() ?? throw new \Illuminate\Auth\AuthenticationException('Usuario no autenticado.'),
                 'fecha' => now(),
                 'comentario' => 'Alta inicial del elemento en el inventario',
             ]);
@@ -351,7 +345,7 @@ class ElementoController extends Controller
     public function edit(Elemento $elemento): View
     {
         if (!auth()->user()?->canManageElementos()) {
-            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+            abort(403, 'Acceso restringido a administradores de inventario (asset_admin).');
         }
 
         $elemento->load('valoresAtributos');
@@ -365,7 +359,7 @@ class ElementoController extends Controller
     public function update(UpdateElementoRequest $request, Elemento $elemento): RedirectResponse
     {
         if (!auth()->user()?->canManageElementos()) {
-            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+            abort(403, 'Acceso restringido a administradores de inventario (asset_admin).');
         }
 
         $validated = $request->validated();
@@ -394,21 +388,9 @@ class ElementoController extends Controller
             'fecha_vencimiento_garantia' => $validated['fecha_vencimiento_garantia'] ?? null,
         ]);
 
-        // Sincronizar atributos técnicos dinámicos
+        // Sincronizar atributos técnicos dinámicos y tabla pivot
         if ($request->has('atributos') && is_array($request->atributos)) {
-            foreach ($request->atributos as $attrId => $valor) {
-                $valLimpio = trim((string)$valor);
-                if ($valLimpio !== '') {
-                    ElementoAtributoValor::updateOrCreate(
-                        ['elemento_id' => $elemento->id, 'atributo_id' => $attrId],
-                        ['valor' => $valLimpio]
-                    );
-                } else {
-                    ElementoAtributoValor::where('elemento_id', $elemento->id)
-                        ->where('atributo_id', $attrId)
-                        ->delete();
-                }
-            }
+            $elemento->sincronizarAtributosTecnicos($request->atributos);
         }
 
         return redirect()->route('elementos.show', $elemento->id)
@@ -421,12 +403,14 @@ class ElementoController extends Controller
     public function destroy(Elemento $elemento): RedirectResponse
     {
         if (!auth()->user()?->canManageElementos()) {
-            abort(403, 'Acceso restringido a administradores de inventario (item_admin).');
+            abort(403, 'Acceso restringido a administradores de inventario.');
         }
 
+        $elemento->deleted_by = auth()->id();
+        $elemento->saveQuietly();
         $elemento->delete();
 
         return redirect()->route('elementos.index')
-            ->with('success', 'Elemento eliminado del inventario.');
+            ->with('success', 'Elemento archivado y retirado del catálogo activo correctamente.');
     }
 }

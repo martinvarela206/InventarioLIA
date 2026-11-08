@@ -4,8 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\ValidationException;
 use App\Presenters\ElementoPresenter;
+use App\Enums\EstadoElemento;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,7 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class Elemento extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'elementos';
     protected $primaryKey = 'id';
@@ -36,6 +38,7 @@ class Elemento extends Model
         'cantidad',
         'fecha_adquisicion',
         'fecha_vencimiento_garantia',
+        'deleted_by',
     ];
 
     protected $casts = [
@@ -44,7 +47,13 @@ class Elemento extends Model
         'descripcion' => 'array',
         'anio_compra' => 'integer',
         'cantidad' => 'integer',
+        'deleted_at' => 'datetime',
     ];
+
+    public function deletedBy(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'deleted_by');
+    }
 
     /**
      * Normaliza un identificador patrimonial (LIA o UNSJ), convirtiendo strings vacíos,
@@ -81,6 +90,77 @@ class Elemento extends Model
             $elemento->nro_lia = static::normalizarIdentificador($elemento->nro_lia);
             $elemento->nro_unsj = static::normalizarIdentificador($elemento->nro_unsj);
         });
+
+        static::saved(function ($elemento) {
+            $elemento->sincronizarDescripcionHaciaAtributos();
+        });
+    }
+
+    /**
+     * Sincroniza los atributos técnicos en la tabla normalizada elemento_atributo_valor
+     * y mantiene actualizada la columna de compatibilidad descripcion (JSON).
+     *
+     * @param array<int|string, string|null> $atributos [atributo_id => valor]
+     */
+    public function sincronizarAtributosTecnicos(array $atributos): void
+    {
+        $descripcionActual = is_array($this->descripcion) ? $this->descripcion : [];
+
+        foreach ($atributos as $attrId => $valor) {
+            $valLimpio = trim((string)$valor);
+            $atributo = Atributo::find($attrId);
+
+            if ($valLimpio !== '') {
+                ElementoAtributoValor::updateOrCreate(
+                    ['elemento_id' => $this->id, 'atributo_id' => $attrId],
+                    ['valor' => $valLimpio]
+                );
+                if ($atributo) {
+                    $descripcionActual[$atributo->nombre] = $valLimpio;
+                }
+            } else {
+                ElementoAtributoValor::where('elemento_id', $this->id)
+                    ->where('atributo_id', $attrId)
+                    ->delete();
+                if ($atributo && array_key_exists($atributo->nombre, $descripcionActual)) {
+                    unset($descripcionActual[$atributo->nombre]);
+                }
+            }
+        }
+
+        $this->descripcion = !empty($descripcionActual) ? $descripcionActual : null;
+        $this->saveQuietly();
+        $this->unsetRelation('valoresAtributos');
+    }
+
+    /**
+     * Propaga valores de atributos desde descripcion (JSON) hacia la tabla
+     * normalizada elemento_atributo_valor si el Tipo define atributos correspondientes.
+     */
+    public function sincronizarDescripcionHaciaAtributos(): void
+    {
+        if (!is_array($this->descripcion) || empty($this->descripcion) || !$this->tipo_id) {
+            return;
+        }
+
+        $tipo = Tipo::with('atributos')->find($this->tipo_id);
+        if (!$tipo || $tipo->atributos->isEmpty()) {
+            return;
+        }
+
+        $atributosPorNombre = $tipo->atributos->keyBy(fn($a) => mb_strtolower(trim($a->nombre)));
+
+        foreach ($this->descripcion as $key => $val) {
+            $keyLower = mb_strtolower(trim((string)$key));
+            $valLimpio = trim((string)$val);
+            if ($valLimpio !== '' && $valLimpio !== '-' && isset($atributosPorNombre[$keyLower])) {
+                $attr = $atributosPorNombre[$keyLower];
+                ElementoAtributoValor::updateOrCreate(
+                    ['elemento_id' => $this->id, 'atributo_id' => $attr->id],
+                    ['valor' => $valLimpio]
+                );
+            }
+        }
     }
 
     public function tipo(): BelongsTo
@@ -90,7 +170,7 @@ class Elemento extends Model
 
     public function movimientos(): HasMany
     {
-        return $this->hasMany(Movimiento::class, 'elemento_id')->orderBy('fecha', 'desc');
+        return $this->hasMany(Movimiento::class, 'elemento_id')->orderBy('id', 'desc');
     }
 
     public function ultimoMovimiento(): HasOne
@@ -115,7 +195,13 @@ class Elemento extends Model
                 if ($va->atributo && mb_strtolower(trim($va->atributo->nombre)) === $nomLower) {
                     $val = trim((string)$va->valor);
                     if ($val !== '') {
-                        $unidad = $va->atributo->unidad_medida ? ' ' . $va->atributo->unidad_medida : '';
+                        $unidad = '';
+                        if ($va->atributo->unidad_medida) {
+                            $u = trim($va->atributo->unidad_medida);
+                            if (!str_ends_with(strtoupper($val), strtoupper($u))) {
+                                $unidad = ' ' . $u;
+                            }
+                        }
                         return $val . $unidad;
                     }
                 }
@@ -155,10 +241,17 @@ class Elemento extends Model
             foreach ($this->valoresAtributos as $va) {
                 $nom = $va->atributo?->nombre;
                 if ($nom && trim((string)$va->valor) !== '') {
-                    $unidad = $va->atributo?->unidad_medida ? ' ' . trim($va->atributo->unidad_medida) : '';
+                    $valLimpio = trim((string)$va->valor);
+                    $unidad = '';
+                    if ($va->atributo?->unidad_medida) {
+                        $u = trim($va->atributo->unidad_medida);
+                        if (!str_ends_with(strtoupper($valLimpio), strtoupper($u))) {
+                            $unidad = ' ' . $u;
+                        }
+                    }
                     $datos[mb_strtolower(trim($nom))] = [
                         'label' => trim($nom),
-                        'valor' => trim((string)$va->valor) . $unidad,
+                        'valor' => $valLimpio . $unidad,
                     ];
                 }
             }
@@ -246,9 +339,47 @@ class Elemento extends Model
         return (string)($this->descripcion ?? '');
     }
 
+    /**
+     * Fuente Única de Verdad para el estado canónico de un activo en el inventario.
+     */
+    public function getEstadoAttribute(): EstadoElemento
+    {
+        if ($this->tipo?->nombre === 'basura tecnologica') {
+            return EstadoElemento::BAJA;
+        }
+
+        $ultimo = $this->ultimoMovimiento;
+        if (!$ultimo) {
+            return EstadoElemento::OPERATIVO;
+        }
+
+        if ($ultimo->tipo_movimiento === 'baja' || $ultimo->estado_ticket === 'baja') {
+            return EstadoElemento::BAJA;
+        }
+
+        if ($ultimo->tipo_movimiento === 'reparacion' && in_array($ultimo->estado_ticket, ['abierto', 'solucionado', null, ''])) {
+            return EstadoElemento::EN_REPARACION;
+        }
+
+        if ($ultimo->esPrestamo() && empty($ultimo->fecha_devolucion)) {
+            return EstadoElemento::PRESTADO;
+        }
+
+        if ($ultimo->tipo_movimiento === 'limbo_reubicacion' || ($ultimo->ubicacion && !$ultimo->ubicacion->activa)) {
+            return EstadoElemento::EN_LIMBO_REUBICACION;
+        }
+
+        return EstadoElemento::OPERATIVO;
+    }
+
     // --- QUERY SCOPES SEMÁNTICOS (SNIPE-IT PATTERN) ---
 
     public function scopeDisponibles(Builder $query): Builder
+    {
+        return $this->scopeOperativos($query);
+    }
+
+    public function scopeOperativos(Builder $query): Builder
     {
         return $query->whereDoesntHave('tipo', function ($tq) {
             $tq->where('nombre', 'basura tecnologica');
@@ -256,7 +387,15 @@ class Elemento extends Model
             $q->where(function ($sub) {
                 $sub->whereNull('fecha_prestamo')
                     ->orWhereNotNull('fecha_devolucion');
-            })->whereNotIn('tipo_movimiento', ['baja', 'reparacion']);
+            })
+            ->whereNotIn('tipo_movimiento', ['baja', 'limbo_reubicacion'])
+            ->where(function ($sub) {
+                $sub->where('tipo_movimiento', '!=', 'reparacion')
+                    ->orWhere('estado_ticket', 'resuelto');
+            })
+            ->whereHas('ubicacion', function ($uq) {
+                $uq->where('activa', true);
+            });
         });
     }
 
@@ -265,6 +404,21 @@ class Elemento extends Model
         return $query->whereHas('ultimoMovimiento', function ($q) {
             $q->whereNotNull('fecha_prestamo')
               ->whereNull('fecha_devolucion');
+        });
+    }
+
+    public function scopeEnLimbo(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('tipo', function ($tq) {
+            $tq->where('nombre', 'basura tecnologica');
+        })->whereHas('ultimoMovimiento', function ($mq) {
+            $mq->whereNotIn('tipo_movimiento', ['baja'])
+               ->where(function ($sub) {
+                   $sub->where('tipo_movimiento', 'limbo_reubicacion')
+                       ->orWhereHas('ubicacion', function ($uq) {
+                           $uq->where('activa', false);
+                       });
+               });
         });
     }
 
@@ -282,7 +436,8 @@ class Elemento extends Model
     {
         return $query->where(function ($q) {
             $q->whereHas('ultimoMovimiento', function ($mq) {
-                $mq->where('tipo_movimiento', 'baja');
+                $mq->where('tipo_movimiento', 'baja')
+                   ->orWhere('estado_ticket', 'baja');
             })->orWhereHas('tipo', function ($tq) {
                 $tq->where('nombre', 'basura tecnologica');
             });
@@ -295,7 +450,7 @@ class Elemento extends Model
             $mq->where('tipo_movimiento', 'reparacion')
                ->where(function ($sub) {
                    $sub->whereNull('estado_ticket')
-                       ->orWhere('estado_ticket', 'abierto');
+                       ->orWhereIn('estado_ticket', ['abierto', 'solucionado']);
                });
         });
     }

@@ -15,14 +15,12 @@ class StoreMovimientoRequest extends FormRequest
     {
         return [
             'elemento_id' => 'required|exists:elementos,id',
-            'tipo_movimiento' => 'required|in:interno,externo_prestamo,reparacion,baja',
-            'estado_ticket' => 'nullable|string|max:30',
-            'ticket_id' => 'nullable|exists:movimientos,id',
-            'ubicacion_id' => 'nullable|exists:ubicaciones,id',
+            'tipo_movimiento' => 'required|in:interno,externo_prestamo',
+            'ubicacion_id' => 'required_if:tipo_movimiento,interno|nullable|exists:ubicaciones,id',
             'puesto' => 'nullable|string|max:50',
-            'solicitante' => 'nullable|string|max:150',
-            'fecha_prestamo' => 'nullable|date',
-            'fecha' => 'nullable|date',
+            'solicitante' => 'required_if:tipo_movimiento,externo_prestamo|nullable|string|max:150',
+            'fecha_prestamo' => 'nullable|date|before_or_equal:today',
+            'fecha' => 'nullable|date|before_or_equal:now',
             'comentario' => 'nullable|string',
         ];
     }

@@ -27,9 +27,40 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('profile.update') }}" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8 space-y-6">
+    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:p-8 space-y-6">
         @csrf
         @method('PUT')
+
+        <!-- Fotografía de Perfil Institucional -->
+        <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-200/60 flex flex-col sm:flex-row items-center gap-5">
+            <div class="relative group shrink-0">
+                <img id="avatar-preview" src="{{ $user->foto_url }}" alt="{{ $user->nombre }}" class="w-20 h-20 rounded-full object-cover border-2 border-[#dba800] shadow-md bg-white">
+            </div>
+            <div class="flex-1 text-center sm:text-left space-y-1.5">
+                <label class="block text-xs font-bold text-gray-700 uppercase">
+                    Fotografía de Perfil Institucional
+                </label>
+                <p class="text-[11px] text-gray-500">
+                    Tu fotografía se utilizará en la barra superior y en la portada del LIA. Formatos admitidos: JPG, PNG, WEBP (hasta 2 MB).
+                </p>
+                <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                    <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 shadow-sm transition-all">
+                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span>Subir o Cambiar Foto</span>
+                        <input type="file" name="foto" id="foto" accept="image/*" class="hidden" onchange="previewAvatar(event)">
+                    </label>
+                    @if($user->foto_path)
+                        <label class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg text-xs font-bold text-rose-700 cursor-pointer transition-all">
+                            <input type="checkbox" name="eliminar_foto" value="1" class="rounded border-rose-300 text-rose-600 focus:ring-rose-500 w-3.5 h-3.5">
+                            <span>Quitar foto</span>
+                        </label>
+                    @endif
+                </div>
+                @error('foto')
+                    <p class="text-red-500 text-xs mt-1 font-semibold">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
 
         <!-- Identidad y Credenciales de Acceso -->
         <div class="bg-gray-50/70 p-4 rounded-xl border border-gray-200/80 space-y-4">
@@ -102,8 +133,15 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
-                    <label for="carrera" class="block text-xs font-bold text-gray-700 uppercase mb-1">Carrera / Área Académica</label>
-                    <input type="text" name="carrera" id="carrera" list="lista-carreras-perfil" value="{{ old('carrera', $user->carrera) }}" placeholder="Seleccione o escriba su carrera..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    <label for="carrera_id" class="block text-xs font-bold text-gray-700 uppercase mb-1">Carrera / Área Académica</label>
+                    <select name="carrera_id" id="carrera_id" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                        <option value="">Seleccione su carrera...</option>
+                        @foreach($carreras as $c)
+                            <option value="{{ $c->id }}" {{ old('carrera_id', $user->carrera_id ?? ($carreras->firstWhere('nombre', $user->carrera)?->id)) == $c->id ? 'selected' : '' }}>
+                                {{ $c->nombre }} {{ $c->codigo ? "({$c->codigo})" : '' }}
+                            </option>
+                        @endforeach
+                    </select>
                     <datalist id="lista-carreras-perfil">
                         @foreach($carreras as $c)
                             <option value="{{ $c->nombre }}">{{ $c->codigo ? "({$c->codigo})" : '' }}</option>
@@ -111,11 +149,21 @@
                     </datalist>
                 </div>
                 <div>
-                    <label for="cargo_actual" class="block text-xs font-bold text-gray-700 uppercase mb-1">Cargo en el Laboratorio</label>
-                    <input type="text" name="cargo_actual" id="cargo_actual" list="lista-cargos-perfil" value="{{ old('cargo_actual', $user->cargo_actual) }}" placeholder="Seleccione o escriba su cargo..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    <label for="cargo_id" class="block text-xs font-bold text-gray-700 uppercase mb-1">Cargo en el Laboratorio</label>
+                    <select name="cargo_id" id="cargo_id" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                        <option value="">Seleccione su cargo...</option>
+                        @foreach($cargos as $cargo)
+                            <option value="{{ $cargo->id }}" {{ old('cargo_id', $user->cargo_id ?? ($cargos->firstWhere('nombre', $user->cargo_actual)?->id)) == $cargo->id ? 'selected' : '' }}>
+                                {{ $cargo->nombre }}
+                            </option>
+                        @endforeach
+                        @if($user->cargo_actual && !$cargos->contains('nombre', $user->cargo_actual))
+                            <option value="" selected disabled>{{ $user->cargo_actual }} (Histórico)</option>
+                        @endif
+                    </select>
                     <datalist id="lista-cargos-perfil">
                         @foreach($cargos as $cargo)
-                            <option value="{{ $cargo }}"></option>
+                            <option value="{{ $cargo->nombre }}"></option>
                         @endforeach
                     </datalist>
                 </div>
@@ -130,12 +178,19 @@
         <!-- Cambio de Contraseña -->
         <div class="border-t border-gray-100 pt-5">
             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Seguridad y Cambio de Contraseña</h3>
-            <p class="text-xs text-gray-500 mb-3">Deje estos campos en blanco si no desea modificar su clave actual.</p>
+            <p class="text-xs text-gray-500 mb-3">Deje estos campos en blanco si no desea modificar su clave actual. Si ingresa una nueva clave, debe ingresar su contraseña actual por seguridad.</p>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="current_password" class="block text-xs font-bold text-gray-700 uppercase mb-1">Contraseña Actual</label>
+                    <input type="password" name="current_password" id="current_password" autocomplete="current-password" placeholder="Su contraseña actual" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none @error('current_password') border-red-500 @enderror">
+                    @error('current_password')
+                        <p class="text-red-500 text-xs mt-1 font-semibold">{{ $message }}</p>
+                    @enderror
+                </div>
                 <div>
                     <label for="password" class="block text-xs font-bold text-gray-700 uppercase mb-1">Nueva Contraseña</label>
-                    <input type="password" name="password" id="password" autocomplete="new-password" placeholder="Mínimo 4 caracteres" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                    <input type="password" name="password" id="password" autocomplete="new-password" placeholder="Mínimo 4 caracteres" class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none @error('password') border-red-500 @enderror">
                     @error('password')
                         <p class="text-red-500 text-xs mt-1 font-semibold">{{ $message }}</p>
                     @enderror
@@ -156,4 +211,20 @@
         </div>
     </form>
 </div>
+
+<script>
+    function previewAvatar(event) {
+        const input = event.target;
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('avatar-preview');
+                if (preview) {
+                    preview.src = e.target.result;
+                }
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
 @endsection

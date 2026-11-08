@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Usuario;
 use App\Models\Rol;
 use App\Models\UsuarioTrayectoria;
+use App\Models\Cargo;
+use App\Models\Carrera;
 
 class UserSeeder extends Seeder
 {
@@ -16,45 +18,55 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $roles = Rol::all()->keyBy('rol');
+        $cargosMap = Cargo::all()->pluck('id', 'nombre');
+        $carrerasMap = Carrera::all()->pluck('id', 'nombre');
+
+        $defaultPassword = config('auth.seed_default_password')
+            ?? env('SEED_DEFAULT_PASSWORD')
+            ?? (app()->isProduction() ? throw new \RuntimeException('En entorno de producción debe definirse SEED_DEFAULT_PASSWORD para inicializar los usuarios.') : 'LiaSegura2026!');
+        $hashedPassword = Hash::make($defaultPassword);
 
         $users = [
             // Usuarios Oficiales y Cuentas Reales
             [
                 'nombre' => 'Flavia Millan',
                 'email' => 'flavia@lia.com',
-                'password' => Hash::make('1234'),
+                'password' => $hashedPassword,
                 'dni' => '27111222',
-                'cargo_actual' => 'Directora General LIA',
+                'cargo_actual' => 'Director',
                 'carrera' => 'Licenciatura en Ciencias de la Computación',
+                'foto_path' => '/assets/flavia.png',
                 'activo' => true,
-                'roles' => ['registered', 'user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev'],
+                'roles' => ['registered', 'user_admin', 'app_admin', 'asset_admin', 'tec', 'subtec', 'rev'],
             ],
             [
                 'nombre' => 'Marcelo Mondre',
                 'email' => 'marcelo@lia.com',
-                'password' => Hash::make('1234'),
+                'password' => $hashedPassword,
                 'dni' => '28333444',
-                'cargo_actual' => 'Coordinador Técnico',
+                'cargo_actual' => 'Coordinador de Área',
                 'carrera' => 'Licenciatura en Sistemas de Información',
+                'foto_path' => '/assets/manuel.png',
                 'activo' => true,
                 'roles' => ['registered', 'rev', 'subtec', 'tec'],
             ],
             [
                 'nombre' => 'Cristina Sosa',
                 'email' => 'cristina@lia.com',
-                'password' => Hash::make('1234'),
+                'password' => $hashedPassword,
                 'dni' => '29555666',
-                'cargo_actual' => 'Administradora Institucional',
+                'cargo_actual' => 'Secretaria',
                 'carrera' => 'Licenciatura en Ciencias de la Computación',
+                'foto_path' => '/assets/pamela.png',
                 'activo' => true,
                 'roles' => ['registered', 'user_admin', 'app_admin'],
             ],
             [
                 'nombre' => 'Martin Varela',
                 'email' => 'martin@lia.com',
-                'password' => Hash::make('1234'),
+                'password' => $hashedPassword,
                 'dni' => '38777888',
-                'cargo_actual' => 'Revisor y Desarrollador',
+                'cargo_actual' => 'JTP',
                 'carrera' => 'Licenciatura en Sistemas de Información',
                 'activo' => true,
                 'roles' => ['registered', 'rev'],
@@ -63,17 +75,18 @@ class UserSeeder extends Seeder
             [
                 'nombre' => 'Juan Pérez (Registrado)',
                 'email' => 'juan.perez@lia.com',
-                'password' => Hash::make('1234'),
+                'password' => $hashedPassword,
                 'dni' => '42111333',
                 'cargo_actual' => 'Estudiante / Alumno',
                 'carrera' => 'Licenciatura en Ciencias de la Computación',
+                'foto_path' => '/assets/alumna.png',
                 'activo' => true,
                 'roles' => ['registered'],
             ],
             [
                 'nombre' => 'Carlos Gómez (Ex-Personal)',
                 'email' => 'carlos.gomez@ex-lia.com',
-                'password' => Hash::make('1234'),
+                'password' => $hashedPassword,
                 'dni' => '24999888',
                 'cargo_actual' => 'Ex-Técnico de Laboratorio',
                 'carrera' => 'Licenciatura en Sistemas de Información',
@@ -86,7 +99,7 @@ class UserSeeder extends Seeder
             [
                 'nombre' => 'Laura Martínez (Ex-Personal)',
                 'email' => 'laura.martinez@ex-lia.com',
-                'password' => Hash::make('1234'),
+                'password' => $hashedPassword,
                 'dni' => '25444333',
                 'cargo_actual' => 'Ex-Pasante de Investigación',
                 'carrera' => 'Licenciatura en Ciencias de la Computación',
@@ -100,16 +113,16 @@ class UserSeeder extends Seeder
             [
                 'nombre' => 'Administrador General',
                 'email' => 'admin@lia.unsj.edu.ar',
-                'password' => Hash::make('1234'),
+                'password' => $hashedPassword,
                 'dni' => '30111222',
                 'cargo_actual' => 'Director LIA',
                 'activo' => true,
-                'roles' => ['registered', 'user_admin', 'app_admin', 'item_admin', 'tec', 'subtec', 'rev'],
+                'roles' => ['registered', 'user_admin', 'app_admin', 'asset_admin', 'tec', 'subtec', 'rev'],
             ],
             [
                 'nombre' => 'Administrador de Aplicación',
                 'email' => 'app_admin@lia.unsj.edu.ar',
-                'password' => Hash::make('1234'),
+                'password' => $hashedPassword,
                 'dni' => '31222333',
                 'cargo_actual' => 'Coordinador Web LIA',
                 'activo' => true,
@@ -117,17 +130,17 @@ class UserSeeder extends Seeder
             ],
             [
                 'nombre' => 'Encargado de Inventario',
-                'email' => 'item_admin@lia.unsj.edu.ar',
-                'password' => Hash::make('1234'),
+                'email' => 'asset_admin@lia.unsj.edu.ar',
+                'password' => $hashedPassword,
                 'dni' => '32333444',
                 'cargo_actual' => 'JTP Inventario',
                 'activo' => true,
-                'roles' => ['registered', 'item_admin'],
+                'roles' => ['registered', 'asset_admin'],
             ],
             [
                 'nombre' => 'Técnico de Laboratorio',
                 'email' => 'tecnico@lia.unsj.edu.ar',
-                'password' => Hash::make('1234'),
+                'password' => $hashedPassword,
                 'dni' => '35555666',
                 'cargo_actual' => 'Ayudante de 1ra',
                 'activo' => true,
@@ -136,7 +149,7 @@ class UserSeeder extends Seeder
             [
                 'nombre' => 'Revisor de Auditoría',
                 'email' => 'revisor@lia.unsj.edu.ar',
-                'password' => Hash::make('1234'),
+                'password' => $hashedPassword,
                 'dni' => '28777888',
                 'cargo_actual' => 'Docente Investigador',
                 'activo' => true,
@@ -145,7 +158,7 @@ class UserSeeder extends Seeder
             [
                 'nombre' => 'Usuario Registrado',
                 'email' => 'registrado@lia.unsj.edu.ar',
-                'password' => Hash::make('1234'),
+                'password' => $hashedPassword,
                 'dni' => '40999000',
                 'cargo_actual' => 'Becario Alumno',
                 'activo' => false,
@@ -161,6 +174,24 @@ class UserSeeder extends Seeder
             $trayectoriaFin = $u['trayectoria_fin'] ?? null;
             $trayectoriaCargo = $u['trayectoria_cargo'] ?? null;
             unset($u['trayectoria_inicio'], $u['trayectoria_fin'], $u['trayectoria_cargo']);
+
+            $cargoNombre = $u['cargo_actual'] ?? null;
+            $carreraNombre = $u['carrera'] ?? null;
+            unset($u['cargo_actual'], $u['carrera']);
+
+            if ($cargoNombre) {
+                $cargoId = $cargosMap[$cargoNombre] ?? null;
+                if (!$cargoId) {
+                    $nuevoCargo = Cargo::firstOrCreate(['nombre' => $cargoNombre]);
+                    $cargoId = $nuevoCargo->id;
+                    $cargosMap[$cargoNombre] = $cargoId;
+                }
+                $u['cargo_id'] = $cargoId;
+            }
+
+            if ($carreraNombre && isset($carrerasMap[$carreraNombre])) {
+                $u['carrera_id'] = $carrerasMap[$carreraNombre];
+            }
 
             $user = Usuario::firstOrCreate(['email' => $u['email']], $u);
             

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Carrera;
+use App\Models\Cargo;
+use App\Models\Usuario;
 use App\Models\EspacioLia;
 use App\Models\PersonalLia;
 use App\Models\ActividadLia;
@@ -24,6 +26,8 @@ class AppAdminController extends Controller
     {
         $totalCarreras = Carrera::count();
         $carrerasActivas = Carrera::activas()->count();
+        $totalCargos = Cargo::count();
+        $cargosActivos = Cargo::activos()->count();
         $totalEspacios = EspacioLia::count();
         $totalPersonal = PersonalLia::count();
         $totalActividades = ActividadLia::count();
@@ -40,6 +44,8 @@ class AppAdminController extends Controller
         return view('admin.app.index', compact(
             'totalCarreras',
             'carrerasActivas',
+            'totalCargos',
+            'cargosActivos',
             'totalEspacios',
             'totalPersonal',
             'totalActividades',
@@ -98,28 +104,91 @@ class AppAdminController extends Controller
     public function carreraToggle(Carrera $carrera): RedirectResponse
     {
         $carrera->update(['activa' => !$carrera->activa]);
-        $estado = $carrera->activa ? 'habilitada' : 'deshabilitada / archivada';
+        $estado = $carrera->activa ? 'habilitada' : 'deshabilitada';
 
         return redirect()->route('app_admin.carreras')
-            ->with('success', "La carrera {$carrera->nombre} fue {$estado}. Los usuarios históricos mantienen su registro inmutable.");
+            ->with('success', "La carrera {$carrera->nombre} fue {$estado}.");
     }
 
     public function carreraDestroy(Carrera $carrera): RedirectResponse
     {
-        if ($carrera->usuarios()->exists()) {
-            // Preservación histórica garantizada: no borrar físicamente si hay usuarios
+        if (Usuario::where('carrera_id', $carrera->id)->exists()) {
             $carrera->update(['activa' => false]);
             return redirect()->route('app_admin.carreras')
-                ->with('success', "La carrera {$carrera->nombre} cuenta con {$carrera->usuarios()->count()} usuarios asociados. Se desactivó de la oferta de registro para proteger el historial inmutable.");
+                ->with('warning', 'La carrera posee usuarios vinculados y fue desactivada para proteger el historial académico.');
         }
 
         $carrera->delete();
+
         return redirect()->route('app_admin.carreras')
-            ->with('success', 'Carrera eliminada exitosamente del catálogo.');
+            ->with('success', 'Carrera eliminada exitosamente.');
     }
 
     // ==========================================
-    // 2. GESTIÓN DE ESPACIOS DEL LIA (FOTOS)
+    // 2. GESTIÓN DE CARGOS DEL LABORATORIO
+    // ==========================================
+    public function cargosIndex(): View
+    {
+        $cargos = Cargo::withCount('usuarios')->orderBy('orden')->orderBy('nombre')->get();
+        return view('admin.app.cargos', compact('cargos'));
+    }
+
+    public function cargoStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100|unique:cargos,nombre',
+            'descripcion' => 'nullable|string|max:255',
+            'orden' => 'nullable|integer',
+            'activo' => 'nullable|boolean',
+        ]);
+
+        $validated['activo'] = $request->has('activo');
+        $validated['orden'] = $validated['orden'] ?? 0;
+
+        Cargo::create($validated);
+
+        return redirect()->route('app_admin.cargos')
+            ->with('success', 'Cargo del laboratorio registrado exitosamente.');
+    }
+
+    public function cargoUpdate(Request $request, Cargo $cargo): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100|unique:cargos,nombre,' . $cargo->id,
+            'descripcion' => 'nullable|string|max:255',
+            'orden' => 'nullable|integer',
+            'activo' => 'nullable|boolean',
+        ]);
+
+        $validated['activo'] = $request->has('activo');
+        $validated['orden'] = $validated['orden'] ?? 0;
+
+        $cargo->update($validated);
+
+        return redirect()->route('app_admin.cargos')
+            ->with('success', 'Datos del cargo actualizados correctamente.');
+    }
+
+    public function cargoToggle(Cargo $cargo): RedirectResponse
+    {
+        $cargo->update(['activo' => !$cargo->activo]);
+        $estado = $cargo->activo ? 'habilitado' : 'deshabilitado';
+
+        return redirect()->route('app_admin.cargos')
+            ->with('success', "El cargo {$cargo->nombre} fue {$estado}.");
+    }
+
+    public function cargoDestroy(Cargo $cargo): RedirectResponse
+    {
+        Usuario::where('cargo_id', $cargo->id)->update(['cargo_id' => null]);
+        $cargo->delete();
+
+        return redirect()->route('app_admin.cargos')
+            ->with('success', 'Cargo eliminado exitosamente.');
+    }
+
+    // ==========================================
+    // 3. GESTIÓN DE ESPACIOS DEL LIA (FOTOS)
     // ==========================================
     public function espaciosIndex(): View
     {
@@ -193,77 +262,64 @@ class AppAdminController extends Controller
             ->with('success', 'Espacio eliminado del catálogo.');
     }
 
-    // ==========================================
     // 3. PERSONAL DEL LIA (FIGURAS CLAVE)
     // ==========================================
     public function personalIndex(): View
     {
-        $personal = PersonalLia::orderBy('orden')->orderBy('id')->get();
-        return view('admin.app.personal', compact('personal'));
+        $personal = PersonalLia::whereHas('user', function ($q) {
+            $q->where('activo', true)->where('huella_borrada', false);
+        })->with('user.cargo')->orderBy('orden')->orderBy('id')->get();
+
+        $asignadosIds = $personal->pluck('user_id')->filter()->values();
+        $usuarios = Usuario::where('activo', true)
+            ->where('huella_borrada', false)
+            ->whereNotIn('id', $asignadosIds)
+            ->with('cargo')
+            ->orderBy('nombre')
+            ->get();
+
+        return view('admin.app.personal', compact('personal', 'usuarios'));
     }
 
     public function personalStore(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:150',
-            'cargo' => 'required|string|max:150',
+            'user_id' => 'required|exists:usuarios,id|unique:personal_lia,user_id',
             'comentario' => 'nullable|string|max:1000',
-            'email' => 'nullable|email|max:150',
-            'foto' => 'nullable|image|max:4096',
-            'foto_url' => 'nullable|string|max:255',
             'orden' => 'nullable|integer',
+        ], [
+            'user_id.required' => 'Debes seleccionar un usuario del sistema para designarlo como autoridad o referente.',
+            'user_id.unique' => 'Este usuario ya se encuentra registrado y destacado en el personal del LIA.',
         ]);
 
-        $fotoPath = $validated['foto_url'] ?? null;
-        if ($request->hasFile('foto')) {
-            $path = $request->file('foto')->store('personal', 'public');
-            $fotoPath = '/storage/' . $path;
-        }
-
         PersonalLia::create([
-            'nombre' => $validated['nombre'],
-            'cargo' => $validated['cargo'],
+            'user_id' => $validated['user_id'],
             'comentario' => $validated['comentario'] ?? null,
-            'email' => $validated['email'] ?? null,
-            'foto_path' => $fotoPath,
             'orden' => $validated['orden'] ?? (PersonalLia::max('orden') + 1),
             'activo' => true,
         ]);
 
         return redirect()->route('app_admin.personal')
-            ->with('success', 'Miembro institucional añadido con éxito.');
+            ->with('success', 'Referente institucional añadido con éxito.');
     }
 
     public function personalUpdate(Request $request, PersonalLia $personal): RedirectResponse
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:150',
-            'cargo' => 'required|string|max:150',
+            'user_id' => 'required|exists:usuarios,id|unique:personal_lia,user_id,' . $personal->id,
             'comentario' => 'nullable|string|max:1000',
-            'email' => 'nullable|email|max:150',
-            'foto' => 'nullable|image|max:4096',
-            'foto_url' => 'nullable|string|max:255',
             'orden' => 'nullable|integer',
             'activo' => 'nullable|boolean',
+        ], [
+            'user_id.unique' => 'Este usuario ya se encuentra registrado y destacado en el personal del LIA.',
         ]);
 
-        $data = [
-            'nombre' => $validated['nombre'],
-            'cargo' => $validated['cargo'],
+        $personal->update([
+            'user_id' => $validated['user_id'],
             'comentario' => $validated['comentario'] ?? null,
-            'email' => $validated['email'] ?? null,
             'orden' => $validated['orden'] ?? $personal->orden,
             'activo' => $request->has('activo'),
-        ];
-
-        if ($request->hasFile('foto')) {
-            $path = $request->file('foto')->store('personal', 'public');
-            $data['foto_path'] = '/storage/' . $path;
-        } elseif (!empty($validated['foto_url'])) {
-            $data['foto_path'] = $validated['foto_url'];
-        }
-
-        $personal->update($data);
+        ]);
 
         return redirect()->route('app_admin.personal')
             ->with('success', 'Registro de personal actualizado.');

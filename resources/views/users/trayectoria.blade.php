@@ -29,7 +29,7 @@
                     <input type="text" name="cargo" list="lista-cargos-trayectoria" placeholder="Seleccione o escriba el cargo..." class="w-full px-3 py-2 border rounded-lg text-sm bg-white font-medium" required>
                     <datalist id="lista-cargos-trayectoria">
                         @foreach($cargos as $cargo)
-                            <option value="{{ $cargo }}"></option>
+                            <option value="{{ is_string($cargo) ? $cargo : $cargo->nombre }}"></option>
                         @endforeach
                     </datalist>
                 </div>

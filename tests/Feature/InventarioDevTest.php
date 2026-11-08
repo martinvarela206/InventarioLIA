@@ -716,6 +716,7 @@ class InventarioDevTest extends TestCase
             'activo' => true,
         ]);
         $admin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+        $admin->roles()->attach(Rol::where('rol', 'app_admin')->first());
 
         $docente = Usuario::create([
             'nombre' => 'Docente A Designar',
@@ -961,15 +962,22 @@ class InventarioDevTest extends TestCase
         $responseUpdate->assertRedirect(route('ubicaciones.index'));
 
         $this->assertDatabaseHas('ubicaciones', [
-            'id' => $nuevaSala->id,
             'nombre' => 'Laboratorio Delta IA - Planta Alta',
+            'activa' => true,
+        ]);
+        $this->assertDatabaseHas('ubicaciones', [
+            'id' => $nuevaSala->id,
+            'nombre' => 'Laboratorio Delta IA',
+            'activa' => false,
         ]);
 
+        $salaRenombrada = Ubicacion::where('nombre', 'Laboratorio Delta IA - Planta Alta')->firstOrFail();
+
         // 4. Eliminar la sala sin activos asociados (debe eliminarse con éxito)
-        $responseDelete = $this->actingAs($itemAdmin)->delete(route('ubicaciones.destroy', $nuevaSala->id));
+        $responseDelete = $this->actingAs($itemAdmin)->delete(route('ubicaciones.destroy', $salaRenombrada->id));
         $responseDelete->assertRedirect(route('ubicaciones.index'));
         $this->assertDatabaseMissing('ubicaciones', [
-            'id' => $nuevaSala->id,
+            'id' => $salaRenombrada->id,
         ]);
 
         // 5. Protección: si una sala tiene activos o movimientos, no se puede eliminar
@@ -989,7 +997,8 @@ class InventarioDevTest extends TestCase
         ]);
 
         $responseDeleteProtegida = $this->actingAs($itemAdmin)->delete(route('ubicaciones.destroy', $salaConMovimientos->id));
-        $responseDeleteProtegida->assertRedirect(route('ubicaciones.index'));
+        $responseDeleteProtegida->assertRedirect(route('ubicaciones.reubicar', ['origen_id' => $salaConMovimientos->id]));
+        $this->assertFalse($salaConMovimientos->fresh()->activa);
         $this->assertDatabaseHas('ubicaciones', [
             'id' => $salaConMovimientos->id,
         ]);
@@ -1194,7 +1203,7 @@ class InventarioDevTest extends TestCase
         $resFormRev->assertSee('Trasladar físicamente a Taller de Hardware / Depósito');
 
         // Registro de Ticket con imagen adjunta
-        $fotoFake = UploadedFile::fake()->image('falla_fuente.jpg', 600, 400);
+        $fotoFake = UploadedFile::fake()->create('falla_fuente.jpg', 600, 'image/jpeg');
         $resStore = $this->actingAs($rev)->post(route('tickets.store'), [
             'elemento_id' => $pcReparar->id,
             'comentario' => 'Capacitor de fuente de poder inflado, produce reinicios intermitentes.',
@@ -2540,7 +2549,7 @@ class InventarioDevTest extends TestCase
         ]);
 
         // 1. Revisor publica mensaje con foto adjunta en el hilo
-        $fotoRev = \Illuminate\Http\UploadedFile::fake()->image('fuente_quemada.jpg');
+        $fotoRev = \Illuminate\Http\UploadedFile::fake()->create('fuente_quemada.jpg', 150, 'image/jpeg');
         $resPostRev = $this->actingAs($rev)->post(route('tickets.comentar', $ticket->id), [
             'mensaje' => 'Adjunto foto del fusible de la fuente de poder chamuscado.',
             'fotos' => [$fotoRev],
@@ -2561,7 +2570,7 @@ class InventarioDevTest extends TestCase
         $this->assertEquals('fuente_quemada.jpg', $comentarioRev->adjuntos->first()->nombre_original);
 
         // 2. Técnico responde en el foro con otra foto
-        $fotoTec = \Illuminate\Http\UploadedFile::fake()->image('reemplazo_fusible.jpg');
+        $fotoTec = \Illuminate\Http\UploadedFile::fake()->create('reemplazo_fusible.jpg', 150, 'image/jpeg');
         $resPostTec = $this->actingAs($tec)->post(route('tickets.comentar', $ticket->id), [
             'mensaje' => 'Recibido en banco de pruebas. Se reemplaza fusible y se testean voltajes de 12V y 5V.',
             'fotos' => [$fotoTec],
@@ -2788,6 +2797,11 @@ class InventarioDevTest extends TestCase
             'comentario' => 'Asignado a Puesto 01',
         ]);
 
+        // Iniciar sesión de auditoría mediante POST formal (sin efectos colaterales en GET)
+        $this->actingAs($auditor)->post(route('auditorias.store'), [
+            'ubicacion_id' => $sala->id,
+        ]);
+
         // 1. Cargar pantalla interactiva de auditoría
         $resView = $this->actingAs($auditor)->get(route('auditorias.create', ['ubicacion_id' => $sala->id]));
         $resView->assertStatus(200);
@@ -2866,8 +2880,8 @@ class InventarioDevTest extends TestCase
         ]);
 
         $tipo = Tipo::firstOrCreate(['nombre' => 'Pantalla Test'], ['categoria' => 'periferico']);
-        $elementoOk = Elemento::create(['tipo_id' => $tipo->id, 'modelo' => 'Pantalla Samsung 24', 'nro_serie' => 'SAM-9988']);
-        $elementoRotura = Elemento::create(['tipo_id' => $tipo->id, 'modelo' => 'Pantalla LG 27', 'nro_serie' => 'LG-7766']);
+        $elementoOk = Elemento::create(['nro_lia' => 'LIA-DEV-AUD-01', 'tipo_id' => $tipo->id, 'modelo' => 'Pantalla Samsung 24', 'nro_serie' => 'SAM-9988']);
+        $elementoRotura = Elemento::create(['nro_lia' => 'LIA-DEV-AUD-02', 'tipo_id' => $tipo->id, 'modelo' => 'Pantalla LG 27', 'nro_serie' => 'LG-7766']);
 
         $ticket = Movimiento::create([
             'elemento_id' => $elementoRotura->id,
@@ -3084,8 +3098,6 @@ class InventarioDevTest extends TestCase
             'password' => bcrypt('password123'),
             'dni' => '28999111',
             'fecha_nacimiento' => '1982-03-15',
-            'carrera' => 'Licenciatura en Computación',
-            'cargo_actual' => 'Ayudante Técnico',
             'whatsapp' => '+5492641122334',
             'direccion' => 'Av. Ignacio de la Roza 590',
             'activo' => false,
@@ -3095,7 +3107,7 @@ class InventarioDevTest extends TestCase
 
         // 2. Asociar movimiento de inventario histórico para verificar integridad referencial
         $tipo = Tipo::firstOrCreate(['nombre' => 'Gabinete Test'], ['categoria' => 'equipo']);
-        $elemento = Elemento::create(['tipo_id' => $tipo->id, 'modelo' => 'Server Torre HP', 'nro_serie' => 'HP-7711']);
+        $elemento = Elemento::create(['nro_lia' => 'LIA-DEV-SRV-01', 'tipo_id' => $tipo->id, 'modelo' => 'Server Torre HP', 'nro_serie' => 'HP-7711']);
         $lab = Ubicacion::firstOrCreate(['nombre' => 'Sala Servidores Hist'], ['descripcion' => 'Rack']);
 
         $movimiento = Movimiento::create([
@@ -3383,6 +3395,7 @@ class InventarioDevTest extends TestCase
         // En producción: actualizar perfil con password débil debe fallar
         $resProfileFail = $this->actingAs($user)->put(route('profile.update'), [
             'nombre' => $user->nombre,
+            'current_password' => 'ClaveRobusta2026',
             'password' => '1234',
             'password_confirmation' => '1234',
         ]);
@@ -3391,6 +3404,7 @@ class InventarioDevTest extends TestCase
         // En producción: actualizar perfil con password robusto debe ser exitoso
         $resProfileOk = $this->actingAs($user)->put(route('profile.update'), [
             'nombre' => $user->nombre,
+            'current_password' => 'ClaveRobusta2026',
             'password' => 'NuevaClaveSegura2026',
             'password_confirmation' => 'NuevaClaveSegura2026',
         ]);
@@ -3425,6 +3439,303 @@ class InventarioDevTest extends TestCase
         // 4. Verificar volumen persistente mariadb_audit_logs montado y declarado
         $this->assertStringContainsString('mariadb_audit_logs:/var/log/mysql', $content);
         $this->assertMatchesRegularExpression('/mariadb_audit_logs:\s+driver:\s+local/', $content);
+    }
+
+    public function test_gestion_de_cargos_y_carreras_por_app_admin_y_seleccion_en_perfil_y_registro(): void
+    {
+        $appAdmin = Usuario::create([
+            'nombre' => 'App Admin Cargos Test',
+            'email' => 'appadmin_cargos@lia.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+        $appAdmin->roles()->attach(Rol::where('rol', 'app_admin')->first());
+        $appAdmin->roles()->attach(Rol::where('rol', 'registered')->first());
+
+        // 1. app_admin gestiona cargos
+        $resIndex = $this->actingAs($appAdmin)->get(route('app_admin.cargos'));
+        $resIndex->assertStatus(200);
+        $resIndex->assertSee('Cargos y Funciones en el Laboratorio');
+
+        // Store
+        $resStore = $this->actingAs($appAdmin)->post(route('app_admin.cargos.store'), [
+            'nombre' => 'Investigador Principal LIA',
+            'descripcion' => 'Líder de proyectos de IA aplicada',
+            'orden' => 15,
+            'activo' => 1,
+        ]);
+        $resStore->assertRedirect(route('app_admin.cargos'));
+        $this->assertDatabaseHas('cargos', ['nombre' => 'Investigador Principal LIA']);
+
+        $cargo = \App\Models\Cargo::where('nombre', 'Investigador Principal LIA')->first();
+
+        // Update
+        $resUpdate = $this->actingAs($appAdmin)->put(route('app_admin.cargos.update', $cargo->id), [
+            'nombre' => 'Investigador Principal Senior LIA',
+            'descripcion' => 'Líder sénior de proyectos de IA',
+            'orden' => 20,
+            'activo' => 1,
+        ]);
+        $resUpdate->assertRedirect(route('app_admin.cargos'));
+        $this->assertDatabaseHas('cargos', ['nombre' => 'Investigador Principal Senior LIA']);
+        $cargo->refresh();
+
+        // Toggle
+        $resToggle = $this->actingAs($appAdmin)->post(route('app_admin.cargos.toggle', $cargo->id));
+        $resToggle->assertRedirect(route('app_admin.cargos'));
+        $this->assertDatabaseHas('cargos', ['id' => $cargo->id, 'activo' => false]);
+
+        // Reactivar para asignarlo
+        $cargo->refresh();
+        $cargo->update(['activo' => true]);
+
+        // 2. Selección en perfil de usuario (profile.edit y update)
+        $carrera = \App\Models\Carrera::first();
+        $resProfile = $this->actingAs($appAdmin)->get(route('profile.edit'));
+        $resProfile->assertStatus(200);
+        $resProfile->assertSee('id="carrera_id"', false);
+        $resProfile->assertSee('id="cargo_id"', false);
+        $resProfile->assertSee('Investigador Principal Senior LIA');
+
+        $resProfileUpdate = $this->actingAs($appAdmin)->put(route('profile.update'), [
+            'nombre' => 'App Admin Cargos Test Actualizado',
+            'carrera_id' => $carrera->id,
+            'cargo_id' => $cargo->id,
+        ]);
+        $resProfileUpdate->assertRedirect(route('profile.edit'));
+        $appAdmin->refresh();
+        $this->assertEquals($cargo->id, $appAdmin->cargo_id);
+        $this->assertEquals('Investigador Principal Senior LIA', $appAdmin->cargo_actual);
+        $this->assertEquals($carrera->id, $appAdmin->carrera_id);
+        $this->assertEquals($carrera->nombre, $appAdmin->carrera);
+
+        // 3. Registro de nuevo usuario seleccionando carrera y cargo desde catálogo
+        auth()->logout();
+        $resRegisterForm = $this->get(route('register'));
+        $resRegisterForm->assertStatus(200);
+        $resRegisterForm->assertSee('id="carrera_id"', false);
+        $resRegisterForm->assertSee('id="cargo_id"', false);
+        $resRegisterForm->assertSee('Investigador Principal Senior LIA');
+
+        $resRegister = $this->post(route('register'), [
+            'nombre' => 'Nuevo Postulante LIA',
+            'email' => 'postulante@lia.com',
+            'carrera_id' => $carrera->id,
+            'cargo_id' => $cargo->id,
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'terminos_consentimiento' => '1',
+        ]);
+        $resRegister->assertRedirect(route('revision.index'));
+
+        $this->assertDatabaseHas('usuarios', [
+            'email' => 'postulante@lia.com',
+            'carrera_id' => $carrera->id,
+            'cargo_id' => $cargo->id,
+        ]);
+
+        $postulante = Usuario::where('email', 'postulante@lia.com')->firstOrFail();
+        $this->assertEquals($carrera->nombre, $postulante->carrera);
+        $this->assertEquals('Investigador Principal Senior LIA', $postulante->cargo_actual);
+    }
+
+    public function test_gestion_de_foto_de_perfil_en_usuario_registro_y_landing_page(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        // 1. Fallback por defecto a placeholder
+        $usuario = Usuario::create([
+            'nombre' => 'Colaborador Fotogénico',
+            'email' => 'fotogenico@lia.com',
+            'password' => bcrypt('password123'),
+            'activo' => true,
+        ]);
+        $usuario->roles()->attach(Rol::where('rol', 'registered')->first());
+        $this->assertStringContainsString('placeholder-user.png', $usuario->foto_url);
+
+        // 2. Subida de foto en profile.update
+        $file = \Illuminate\Http\UploadedFile::fake()->create('mi_foto.jpg', 150, 'image/jpeg');
+
+        $resUpdate = $this->actingAs($usuario)->put(route('profile.update'), [
+            'nombre' => 'Colaborador Fotogénico',
+            'foto' => $file,
+        ]);
+        $resUpdate->assertRedirect(route('profile.edit'));
+
+        $usuario->refresh();
+        $this->assertNotNull($usuario->foto_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($usuario->foto_path);
+        $this->assertStringContainsString('storage/' . $usuario->foto_path, $usuario->foto_url);
+
+        // 3. Navbar muestra el avatar fotográfico
+        $resNavbar = $this->actingAs($usuario)->get(route('profile.edit'));
+        $resNavbar->assertStatus(200);
+        $resNavbar->assertSee($usuario->foto_url, false);
+
+        // 4. PersonalLia resuelve la foto dinámicamente desde el usuario vinculado
+        $personal = \App\Models\PersonalLia::create([
+            'user_id' => $usuario->id,
+            'comentario' => 'Docente Investigador',
+            'orden' => 10,
+            'activo' => true,
+        ]);
+        $this->assertEquals($usuario->foto_url, $personal->foto_url);
+
+        // 5. Eliminar foto voluntariamente en perfil
+        $fotoGuardada = $usuario->foto_path;
+        $resDeletePhoto = $this->actingAs($usuario)->put(route('profile.update'), [
+            'nombre' => 'Colaborador Fotogénico',
+            'eliminar_foto' => '1',
+        ]);
+        $resDeletePhoto->assertRedirect(route('profile.edit'));
+
+        $usuario->refresh();
+        $this->assertNull($usuario->foto_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing($fotoGuardada);
+        $this->assertStringContainsString('placeholder-user.png', $usuario->foto_url);
+
+        // 6. Anonimización por Ley 25.326 purga la foto física si existiese
+        $file2 = \Illuminate\Http\UploadedFile::fake()->create('foto_legajo.png', 120, 'image/png');
+        $usuario->update([
+            'foto_path' => $file2->store('avatares', 'public')
+        ]);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($usuario->foto_path);
+
+        $usuario->anonimizarHuellaDigital();
+        $this->assertNull($usuario->foto_path);
+    }
+
+    public function test_unificacion_autoridades_y_personal_lia_con_usuarios_del_sistema(): void
+    {
+        $appAdmin = \App\Models\Usuario::where('email', 'admin@app.com')->first();
+        if (!$appAdmin) {
+            $appAdmin = \App\Models\Usuario::factory()->create([
+                'nombre' => 'Admin App Test',
+                'email' => 'admin_test@lia.com',
+                'password' => bcrypt('password123'),
+                'activo' => true,
+            ]);
+            $rolAppAdmin = \App\Models\Rol::firstOrCreate(['rol' => 'app_admin']);
+            $appAdmin->roles()->syncWithoutDetaching([$rolAppAdmin->id]);
+        }
+
+        // 1. Crear un usuario institucional con cargo oficial y foto
+        $cargoCoordinador = \App\Models\Cargo::firstOrCreate(
+            ['nombre' => 'Coordinador de Laboratorios Avanzados'],
+            ['descripcion' => 'Coordinación técnica', 'activo' => true]
+        );
+
+        $investigador = \App\Models\Usuario::factory()->create([
+            'nombre' => 'Dra. Romina Valenzuela',
+            'email' => 'rvalenzuela@lia.unsj.edu.ar',
+            'password' => bcrypt('password123'),
+            'cargo_id' => $cargoCoordinador->id,
+            'foto_path' => '/assets/flavia.png',
+            'activo' => true,
+        ]);
+
+        // 1.b. Acceso a vista de gestión de personal en App Admin (garantiza no error 500 y presencia de usuarios en el select)
+        $resPersonalView = $this->actingAs($appAdmin)->get(route('app_admin.personal'));
+        $resPersonalView->assertStatus(200);
+        $resPersonalView->assertSee('Dra. Romina Valenzuela');
+        $resPersonalView->assertSee('Designar Autoridad / Referente');
+
+        // 2. App Admin da de alta en PersonalLia asociando el user_id sin reescribir nombre ni cargo
+        $resStore = $this->actingAs($appAdmin)->post(route('app_admin.personal.store'), [
+            'user_id' => $investigador->id,
+            'comentario' => 'Lidera proyectos de investigación aplicada y docencia de grado.',
+            'orden' => 1,
+        ]);
+        $resStore->assertRedirect(route('app_admin.personal'));
+
+        $personal = \App\Models\PersonalLia::where('user_id', $investigador->id)->first();
+        $this->assertNotNull($personal);
+        $this->assertEquals('Dra. Romina Valenzuela', $personal->nombre);
+        $this->assertEquals('Coordinador de Laboratorios Avanzados', $personal->cargo);
+        $this->assertEquals('rvalenzuela@lia.unsj.edu.ar', $personal->email);
+        $this->assertEquals('/assets/flavia.png', $personal->foto_url);
+
+        // 2.b. Prevención de duplicados: El usuario ya asignado no debe figurar en el dropdown de nuevo personal
+        $resPersonalViewAfter = $this->actingAs($appAdmin)->get(route('app_admin.personal'));
+        $resPersonalViewAfter->assertDontSee('<option value="' . $investigador->id . '"', false);
+
+        // 2.c. Intento de re-asignar el mismo usuario es rechazado por regla unique
+        $resStoreDuplicate = $this->actingAs($appAdmin)->post(route('app_admin.personal.store'), [
+            'user_id' => $investigador->id,
+        ]);
+        $resStoreDuplicate->assertSessionHasErrors(['user_id']);
+        $this->assertEquals(1, \App\Models\PersonalLia::where('user_id', $investigador->id)->count());
+
+        // 3. Landing page renderiza los datos en vivo derivados del usuario
+        $resLanding = $this->get('/');
+        $resLanding->assertStatus(200);
+        $resLanding->assertSee('Dra. Romina Valenzuela');
+        $resLanding->assertSee('Coordinador de Laboratorios Avanzados');
+        $resLanding->assertSee('/assets/flavia.png');
+        $resLanding->assertSee('rvalenzuela@lia.unsj.edu.ar');
+
+        // 4. Actualización en tiempo real: el usuario cambia su nombre, cargo oficial, email y avatar
+        $cargoDirectora = \App\Models\Cargo::firstOrCreate(
+            ['nombre' => 'Directora de Área Científica'],
+            ['descripcion' => 'Dirección de proyectos', 'activo' => true]
+        );
+
+        $investigador->update([
+            'nombre' => 'Dra. Romina Valenzuela PhD',
+            'cargo_id' => $cargoDirectora->id,
+            'email' => 'romina.phd@lia.unsj.edu.ar',
+            'foto_path' => '/assets/pamela.png',
+        ]);
+
+        $personal->refresh();
+        $this->assertEquals('Dra. Romina Valenzuela PhD', $personal->nombre);
+        $this->assertEquals('Directora de Área Científica', $personal->cargo);
+        $this->assertEquals('romina.phd@lia.unsj.edu.ar', $personal->email);
+        $this->assertEquals('/assets/pamela.png', $personal->foto_url);
+
+        // Comprobar reflejo inmediato en panel de administración y portada
+        $resAdminUpdated = $this->actingAs($appAdmin)->get(route('app_admin.personal'));
+        $resAdminUpdated->assertStatus(200);
+        $resAdminUpdated->assertSee('Dra. Romina Valenzuela PhD');
+        $resAdminUpdated->assertSee('Directora de Área Científica');
+        $resAdminUpdated->assertSee('romina.phd@lia.unsj.edu.ar');
+
+        $resLandingUpdated = $this->get('/');
+        $resLandingUpdated->assertStatus(200);
+        $resLandingUpdated->assertSee('Dra. Romina Valenzuela PhD');
+        $resLandingUpdated->assertSee('Directora de Área Científica');
+        $resLandingUpdated->assertSee('/assets/pamela.png');
+
+        // 5. Exclusión por usuario inactivo (activo = false)
+        $investigador->update(['activo' => false]);
+        $this->assertEquals(0, \App\Models\PersonalLia::activos()->where('user_id', $investigador->id)->count());
+
+        $resLandingInactivo = $this->get('/');
+        $resLandingInactivo->assertDontSee('Dra. Romina Valenzuela PhD');
+
+        // 6. Reactivación del usuario (activo = true) vuelve a habilitarlo en la portada y consulta
+        $investigador->update(['activo' => true]);
+        $this->assertEquals(1, \App\Models\PersonalLia::activos()->where('user_id', $investigador->id)->count());
+
+        $resLandingReactivado = $this->get('/');
+        $resLandingReactivado->assertSee('Dra. Romina Valenzuela PhD');
+
+        // 7. Exclusión por huella digital borrada (huella_borrada = true)
+        $investigador->anonimizarHuellaDigital();
+        $this->assertTrue($investigador->fresh()->huella_borrada);
+        $this->assertEquals(0, \App\Models\PersonalLia::activos()->where('user_id', $investigador->id)->count());
+
+        $resLandingHuella = $this->get('/');
+        $resLandingHuella->assertDontSee('Dra. Romina Valenzuela PhD');
+
+        // 8. Integridad relacional: si el usuario es eliminado por completo
+        $personalId = $personal->id;
+        $investigador->delete();
+
+        $personalRefreshed = \App\Models\PersonalLia::find($personalId);
+        $this->assertNotNull($personalRefreshed);
+        $this->assertNull($personalRefreshed->user_id);
+        $this->assertEquals(0, \App\Models\PersonalLia::activos()->where('id', $personalId)->count());
     }
 }
 

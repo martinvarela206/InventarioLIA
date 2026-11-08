@@ -14,7 +14,7 @@ class RevisionController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user || (!$user->hasRole(['rev', 'tec', 'item_admin', 'user_admin']))) {
+        if (!$user || (!$user->hasRole(['rev', 'tec', 'asset_admin', 'user_admin']))) {
             return view('revision.welcome');
         }
 

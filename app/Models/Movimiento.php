@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use App\Presenters\MovimientoPresenter;
+use Illuminate\Support\Facades\DB;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -61,24 +62,38 @@ class Movimiento extends Model
      */
     public function crearEnmienda(array $datos, int $usuarioId, string $motivo): self
     {
-        $comentario = "ENMIENDA / CORRECCIÓN de Movimiento #{$this->id}: {$motivo}";
-        if (!empty($datos['comentario'])) {
-            $comentario .= " | {$datos['comentario']}";
-        }
+        return DB::transaction(function () use ($datos, $usuarioId, $motivo) {
+            $comentario = "ENMIENDA / CORRECCIÓN de Movimiento #{$this->id}: {$motivo}";
+            if (!empty($datos['comentario'])) {
+                $comentario .= " | {$datos['comentario']}";
+            }
 
-        return static::create([
-            'elemento_id' => $this->elemento_id,
-            'tipo_movimiento' => $this->tipo_movimiento,
-            'ubicacion_id' => $datos['ubicacion_id'] ?? $this->ubicacion_id,
-            'puesto' => array_key_exists('puesto', $datos) ? $datos['puesto'] : $this->puesto,
-            'user_id' => $usuarioId,
-            'fecha' => now(),
-            'solicitante' => array_key_exists('solicitante', $datos) ? $datos['solicitante'] : $this->solicitante,
-            'fecha_prestamo' => $this->fecha_prestamo,
-            'fecha_devolucion' => $this->fecha_devolucion,
-            'correccion_de_id' => $this->id,
-            'comentario' => $comentario,
-        ]);
+            $enmienda = static::create([
+                'elemento_id' => $this->elemento_id,
+                'tipo_movimiento' => $this->tipo_movimiento,
+                'estado_ticket' => array_key_exists('estado_ticket', $datos) ? $datos['estado_ticket'] : $this->estado_ticket,
+                'ticket_id' => array_key_exists('ticket_id', $datos) ? $datos['ticket_id'] : $this->ticket_id,
+                'ubicacion_id' => $datos['ubicacion_id'] ?? $this->ubicacion_id,
+                'puesto' => array_key_exists('puesto', $datos) ? $datos['puesto'] : $this->puesto,
+                'user_id' => $usuarioId,
+                'fecha' => now(),
+                'solicitante' => array_key_exists('solicitante', $datos) ? $datos['solicitante'] : $this->solicitante,
+                'fecha_prestamo' => $this->fecha_prestamo,
+                'fecha_devolucion' => $this->fecha_devolucion,
+                'correccion_de_id' => $this->id,
+                'comentario' => $comentario,
+            ]);
+
+            // Si se enmienda un préstamo que aún estaba abierto, cerrar el original
+            // para que no quede duplicado como préstamo activo fantasma (I6)
+            if ($this->esPrestamo() && $this->fecha_devolucion === null) {
+                $this->update([
+                    'fecha_devolucion' => $this->fecha_prestamo ?: now()->toDateString(),
+                ]);
+            }
+
+            return $enmienda;
+        });
     }
 
     public function correccionDe(): BelongsTo
@@ -132,7 +147,9 @@ class Movimiento extends Model
 
     public function scopePrestadosActivos(Builder $query): Builder
     {
-        return $query->whereNotNull('fecha_prestamo')->whereNull('fecha_devolucion');
+        return $query->whereNotNull('fecha_prestamo')
+            ->whereNull('fecha_devolucion')
+            ->whereDoesntHave('correcciones');
     }
 
     public function adjuntos(): HasMany
@@ -162,6 +179,11 @@ class Movimiento extends Model
     }
 
     public function esReparacion(): bool
+    {
+        return $this->tipo_movimiento === 'reparacion';
+    }
+
+    public function esTicket(): bool
     {
         return $this->tipo_movimiento === 'reparacion';
     }

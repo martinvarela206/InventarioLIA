@@ -5,13 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Usuario extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $table = 'usuarios';
 
@@ -21,9 +22,9 @@ class Usuario extends Authenticatable
         'password',
         'dni',
         'fecha_nacimiento',
-        'carrera',
         'carrera_id',
-        'cargo_actual',
+        'cargo_id',
+        'foto_path',
         'whatsapp',
         'direccion',
         'activo',
@@ -60,9 +61,43 @@ class Usuario extends Authenticatable
         return $this->belongsTo(Carrera::class, 'carrera_id');
     }
 
+    public function cargo(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Cargo::class, 'cargo_id');
+    }
+
+    public function cargoRelacion(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->cargo();
+    }
+
+    public function getCarreraAttribute(): ?string
+    {
+        return $this->carreraRelacion?->nombre;
+    }
+
+    public function getCargoActualAttribute(): ?string
+    {
+        if ($this->esHistorico()) {
+            return 'Ex Colaborador Histórico';
+        }
+        return $this->cargoRelacion?->nombre;
+    }
+
     public function getCarreraNombreAttribute(): string
     {
-        return $this->carreraRelacion?->nombre ?? $this->carrera ?? 'Sin carrera';
+        return $this->carreraRelacion?->nombre ?? 'Sin carrera';
+    }
+
+    public function getFotoUrlAttribute(): string
+    {
+        if ($this->foto_path) {
+            if (str_starts_with($this->foto_path, 'http://') || str_starts_with($this->foto_path, 'https://') || str_starts_with($this->foto_path, '/assets/')) {
+                return $this->foto_path;
+            }
+            return asset('storage/' . $this->foto_path);
+        }
+        return asset('assets/placeholder-user.png');
     }
 
     public function trayectorias(): HasMany
@@ -103,28 +138,46 @@ class Usuario extends Authenticatable
     }
 
     /**
+     * Scope para consultar ex-colaboradores con más de 6 años de cese laboral
+     * pendientes de borrado de huella digital a nivel de consulta SQL (Ley 25.326).
+     */
+    public function scopeElegiblesBorradoHuella($query)
+    {
+        $seisAniosAtras = now()->subYears(6);
+
+        return $query->where('activo', false)
+            ->where(function ($q) {
+                $q->where('huella_borrada', false)->orWhereNull('huella_borrada');
+            })
+            ->where(function ($q) use ($seisAniosAtras) {
+                // Caso A: fecha_egreso explícita <= 6 años atrás
+                $q->where(function ($q2) use ($seisAniosAtras) {
+                    $q2->whereNotNull('fecha_egreso')
+                       ->where('fecha_egreso', '<=', $seisAniosAtras);
+                })
+                // Caso B: fecha_egreso nula, pero con historial de trayectorias donde la última cerró hace >= 6 años
+                ->orWhere(function ($q2) use ($seisAniosAtras) {
+                    $q2->whereNull('fecha_egreso')
+                       ->whereHas('trayectorias', function ($t) use ($seisAniosAtras) {
+                           $t->whereNotNull('fecha_fin')->where('fecha_fin', '<=', $seisAniosAtras);
+                       })
+                       ->whereDoesntHave('trayectorias', function ($t) use ($seisAniosAtras) {
+                           $t->whereNull('fecha_fin')->orWhere('fecha_fin', '>', $seisAniosAtras);
+                       });
+                });
+            });
+    }
+
+    /**
      * Retorna la colección de ex-colaboradores con más de 6 años de cese laboral
      * pendientes de borrado de huella digital (Ley 25.326).
      */
     public static function elegiblesBorradoHuella()
     {
-        $seisAniosAtras = now()->subYears(6);
-        return static::where('activo', false)
-            ->where(function ($q) {
-                $q->where('huella_borrada', false)->orWhereNull('huella_borrada');
-            })
-            ->where(function ($q) use ($seisAniosAtras) {
-                $q->where('fecha_egreso', '<=', $seisAniosAtras)
-                  ->orWhereHas('trayectorias', function ($t) use ($seisAniosAtras) {
-                      $t->whereNotNull('fecha_fin')->where('fecha_fin', '<=', $seisAniosAtras);
-                  });
-            })
+        return static::query()
+            ->elegiblesBorradoHuella()
             ->with('trayectorias')
-            ->get()
-            ->filter(function ($u) {
-                return $u->isExPersonalMayor6Anios() && !$u->esHistorico();
-            })
-            ->values();
+            ->get();
     }
 
     /**
@@ -135,14 +188,26 @@ class Usuario extends Authenticatable
     public function anonimizarHuellaDigital(): bool
     {
         $id = $this->id;
+        $nombreOriginal = $this->nombre;
+        $dniOriginal = $this->dni;
 
         $this->dni = null;
         $this->whatsapp = null;
         $this->direccion = null;
         $this->fecha_nacimiento = null;
-        $this->carrera = null;
         $this->carrera_id = null;
-        $this->cargo_actual = 'Ex Colaborador Histórico';
+        $this->cargo_id = null;
+
+        // Borrar foto de perfil física si existe en storage
+        if ($this->foto_path && !str_starts_with($this->foto_path, '/assets/')) {
+            try {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($this->foto_path);
+            } catch (\Throwable $e) {
+                // Log and continue
+            }
+        }
+        $this->foto_path = null;
+
         $this->nombre = "Usuario Histórico #{$id}";
         $this->email = "historico_{$id}@lia.local";
         $this->password = bcrypt(\Illuminate\Support\Str::random(40));
@@ -153,17 +218,30 @@ class Usuario extends Authenticatable
 
         // Revocar roles de gestión si tuviese asociados
         $this->roles()->detach();
+        $this->flushRolesCache();
+
+        // Revocar tokens Sanctum activos
+        $this->tokens()->delete();
+
+        // Anonimizar referencias de solicitante en movimientos para proteger datos personales (Ley 25.326)
+        if (!empty($nombreOriginal)) {
+            Movimiento::where('solicitante', $nombreOriginal)
+                ->update(['solicitante' => "Ex-colaborador anonimizado #{$id}"]);
+        }
+        if (!empty($dniOriginal)) {
+            Movimiento::where('solicitante', 'like', "%{$dniOriginal}%")
+                ->update(['solicitante' => "Ex-colaborador anonimizado #{$id}"]);
+        }
+
+        // Anonimizar notas personales en historial de trayectorias preservando estadísticas institucionales
+        $this->trayectorias()->update(['notas' => null]);
 
         return $this->save();
     }
 
     public function esAnonimizado(): bool
     {
-        return (bool)$this->huella_borrada
-            || str_starts_with((string)$this->email, 'historico_')
-            || str_starts_with((string)$this->email, 'anonimo_')
-            || str_starts_with((string)$this->nombre, 'Usuario Histórico')
-            || str_starts_with((string)$this->nombre, 'Usuario Anonimizado');
+        return (bool)$this->huella_borrada;
     }
 
     public function esHistorico(): bool
@@ -171,10 +249,69 @@ class Usuario extends Authenticatable
         return $this->esAnonimizado();
     }
 
+    protected ?array $rolesCache = null;
+
+    /**
+     * Retorna el listado plano de nombres de roles del usuario cacheados en la instancia
+     * para evitar subconsultas repetidas o instanciación redundante de colecciones.
+     *
+     * @return array<string>
+     */
+    public function getCachedRoles(): array
+    {
+        if ($this->rolesCache !== null) {
+            return $this->rolesCache;
+        }
+
+        if ($this->relationLoaded('roles')) {
+            $this->rolesCache = $this->roles->pluck('rol')->all();
+        } else {
+            $this->rolesCache = $this->roles()->pluck('rol')->all();
+        }
+
+        return $this->rolesCache;
+    }
+
+    /**
+     * Invalida la caché en memoria de roles del usuario.
+     */
+    public function flushRolesCache(): void
+    {
+        $this->rolesCache = null;
+        $this->unsetRelation('roles');
+    }
+
+    public function refresh()
+    {
+        $this->flushRolesCache();
+        return parent::refresh();
+    }
+
+    public function setRelation($relation, $value)
+    {
+        if ($relation === 'roles') {
+            $this->rolesCache = null;
+        }
+        return parent::setRelation($relation, $value);
+    }
+
     public function hasRole(string|array $role): bool
     {
         $roleList = is_array($role) ? $role : func_get_args();
-        return $this->roles->pluck('rol')->intersect($roleList)->isNotEmpty();
+        // Compatibilidad bidireccional durante la transición item_admin <-> asset_admin
+        if (in_array('item_admin', $roleList, true) && !in_array('asset_admin', $roleList, true)) {
+            $roleList[] = 'asset_admin';
+        } elseif (in_array('asset_admin', $roleList, true) && !in_array('item_admin', $roleList, true)) {
+            $roleList[] = 'item_admin';
+        }
+
+        $myRoles = $this->getCachedRoles();
+        foreach ($roleList as $r) {
+            if (in_array($r, $myRoles, true)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function isUserAdmin(): bool
@@ -192,9 +329,14 @@ class Usuario extends Authenticatable
         return $this->hasRole('app_admin');
     }
 
+    public function isAssetAdmin(): bool
+    {
+        return $this->hasRole('asset_admin');
+    }
+
     public function isItemAdmin(): bool
     {
-        return $this->hasRole('item_admin');
+        return $this->hasRole('asset_admin');
     }
 
     public function isTec(): bool
@@ -224,7 +366,7 @@ class Usuario extends Authenticatable
 
     public function canManageElementos(): bool
     {
-        return $this->hasRole('item_admin');
+        return $this->hasRole('asset_admin');
     }
 
     public function canManageUsers(): bool
@@ -246,30 +388,33 @@ class Usuario extends Authenticatable
      * Permisos jerárquicos sobre el ciclo de vida del Ticket:
      * - Revisor (rev): inicia y comenta/responde en el hilo de diagnóstico, NUNCA soluciona ni cierra.
      * - SubTécnico (subtec): registra y propone la solución técnica, NUNCA asocia movimientos ni cierra formalmente.
-     * - Técnico (tec/item_admin): cierra formalmente el ticket (resuelto o baja) y asocia movimientos físicos.
+     * - Técnico (tec/asset_admin): cierra formalmente el ticket (resuelto o baja) y asocia movimientos físicos.
      */
     public function canSolveTickets(): bool
     {
-        return $this->hasRole(['subtec', 'tec', 'item_admin', 'user_admin', 'app_admin']);
+        return $this->hasRole(['subtec', 'tec', 'asset_admin', 'user_admin', 'app_admin']);
     }
 
     public function canCloseTickets(): bool
     {
-        return $this->hasRole(['tec', 'item_admin', 'user_admin', 'app_admin']);
+        return $this->hasRole(['tec', 'asset_admin', 'user_admin', 'app_admin']);
     }
 
     public function canAssociateMovementsToTicket(): bool
     {
-        return $this->hasRole(['tec', 'item_admin', 'user_admin', 'app_admin']);
+        return $this->hasRole(['tec', 'asset_admin', 'user_admin', 'app_admin']);
     }
 
     /**
      * Determina si el usuario tiene al menos un rol operativo más allá de registered.
-     * Si posee cualquier rol (rev, subtec, tec, item_admin, user_admin, app_admin), ingresa al panel y nunca ve bienvenida.
+     * Si posee cualquier rol (rev, subtec, tec, asset_admin, user_admin, app_admin), ingresa al panel y nunca ve bienvenida.
      */
     public function hasActivePermissions(): bool
     {
-        return $this->hasRole(['rev', 'subtec', 'tec', 'item_admin', 'user_admin', 'app_admin']);
+        if (!$this->activo) {
+            return false;
+        }
+        return $this->hasRole(['rev', 'subtec', 'tec', 'asset_admin', 'user_admin', 'app_admin']);
     }
 
     /**

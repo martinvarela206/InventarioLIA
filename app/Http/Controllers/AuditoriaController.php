@@ -19,6 +19,7 @@ class AuditoriaController extends Controller
 {
     /**
      * Muestra la pantalla interactiva de auditoría de sala con grilla de puestos y mesones.
+     * Operación idempotente de solo lectura (sin efectos secundarios por GET).
      */
     public function create(Request $request): View
     {
@@ -27,16 +28,34 @@ class AuditoriaController extends Controller
         $ubicacionSeleccionada = Ubicacion::findOrFail($ubicacionId);
 
         $user = Auth::user();
-        $auditoria = Auditoria::firstOrCreate(
-            [
+
+        // Búsqueda de auditoría en progreso existente sin mutar la base de datos
+        $auditoria = null;
+        if ($request->filled('auditoria_id')) {
+            $auditoria = Auditoria::find($request->auditoria_id);
+        }
+        if (!$auditoria) {
+            $auditoria = Auditoria::where('ubicacion_id', $ubicacionSeleccionada->id)
+                ->where('user_id', $user?->id)
+                ->where('estado', 'en_progreso')
+                ->first();
+        }
+        if (!$auditoria) {
+            $auditoria = Auditoria::where('ubicacion_id', $ubicacionSeleccionada->id)
+                ->where('estado', 'en_progreso')
+                ->first();
+        }
+        // Si no existe, se instancia en memoria para permitir visualización sin mutar la BD
+        if (!$auditoria) {
+            $auditoria = new Auditoria([
                 'ubicacion_id' => $ubicacionSeleccionada->id,
+                'user_id' => $user?->id,
                 'estado' => 'en_progreso',
-            ],
-            [
-                'user_id' => $user->id,
                 'fecha' => now(),
-            ]
-        );
+            ]);
+            $auditoria->id = 0;
+            $auditoria->setRelation('detalles', collect());
+        }
 
         // Activos asignados actualmente a esta sala
         $elementosEnSala = Elemento::whereHas('ultimoMovimiento', function ($q) use ($ubicacionSeleccionada) {
@@ -104,16 +123,18 @@ class AuditoriaController extends Controller
         }
 
         if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha', '>=', $request->fecha_desde);
+            $desde = \Carbon\Carbon::parse($request->fecha_desde)->startOfDay();
+            $query->where('fecha', '>=', $desde);
         }
 
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha', '<=', $request->fecha_hasta);
+            $hasta = \Carbon\Carbon::parse($request->fecha_hasta)->endOfDay();
+            $query->where('fecha', '<=', $hasta);
         }
 
         $auditorias = $query->paginate(15)->withQueryString();
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
-        $usuarios = Usuario::orderBy('nombre')->get();
+        $usuarios = Usuario::select(['id', 'nombre'])->orderBy('nombre')->get();
 
         return view('auditorias.index', compact('auditorias', 'ubicaciones', 'usuarios'));
     }
@@ -184,6 +205,23 @@ class AuditoriaController extends Controller
         ]);
 
         $auditoria = Auditoria::findOrFail($auditoriaId);
+        $user = Auth::user();
+
+        // Bloqueo estricto contra mutación de auditorías cerradas/finalizadas
+        if ($auditoria->estado === 'finalizada') {
+            return response()->json([
+                'success' => false,
+                'message' => 'La auditoría ya se encuentra finalizada y bloqueada contra modificaciones.',
+            ], 422);
+        }
+
+        // Autorización por objeto: solo el profesional asignado o administradores
+        if ($auditoria->user_id !== $user?->id && !$user?->hasRole(['app_admin', 'asset_admin', 'user_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes autorización para modificar una auditoría iniciada por otro usuario.',
+            ], 403);
+        }
 
         $detalle = DB::transaction(function () use ($auditoria, $validated) {
             $criterios = ['auditoria_id' => $auditoria->id];
@@ -227,6 +265,23 @@ class AuditoriaController extends Controller
     public function finalizar(Request $request, int $auditoriaId): JsonResponse|RedirectResponse
     {
         $auditoria = Auditoria::findOrFail($auditoriaId);
+        $user = Auth::user();
+
+        // Bloqueo estricto contra mutación de auditorías cerradas/finalizadas
+        if ($auditoria->estado === 'finalizada') {
+            return response()->json([
+                'success' => false,
+                'message' => 'La auditoría ya se encuentra finalizada y bloqueada contra modificaciones.',
+            ], 422);
+        }
+
+        // Autorización por objeto: solo el profesional asignado o administradores
+        if ($auditoria->user_id !== $user?->id && !$user?->hasRole(['app_admin', 'asset_admin', 'user_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes autorización para modificar una auditoría iniciada por otro usuario.',
+            ], 403);
+        }
         $auditoria->estado = 'finalizada';
         $auditoria->recalcularTotales();
 
@@ -255,16 +310,39 @@ class AuditoriaController extends Controller
 
         $auditoria = Auditoria::with('ubicacion')->findOrFail($auditoriaId);
         $user = Auth::user();
-        $elemento = Elemento::findOrFail($validated['elemento_id']);
 
-        $ticket = DB::transaction(function () use ($auditoria, $user, $elemento, $validated) {
+        // Bloqueo estricto contra mutación de auditorías finalizadas
+        if ($auditoria->estado === 'finalizada') {
+            return response()->json([
+                'success' => false,
+                'message' => 'La auditoría ya se encuentra finalizada y no permite registrar nuevas anomalías o tickets.',
+            ], 422);
+        }
+
+        // Autorización por objeto: solo el profesional asignado o administradores
+        if ($auditoria->user_id !== $user?->id && !$user?->hasRole(['app_admin', 'asset_admin', 'user_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes autorización para operar sobre una sesión de auditoría asignada a otro profesional.',
+            ], 403);
+        }
+
+        $elemento = Elemento::with('ultimoMovimiento')->findOrFail($validated['elemento_id']);
+        $isTec = $user && $user->hasRole(['tec', 'subtec', 'user_admin', 'item_admin', 'asset_admin']);
+
+        $ticket = DB::transaction(function () use ($auditoria, $user, $elemento, $validated, $isTec) {
             $motivo = strtoupper($validated['tipo_discrepancia']);
+
+            // Si el usuario es de solo lectura (rev), no puede mover el activo físicamente; se mantiene in-situ
+            $ubicacionTicket = $isTec ? $auditoria->ubicacion_id : ($elemento->ultimoMovimiento?->ubicacion_id ?? $auditoria->ubicacion_id);
+            $puestoTicket = $isTec ? ($validated['puesto'] ?? null) : ($elemento->ultimoMovimiento?->puesto ?? null);
+
             $movimiento = Movimiento::create([
                 'elemento_id' => $elemento->id,
                 'tipo_movimiento' => 'reparacion',
                 'estado_ticket' => 'abierto',
-                'ubicacion_id' => $auditoria->ubicacion_id,
-                'puesto' => $validated['puesto'] ?? null,
+                'ubicacion_id' => $ubicacionTicket,
+                'puesto' => $puestoTicket,
                 'user_id' => $user->id,
                 'fecha' => now(),
                 'solicitante' => $user->nombre ?: 'Auditoría Física',

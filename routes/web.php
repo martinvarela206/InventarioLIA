@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AppAdminController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\AdjuntoController;
 use App\Models\EspacioLia;
 use App\Models\PersonalLia;
 use App\Models\ActividadLia;
@@ -23,12 +24,12 @@ Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:5
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-Route::post('/register', [RegisterController::class, 'register']);
+Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:5,1');
 
 // Portada / Welcome (datos dinámicos administrados por app_admin)
 Route::get('/', function () {
     $espacios = EspacioLia::activos()->get();
-    $personal = PersonalLia::activos()->get();
+    $personal = PersonalLia::activos()->with('user.cargo')->get();
     $actividades = ActividadLia::activos()->with('autor')->take(6)->get();
     $avisos = AvisoSeguridad::activos()->get();
     return view('welcome', compact('espacios', 'personal', 'actividades', 'avisos'));
@@ -54,7 +55,11 @@ Route::middleware('auth')->group(function () {
         Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     });
 
-    // Módulos Operativos Protegidos (usuarios con permisos: rev, tec, item_admin, user_admin, app_admin)
+    // Entrega autenticada y segura de archivos adjuntos
+    Route::get('/adjuntos/tickets/{id}', [AdjuntoController::class, 'verAdjuntoTicket'])->name('adjuntos.ticket');
+    Route::get('/adjuntos/ticket-comentarios/{id}', [AdjuntoController::class, 'verAdjuntoComentario'])->name('adjuntos.ticket-comentario');
+
+    // Módulos Operativos Protegidos (usuarios con permisos: rev, tec, asset_admin, user_admin, app_admin)
     Route::middleware('has_permissions')->group(function () {
         // Dashboard Operativo
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
@@ -64,8 +69,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/elementos/export-csv', [ElementoController::class, 'exportCsv'])->name('elementos.exportCsv');
         Route::get('/elementos/imprimir', [ElementoController::class, 'imprimir'])->name('elementos.imprimir');
 
-        // Mutación de Inventario (Alta, Edición y Baja de Activos - exclusivo item_admin)
-        Route::middleware('role:item_admin')->group(function () {
+        // Mutación de Inventario (Alta, Edición y Baja de Activos - exclusivo asset_admin)
+        Route::middleware('role:asset_admin')->group(function () {
             Route::get('/elementos/create', [ElementoController::class, 'create'])->name('elementos.create');
             Route::post('/elementos', [ElementoController::class, 'store'])->name('elementos.store');
             Route::get('/elementos/{elemento}/edit', [ElementoController::class, 'edit'])->name('elementos.edit');
@@ -73,6 +78,8 @@ Route::middleware('auth')->group(function () {
             Route::delete('/elementos/{elemento}', [ElementoController::class, 'destroy'])->name('elementos.destroy');
             Route::resource('tipos', \App\Http\Controllers\TipoController::class)->except(['show']);
             Route::post('/atributos', [\App\Http\Controllers\TipoController::class, 'storeAtributo'])->name('atributos.store');
+            Route::get('/ubicaciones/reubicar', [\App\Http\Controllers\ReubicacionController::class, 'show'])->name('ubicaciones.reubicar');
+            Route::post('/ubicaciones/reubicar', [\App\Http\Controllers\ReubicacionController::class, 'reubicar'])->name('ubicaciones.reubicar.store');
             Route::resource('ubicaciones', \App\Http\Controllers\UbicacionController::class);
         });
 
@@ -87,14 +94,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
 
         // Hilo y Seguimiento de Tickets (apertura, consulta y comentarios: rev, subtec, tec)
-        Route::middleware('role:rev,subtec,tec,item_admin,user_admin,app_admin')->group(function () {
+        Route::middleware('role:rev,subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
             Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
             Route::post('/tickets/{ticket}/comentar', [TicketController::class, 'comentar'])->name('tickets.comentar');
             Route::post('/tickets/{ticket}/area', [TicketController::class, 'agregarArea'])->name('tickets.agregarArea');
         });
 
         // Bandeja y Solución Técnica de Tickets (subtec, tec)
-        Route::middleware('role:subtec,tec,item_admin,user_admin,app_admin')->group(function () {
+        Route::middleware('role:subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
             Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
             Route::post('/tickets/{ticket}/solucionar', [TicketController::class, 'solucionar'])->name('tickets.solucionar');
         });
@@ -117,7 +124,7 @@ Route::middleware('auth')->group(function () {
         });
 
         // Módulo de Auditorías Físicas de Ubicación y Archivo Histórico
-        Route::middleware('role:rev,subtec,tec,item_admin,user_admin,app_admin')->group(function () {
+        Route::middleware('role:rev,subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
             Route::get('/auditorias', [\App\Http\Controllers\AuditoriaController::class, 'index'])->name('auditorias.index');
             Route::get('/auditorias/crear', [\App\Http\Controllers\AuditoriaController::class, 'create'])->name('auditorias.create');
             Route::get('/auditorias/{auditoria}', [\App\Http\Controllers\AuditoriaController::class, 'show'])->name('auditorias.show');
@@ -152,6 +159,13 @@ Route::middleware('auth')->group(function () {
             Route::put('/app-admin/carreras/{carrera}', [AppAdminController::class, 'carreraUpdate'])->name('app_admin.carreras.update');
             Route::post('/app-admin/carreras/{carrera}/toggle', [AppAdminController::class, 'carreraToggle'])->name('app_admin.carreras.toggle');
             Route::delete('/app-admin/carreras/{carrera}', [AppAdminController::class, 'carreraDestroy'])->name('app_admin.carreras.destroy');
+
+            // Cargos del Laboratorio (Estructura de roles y funciones institucionales)
+            Route::get('/app-admin/cargos', [AppAdminController::class, 'cargosIndex'])->name('app_admin.cargos');
+            Route::post('/app-admin/cargos', [AppAdminController::class, 'cargoStore'])->name('app_admin.cargos.store');
+            Route::put('/app-admin/cargos/{cargo}', [AppAdminController::class, 'cargoUpdate'])->name('app_admin.cargos.update');
+            Route::post('/app-admin/cargos/{cargo}/toggle', [AppAdminController::class, 'cargoToggle'])->name('app_admin.cargos.toggle');
+            Route::delete('/app-admin/cargos/{cargo}', [AppAdminController::class, 'cargoDestroy'])->name('app_admin.cargos.destroy');
 
             // Espacios y Fotos de Laboratorios
             Route::get('/app-admin/espacios', [AppAdminController::class, 'espaciosIndex'])->name('app_admin.espacios');

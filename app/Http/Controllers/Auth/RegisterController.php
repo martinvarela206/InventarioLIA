@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Usuario;
 use App\Models\Rol;
 use App\Models\Carrera;
+use App\Models\Cargo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -15,41 +16,55 @@ class RegisterController extends Controller
 {
     public function showRegistrationForm()
     {
-        $carreras = Carrera::activas()->get();
-        return view('auth.register', compact('carreras'));
+        $carreras = Carrera::activas()->orderBy('nombre')->get();
+        $cargos = Cargo::activos()->orderBy('orden')->orderBy('nombre')->get();
+        return view('auth.register', compact('carreras', 'cargos'));
     }
 
     public function register(Request $request)
     {
-        $request->validate([
+        $rules = [
             'nombre' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'string', 'email', 'max:150', 'unique:usuarios'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:150',
+                'unique:usuarios',
+                function ($attribute, $value, $fail) {
+                    $enforce = config('auth.enforce_institutional_domain', false) || (app()->isProduction() && !defined('PHPUNIT_COMPOSER_INSTALL'));
+                    if ($enforce) {
+                        $domain = substr(strrchr($value, "@"), 1);
+                        $allowedDomain = config('auth.institutional_domain', 'unsj.edu.ar');
+                        if ($domain !== $allowedDomain && !str_ends_with($domain, '.' . $allowedDomain)) {
+                            $fail('El correo electrónico debe pertenecer al dominio institucional (@unsj.edu.ar).');
+                        }
+                    }
+                },
+            ],
             'dni' => ['nullable', 'string', 'max:15', 'unique:usuarios'],
             'carrera_id' => ['nullable', 'exists:carreras,id'],
-            'carrera' => ['nullable', 'string', 'max:100'],
+            'cargo_id' => ['nullable', 'exists:cargos,id'],
+            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
             'terminos_consentimiento' => ['accepted'],
-        ], [
+        ];
+
+        $request->validate($rules, [
             'terminos_consentimiento.accepted' => 'Debe aceptar los términos de uso y tratamiento de datos personales conforme a la Ley 25.326.',
         ]);
 
-        $carreraId = $request->input('carrera_id');
-        $carreraNombre = null;
-        if ($carreraId) {
-            $carreraObj = Carrera::find($carreraId);
-            $carreraNombre = $carreraObj?->nombre;
-        } elseif ($request->filled('carrera')) {
-            $carreraObj = Carrera::where('nombre', $request->input('carrera'))->first();
-            $carreraId = $carreraObj?->id;
-            $carreraNombre = $request->input('carrera');
-        }
+        $fotoPath = $request->hasFile('foto')
+            ? \App\Services\ImageSanitizer::sanitizeAndStore($request->file('foto'), 'avatares', 'public')
+            : null;
 
         $user = Usuario::create([
             'nombre' => $request->nombre,
             'email' => $request->email,
             'dni' => $request->dni,
-            'carrera' => $carreraNombre,
-            'carrera_id' => $carreraId,
+            'carrera_id' => $request->carrera_id,
+            'cargo_id' => $request->cargo_id,
+            'foto_path' => $fotoPath,
             'password' => Hash::make($request->password),
             'activo' => false, // Requiere aprobación de user_admin
         ]);
@@ -60,9 +75,7 @@ class RegisterController extends Controller
             $user->roles()->attach($rolRegistered->id);
         }
 
-        Auth::login($user);
-
         return redirect(route('revision.index'))
-            ->with('success', 'Registro completado. Tu cuenta se encuentra pendiente de activación por el administrador.');
+            ->with('success', 'Registro completado. Tu cuenta se encuentra pendiente de activación por un administrador.');
     }
 }

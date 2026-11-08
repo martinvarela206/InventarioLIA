@@ -14,16 +14,22 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
+        $seeders = [
             RoleSeeder::class,
             UserSeeder::class,
             TipoSeeder::class,
             AtributoSeeder::class,
             UbicacionSeeder::class,
-            InventarioOdsSeeder::class,
-            MovimientoFakeSeeder::class,
             AppAdminSeeder::class,
             ReporteConfiguradoSeeder::class,
-        ]);
+        ];
+
+        // Seeders con datos simulados o masivos de prueba restringidos a entornos de desarrollo y testing
+        if (app()->environment(['local', 'testing'])) {
+            $seeders[] = InventarioOdsSeeder::class;
+            $seeders[] = MovimientoFakeSeeder::class;
+        }
+
+        $this->call($seeders);
     }
 }

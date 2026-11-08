@@ -6,6 +6,9 @@ use App\Models\Movimiento;
 use App\Models\Elemento;
 use App\Models\Usuario;
 use App\Models\Ubicacion;
+use App\Enums\EstadoElemento;
+use App\Actions\Movimientos\RegistrarPrestamoAction;
+use App\Actions\Movimientos\RegistrarDevolucionAction;
 use App\Http\Requests\StoreMovimientoRequest;
 use App\Http\Requests\DevolucionMovimientoRequest;
 use App\Http\Requests\StoreEnmiendaRequest;
@@ -52,11 +55,13 @@ class MovimientoController extends Controller
         }
 
         if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha', '>=', $request->fecha_desde);
+            $desde = \Carbon\Carbon::parse($request->fecha_desde)->startOfDay();
+            $query->where('fecha', '>=', $desde);
         }
 
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha', '<=', $request->fecha_hasta);
+            $hasta = \Carbon\Carbon::parse($request->fecha_hasta)->endOfDay();
+            $query->where('fecha', '<=', $hasta);
         }
 
         $movimientos = $query->orderBy('fecha', 'desc')->paginate(20)->withQueryString();
@@ -83,8 +88,10 @@ class MovimientoController extends Controller
 
         $solicitantesFrecuentes = Movimiento::whereNotNull('solicitante')
             ->where('solicitante', '!=', '')
-            ->distinct()
-            ->orderBy('solicitante')
+            ->select('solicitante')
+            ->selectRaw('COUNT(*) as total_solicitudes')
+            ->groupBy('solicitante')
+            ->orderByDesc('total_solicitudes')
             ->limit(25)
             ->pluck('solicitante');
 
@@ -137,23 +144,48 @@ class MovimientoController extends Controller
     /**
      * Store a newly created movement in storage.
      */
-    public function store(StoreMovimientoRequest $request): RedirectResponse
+    public function store(StoreMovimientoRequest $request, RegistrarPrestamoAction $registrarPrestamoAction): RedirectResponse
     {
         $validated = $request->validated();
         $tipoMovimiento = $validated['tipo_movimiento'];
-        $esPrestamo = $tipoMovimiento === 'externo_prestamo';
+
+        if ($tipoMovimiento === 'externo_prestamo') {
+            try {
+                $registrarPrestamoAction->execute(
+                    $validated['elemento_id'],
+                    $validated,
+                    auth()->user()
+                );
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                return redirect()->back()->withErrors($e->errors())->withInput();
+            }
+
+            return redirect()->route('elementos.show', $validated['elemento_id'])
+                ->with('success', 'Préstamo externo registrado con éxito.');
+        }
+
+        // Movimiento interno
+        $elemento = Elemento::findOrFail($validated['elemento_id']);
+        if ($elemento->estado === EstadoElemento::BAJA) {
+            return redirect()->back()
+                ->withErrors(['elemento_id' => 'No es posible trasladar un activo dado de baja o clasificado como basura tecnológica.'])
+                ->withInput();
+        }
+        if ($elemento->estado === EstadoElemento::PRESTADO) {
+            return redirect()->back()
+                ->withErrors(['elemento_id' => 'El activo se encuentra prestado actualmente. Debe registrar la devolución antes de realizar un traslado interno.'])
+                ->withInput();
+        }
 
         $fecha = !empty($validated['fecha']) ? Carbon::parse($validated['fecha']) : now();
 
         Movimiento::create([
             'elemento_id' => $validated['elemento_id'],
-            'tipo_movimiento' => $tipoMovimiento,
-            'ubicacion_id' => $esPrestamo ? null : ($validated['ubicacion_id'] ?? null),
-            'puesto' => $esPrestamo ? null : ($validated['puesto'] ?? null),
-            'user_id' => auth()->id() ?? Usuario::first()->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $validated['ubicacion_id'] ?? null,
+            'puesto' => $validated['puesto'] ?? null,
+            'user_id' => auth()->id() ?? throw new \Illuminate\Auth\AuthenticationException('Usuario no autenticado.'),
             'fecha' => $fecha,
-            'solicitante' => $esPrestamo ? ($validated['solicitante'] ?? null) : null,
-            'fecha_prestamo' => $esPrestamo ? (!empty($validated['fecha_prestamo']) ? Carbon::parse($validated['fecha_prestamo'])->toDateString() : now()->toDateString()) : null,
             'comentario' => $validated['comentario'] ?? null,
         ]);
 
@@ -162,32 +194,17 @@ class MovimientoController extends Controller
     }
 
     /**
-     * Check-in / Registro de devolución de préstamo (Transacción atómica).
+     * Check-in / Registro de devolución de préstamo (Transacción atómica con bloqueo pesimista).
      */
-    public function devolucion(DevolucionMovimientoRequest $request, Movimiento $movimiento): RedirectResponse
+    public function devolucion(DevolucionMovimientoRequest $request, Movimiento $movimiento, RegistrarDevolucionAction $registrarDevolucionAction): RedirectResponse
     {
         $validated = $request->validated();
-        $fechaDev = !empty($validated['fecha_devolucion'])
-            ? Carbon::parse($validated['fecha_devolucion'])->toDateString()
-            : now()->toDateString();
 
-        DB::transaction(function () use ($movimiento, $validated, $fechaDev, $request) {
-            // 1. Marcar fecha de devolución en el préstamo original
-            $movimiento->update([
-                'fecha_devolucion' => $fechaDev,
-            ]);
-
-            // 2. Registrar el nuevo movimiento interno de reingreso al laboratorio
-            Movimiento::create([
-                'elemento_id' => $movimiento->elemento_id,
-                'tipo_movimiento' => 'interno',
-                'ubicacion_id' => $validated['ubicacion_id'],
-                'puesto' => $validated['puesto'] ?? null,
-                'user_id' => auth()->id() ?? Usuario::first()->id,
-                'fecha' => now(),
-                'comentario' => 'Reingreso de préstamo externo. ' . ($validated['comentario'] ?? ''),
-            ]);
-        });
+        try {
+            $registrarDevolucionAction->execute($movimiento, $validated, auth()->user());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        }
 
         return redirect()->route('elementos.show', $movimiento->elemento_id)
             ->with('success', 'Devolución registrada exitosamente. El equipo ha reingresado a la sala.');
@@ -199,7 +216,7 @@ class MovimientoController extends Controller
     public function storeCorreccion(StoreEnmiendaRequest $request, Movimiento $movimiento): RedirectResponse
     {
         $validated = $request->validated();
-        $usuarioId = auth()->id() ?? Usuario::first()->id;
+        $usuarioId = auth()->id() ?? throw new \Illuminate\Auth\AuthenticationException('Usuario no autenticado.');
 
         $nuevoMovimiento = $movimiento->crearEnmienda(
             $validated,
