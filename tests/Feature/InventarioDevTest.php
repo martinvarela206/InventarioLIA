@@ -716,6 +716,7 @@ class InventarioDevTest extends TestCase
             'activo' => true,
         ]);
         $admin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+        $admin->roles()->attach(Rol::where('rol', 'app_admin')->first());
 
         $docente = Usuario::create([
             'nombre' => 'Docente A Designar',

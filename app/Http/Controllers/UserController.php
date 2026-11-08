@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -66,6 +67,8 @@ class UserController extends Controller
             'whatsapp' => 'nullable|string|max:30',
             'direccion' => 'nullable|string|max:255',
             'activo' => 'nullable|boolean',
+            'roles' => 'nullable|array',
+            'roles.*' => 'exists:roles,id',
         ]);
 
         $validated['activo'] = $request->has('activo');
@@ -73,7 +76,39 @@ class UserController extends Controller
         $user->update($validated);
 
         if ($request->has('roles')) {
-            $user->roles()->sync($request->roles);
+            $rolesInput = $request->input('roles', []);
+            $appAdminRol = Rol::where('rol', 'app_admin')->first();
+            $actor = auth()->user();
+
+            // Blindaje anti-escalada: solo un app_admin puede otorgar o revocar el rol app_admin
+            if ($appAdminRol && (!$actor || !$actor->isAppAdmin())) {
+                $teniaAppAdmin = $user->hasRole('app_admin');
+                $quiereAppAdmin = in_array($appAdminRol->id, $rolesInput);
+                if ($teniaAppAdmin !== $quiereAppAdmin) {
+                    abort(403, 'Solo un administrador general (app_admin) puede asignar o remover el rol app_admin.');
+                }
+            }
+
+            // Prevenir que un user_admin modifique sus propios roles en update masivo
+            if ($actor && $user->id === $actor->id && !$actor->isAppAdmin()) {
+                $rolesInput = $user->roles()->pluck('roles.id')->toArray();
+            }
+
+            $rolesAntes = $user->roles()->pluck('rol')->toArray();
+            $user->roles()->sync($rolesInput);
+            $rolesDespues = $user->fresh()->roles()->pluck('rol')->toArray();
+
+            if ($rolesAntes != $rolesDespues) {
+                Log::info("AUDITORIA_ROLES: Sincronización de roles en actualización de usuario", [
+                    'actor_id' => $actor?->id,
+                    'actor_email' => $actor?->email,
+                    'target_id' => $user->id,
+                    'target_email' => $user->email,
+                    'roles_anteriores' => $rolesAntes,
+                    'roles_nuevos' => $rolesDespues,
+                    'ip' => $request->ip(),
+                ]);
+            }
         }
 
         return redirect()->route('users.index')->with('success', 'Usuario y perfil actualizados correctamente.');
@@ -87,9 +122,26 @@ class UserController extends Controller
 
         $roleName = $request->role;
         $role = Rol::where('rol', $roleName)->firstOrFail();
+        $actor = auth()->user();
 
-        // Evitar que el administrador se auto-despoje del rol user_admin si es el único
-        if ($roleName === 'user_admin' && $user->id === auth()->id() && $user->hasRole('user_admin')) {
+        // 1. Solo app_admin puede tocar el rol app_admin
+        if ($roleName === 'app_admin' && (!$actor || !$actor->isAppAdmin())) {
+            return response()->json([
+                'message' => 'Solo un administrador general (app_admin) puede asignar o revocar el rol app_admin.',
+                'status' => 'error'
+            ], 403);
+        }
+
+        // 2. Prevenir autoasignación o alteración de roles propios por parte de user_admin
+        if ($actor && $user->id === $actor->id && !$actor->isAppAdmin()) {
+            return response()->json([
+                'message' => 'No tienes permisos para modificar tus propios roles.',
+                'status' => 'error'
+            ], 403);
+        }
+
+        // 3. Evitar que el administrador se auto-despoje del rol user_admin si es el único
+        if ($roleName === 'user_admin' && $user->id === $actor?->id && $user->hasRole('user_admin')) {
             return response()->json(['message' => 'No puedes remover tu propio rol de user_admin.', 'status' => 'error'], 422);
         }
 
@@ -102,6 +154,16 @@ class UserController extends Controller
             $message = "Rol {$roleName} asignado correctamente.";
             $status = 'assigned';
         }
+
+        Log::info("AUDITORIA_ROLES: Cambio individual de rol", [
+            'actor_id' => $actor?->id,
+            'actor_email' => $actor?->email,
+            'target_id' => $user->id,
+            'target_email' => $user->email,
+            'rol' => $roleName,
+            'accion' => $status,
+            'ip' => $request->ip(),
+        ]);
 
         return response()->json(['message' => $message, 'status' => $status]);
     }
