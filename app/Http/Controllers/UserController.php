@@ -111,6 +111,28 @@ class UserController extends Controller
         $user->activo = !$user->activo;
         $user->save();
 
+        if (!$user->activo) {
+            // Revocar tokens Sanctum activos
+            $user->tokens()->delete();
+
+            // Purgar sesiones persistidas en base de datos si existe la tabla
+            if (\Illuminate\Support\Facades\Schema::hasTable('sessions')) {
+                \Illuminate\Support\Facades\DB::table('sessions')
+                    ->where('user_id', $user->id)
+                    ->delete();
+            }
+
+            // Si el usuario desactivó su propia cuenta, cerrar sesión inmediatamente
+            if (auth()->id() === $user->id) {
+                auth()->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')
+                    ->withErrors(['login' => 'Has desactivado tu propia cuenta. Tu sesión ha finalizado.']);
+            }
+        }
+
         $estado = $user->activo ? 'activada' : 'desactivada';
         return redirect()->route('users.index')->with('success', "Cuenta del usuario {$user->nombre} {$estado}.");
     }

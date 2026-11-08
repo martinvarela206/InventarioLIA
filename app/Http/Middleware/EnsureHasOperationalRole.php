@@ -21,7 +21,7 @@ class EnsureHasOperationalRole
             return redirect()->route('login');
         }
 
-        if (!$user->hasActivePermissions()) {
+        if (!$user->activo || !$user->hasActivePermissions()) {
             return redirect()->route('bienvenida');
         }
 

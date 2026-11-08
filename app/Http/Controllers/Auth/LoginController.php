@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
@@ -39,6 +41,7 @@ class LoginController extends Controller
         $credentials = [
             $field => $input,
             'password' => $password,
+            'activo' => true,
         ];
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
@@ -54,7 +57,7 @@ class LoginController extends Controller
 
         // Si intentó con nombre pero falló, intentar con email por si acaso
         if ($field === 'nombre') {
-            if (Auth::attempt(['email' => $input, 'password' => $password], $request->boolean('remember'))) {
+            if (Auth::attempt(['email' => $input, 'password' => $password, 'activo' => true], $request->boolean('remember'))) {
                 RateLimiter::clear($throttleKey);
                 $request->session()->regenerate();
                 $target = Auth::user()->hasActivePermissions() ? route('dashboard.index') : route('bienvenida');
@@ -64,6 +67,17 @@ class LoginController extends Controller
                 }
                 return redirect()->intended($target);
             }
+        }
+
+        // Verificar si la cuenta existe pero está inactiva/desactivada
+        $userCheck = Usuario::where($field, $input)->first();
+        if (!$userCheck && $field === 'nombre') {
+            $userCheck = Usuario::where('email', $input)->first();
+        }
+        if ($userCheck && Hash::check($password, $userCheck->password) && !$userCheck->activo) {
+            return back()->withErrors([
+                'login' => 'Su cuenta se encuentra desactivada o pendiente de activación. Por favor, comuníquese con un administrador.',
+            ])->withInput();
         }
 
         RateLimiter::hit($throttleKey, 60);

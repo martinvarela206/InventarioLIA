@@ -28,6 +28,14 @@ class CheckRole
             $roles = explode(',', $roles[0]);
         }
 
+        // Si el usuario se encuentra inactivo, no puede ejercer roles operativos en el inventario
+        if (!$user->activo && !in_array('registered', $roles, true)) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                abort(403, 'Cuenta inactiva.');
+            }
+            return redirect()->route('bienvenida');
+        }
+
         // Comprobar si el usuario posee alguno de los roles requeridos
         if ($user->hasRole($roles)) {
             return $next($request);

@@ -325,6 +325,9 @@ class Usuario extends Authenticatable
      */
     public function hasActivePermissions(): bool
     {
+        if (!$this->activo) {
+            return false;
+        }
         return $this->hasRole(['rev', 'subtec', 'tec', 'item_admin', 'user_admin', 'app_admin']);
     }
 

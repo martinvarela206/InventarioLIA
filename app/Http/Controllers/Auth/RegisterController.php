@@ -55,9 +55,7 @@ class RegisterController extends Controller
             $user->roles()->attach($rolRegistered->id);
         }
 
-        Auth::login($user);
-
         return redirect(route('revision.index'))
-            ->with('success', 'Registro completado. Tu cuenta se encuentra pendiente de activación por el administrador.');
+            ->with('success', 'Registro completado. Tu cuenta se encuentra pendiente de activación por un administrador.');
     }
 }

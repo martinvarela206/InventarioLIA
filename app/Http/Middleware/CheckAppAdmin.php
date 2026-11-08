@@ -15,7 +15,7 @@ class CheckAppAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user() || !$request->user()->isAppAdmin()) {
+        if (!$request->user() || !$request->user()->activo || !$request->user()->isAppAdmin()) {
             abort(403, 'Acceso restringido a administradores de la aplicación (app_admin).');
         }
 
