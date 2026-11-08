@@ -126,43 +126,8 @@ class ElementoController extends Controller
     public function exportCsv(Request $request): StreamedResponse
     {
         $query = $this->construirConsultaInventario($request);
-        $items = $query->orderBy('id', 'asc')->get();
 
         $columnas = ['Tipo', 'Nro LIA', 'Nro UNSJ', 'Marca', 'Modelo', 'Especificaciones / Hardware', 'Nro Serie', 'Ubicación', 'Puesto', 'Situación', 'Solicitante / Préstamo', 'Garantía', 'Año Compra', 'Observaciones'];
-
-        $filas = $items->map(function ($el) {
-            $u = $el->ultimoMovimiento;
-            $situacion = match ($el->estado) {
-                EstadoElemento::OPERATIVO => 'En Sala / Operativo',
-                EstadoElemento::PRESTADO => 'Prestado (' . ($u?->diasPrestado() ?? 0) . ' d)',
-                EstadoElemento::EN_REPARACION => 'En Reparación',
-                EstadoElemento::EN_LIMBO_REUBICACION => 'En Limbo (Pendiente Reubicación)',
-                EstadoElemento::BAJA => 'Basura Tecnológica / De Baja',
-            };
-
-            $garantia = 'Sin datos';
-            if ($el->fecha_vencimiento_garantia) {
-                $venc = Carbon::parse($el->fecha_vencimiento_garantia);
-                $garantia = $venc->isPast() ? 'Vencida (' . $venc->format('d/m/Y') . ')' : 'Vigente (' . $venc->format('d/m/Y') . ')';
-            }
-
-            return [
-                $el->tipo?->nombre ?? 'N/A',
-                $el->nro_lia ?? '-',
-                $el->nro_unsj ?? '-',
-                $el->marca ?? '-',
-                $el->modelo ?? '-',
-                $el->especificacionesSintetizadas(false),
-                $el->nro_serie ?? '-',
-                $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo Externo' : 'Sin asignar'),
-                $u?->puesto ?: ($el->puesto ?? '-'),
-                $situacion,
-                $u?->solicitante ?? '-',
-                $garantia,
-                $el->anio_compra ? (string)$el->anio_compra : '-',
-                $el->observaciones ?: ($el->descripcion_texto ?? '-'),
-            ];
-        });
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -172,13 +137,47 @@ class ElementoController extends Controller
             'Expires' => '0',
         ];
 
-        return response()->stream(function () use ($filas, $columnas) {
+        return response()->stream(function () use ($query, $columnas) {
             $handle = fopen('php://output', 'w');
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($handle, $columnas, ';');
-            foreach ($filas as $fila) {
+
+            foreach ($query->with(['tipo', 'ultimoMovimiento.ubicacion'])->orderBy('id', 'asc')->lazy(250) as $el) {
+                $u = $el->ultimoMovimiento;
+                $situacion = match ($el->estado) {
+                    EstadoElemento::OPERATIVO => 'En Sala / Operativo',
+                    EstadoElemento::PRESTADO => 'Prestado (' . ($u?->diasPrestado() ?? 0) . ' d)',
+                    EstadoElemento::EN_REPARACION => 'En Reparación',
+                    EstadoElemento::EN_LIMBO_REUBICACION => 'En Limbo (Pendiente Reubicación)',
+                    EstadoElemento::BAJA => 'Basura Tecnológica / De Baja',
+                };
+
+                $garantia = 'Sin datos';
+                if ($el->fecha_vencimiento_garantia) {
+                    $venc = Carbon::parse($el->fecha_vencimiento_garantia);
+                    $garantia = $venc->isPast() ? 'Vencida (' . $venc->format('d/m/Y') . ')' : 'Vigente (' . $venc->format('d/m/Y') . ')';
+                }
+
+                $fila = [
+                    $el->tipo?->nombre ?? 'N/A',
+                    $el->nro_lia ?? '-',
+                    $el->nro_unsj ?? '-',
+                    $el->marca ?? '-',
+                    $el->modelo ?? '-',
+                    $el->especificacionesSintetizadas(false),
+                    $el->nro_serie ?? '-',
+                    $u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo Externo' : 'Sin asignar'),
+                    $u?->puesto ?: ($el->puesto ?? '-'),
+                    $situacion,
+                    $u?->solicitante ?? '-',
+                    $garantia,
+                    $el->anio_compra ? (string)$el->anio_compra : '-',
+                    $el->observaciones ?: ($el->descripcion_texto ?? '-'),
+                ];
+
                 fputcsv($handle, \App\Support\CsvSanitizer::sanitizeRow($fila), ';');
             }
+
             fclose($handle);
         }, 200, $headers);
     }
@@ -189,7 +188,6 @@ class ElementoController extends Controller
     public function imprimir(Request $request): View
     {
         $query = $this->construirConsultaInventario($request);
-        $items = $query->with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo'])->orderBy('id', 'asc')->get();
 
         $atributos = ReporteController::obtenerAtributosDinamicos();
         $columnas = array_merge(
@@ -199,7 +197,10 @@ class ElementoController extends Controller
         );
         $columnasOcultasDefecto = ReporteController::obtenerColumnasOcultasDefecto($atributos);
 
-        $filas = $items->map(function ($el) use ($atributos) {
+        $filas = $query->with(['tipo', 'ultimoMovimiento.ubicacion', 'valoresAtributos.atributo'])
+            ->orderBy('id', 'asc')
+            ->lazy(250)
+            ->map(function ($el) use ($atributos) {
             $u = $el->ultimoMovimiento;
             $situacion = 'En Sala';
             if ($u?->esPrestamo() && !$u?->fecha_devolucion) {
