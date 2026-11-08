@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Elemento;
+use App\Enums\EstadoElemento;
 use App\Models\Movimiento;
 use App\Models\Ubicacion;
 use App\Models\Tipo;
@@ -186,15 +187,7 @@ class ReporteController extends Controller
         $u = $el->ultimoMovimiento;
         $situacion = $situacionForzada;
         if ($situacion === null) {
-            if ($u?->esPrestamo() && !$u?->fecha_devolucion) {
-                $situacion = 'Prestado';
-            } elseif ($u?->tipo_movimiento === 'baja' || $el->tipo?->nombre === 'basura tecnologica') {
-                $situacion = 'Basura Tecnológica / De Baja';
-            } elseif ($u?->esTicketAbierto()) {
-                $situacion = 'En Reparación';
-            } else {
-                $situacion = 'En Sala';
-            }
+            $situacion = $el->estado->label();
         }
 
         $ubicacionNombre = $ubicacionForzada ?: ($u?->ubicacion?->nombre ?? ($u?->esPrestamo() ? 'Préstamo externo' : 'Sin asignar'));

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\ValidationException;
 use App\Presenters\ElementoPresenter;
+use App\Enums\EstadoElemento;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -254,9 +255,47 @@ class Elemento extends Model
         return (string)($this->descripcion ?? '');
     }
 
+    /**
+     * Fuente Única de Verdad para el estado canónico de un activo en el inventario.
+     */
+    public function getEstadoAttribute(): EstadoElemento
+    {
+        if ($this->tipo?->nombre === 'basura tecnologica') {
+            return EstadoElemento::BAJA;
+        }
+
+        $ultimo = $this->ultimoMovimiento;
+        if (!$ultimo) {
+            return EstadoElemento::OPERATIVO;
+        }
+
+        if ($ultimo->tipo_movimiento === 'baja' || $ultimo->estado_ticket === 'baja') {
+            return EstadoElemento::BAJA;
+        }
+
+        if ($ultimo->tipo_movimiento === 'reparacion' && in_array($ultimo->estado_ticket, ['abierto', 'solucionado', null, ''])) {
+            return EstadoElemento::EN_REPARACION;
+        }
+
+        if ($ultimo->esPrestamo() && empty($ultimo->fecha_devolucion)) {
+            return EstadoElemento::PRESTADO;
+        }
+
+        if ($ultimo->tipo_movimiento === 'limbo_reubicacion' || ($ultimo->ubicacion && !$ultimo->ubicacion->activa)) {
+            return EstadoElemento::EN_LIMBO_REUBICACION;
+        }
+
+        return EstadoElemento::OPERATIVO;
+    }
+
     // --- QUERY SCOPES SEMÁNTICOS (SNIPE-IT PATTERN) ---
 
     public function scopeDisponibles(Builder $query): Builder
+    {
+        return $this->scopeOperativos($query);
+    }
+
+    public function scopeOperativos(Builder $query): Builder
     {
         return $query->whereDoesntHave('tipo', function ($tq) {
             $tq->where('nombre', 'basura tecnologica');
@@ -264,7 +303,15 @@ class Elemento extends Model
             $q->where(function ($sub) {
                 $sub->whereNull('fecha_prestamo')
                     ->orWhereNotNull('fecha_devolucion');
-            })->whereNotIn('tipo_movimiento', ['baja', 'reparacion']);
+            })
+            ->whereNotIn('tipo_movimiento', ['baja', 'limbo_reubicacion'])
+            ->where(function ($sub) {
+                $sub->where('tipo_movimiento', '!=', 'reparacion')
+                    ->orWhere('estado_ticket', 'resuelto');
+            })
+            ->whereHas('ubicacion', function ($uq) {
+                $uq->where('activa', true);
+            });
         });
     }
 
@@ -273,6 +320,21 @@ class Elemento extends Model
         return $query->whereHas('ultimoMovimiento', function ($q) {
             $q->whereNotNull('fecha_prestamo')
               ->whereNull('fecha_devolucion');
+        });
+    }
+
+    public function scopeEnLimbo(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('tipo', function ($tq) {
+            $tq->where('nombre', 'basura tecnologica');
+        })->whereHas('ultimoMovimiento', function ($mq) {
+            $mq->whereNotIn('tipo_movimiento', ['baja'])
+               ->where(function ($sub) {
+                   $sub->where('tipo_movimiento', 'limbo_reubicacion')
+                       ->orWhereHas('ubicacion', function ($uq) {
+                           $uq->where('activa', false);
+                       });
+               });
         });
     }
 
@@ -290,7 +352,8 @@ class Elemento extends Model
     {
         return $query->where(function ($q) {
             $q->whereHas('ultimoMovimiento', function ($mq) {
-                $mq->where('tipo_movimiento', 'baja');
+                $mq->where('tipo_movimiento', 'baja')
+                   ->orWhere('estado_ticket', 'baja');
             })->orWhereHas('tipo', function ($tq) {
                 $tq->where('nombre', 'basura tecnologica');
             });
@@ -303,7 +366,7 @@ class Elemento extends Model
             $mq->where('tipo_movimiento', 'reparacion')
                ->where(function ($sub) {
                    $sub->whereNull('estado_ticket')
-                       ->orWhere('estado_ticket', 'abierto');
+                       ->orWhereIn('estado_ticket', ['abierto', 'solucionado']);
                });
         });
     }

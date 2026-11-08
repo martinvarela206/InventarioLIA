@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Elemento;
+use App\Enums\EstadoElemento;
 use App\Models\Movimiento;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
@@ -62,14 +63,16 @@ class ElementoController extends Controller
         }
 
         if ($request->filled('situacion')) {
-            if ($request->situacion === 'operativo') {
+            if ($request->situacion === 'operativo' || $request->situacion === 'disponible') {
                 $query->disponibles();
             } elseif ($request->situacion === 'prestado') {
                 $query->prestadosActivos();
-            } elseif ($request->situacion === 'baja') {
+            } elseif ($request->situacion === 'baja' || $request->situacion === 'obsoleto') {
                 $query->obsoletos();
             } elseif ($request->situacion === 'reparacion') {
                 $query->enReparacion();
+            } elseif ($request->situacion === 'limbo') {
+                $query->enLimbo();
             }
         }
 
@@ -129,14 +132,13 @@ class ElementoController extends Controller
 
         $filas = $items->map(function ($el) {
             $u = $el->ultimoMovimiento;
-            $situacion = 'En Sala';
-            if ($u?->esPrestamo() && !$u?->fecha_devolucion) {
-                $situacion = 'Prestado (' . $u->diasPrestado() . ' d)';
-            } elseif ($u?->tipo_movimiento === 'baja' || $el->tipo?->nombre === 'basura tecnologica') {
-                $situacion = 'Basura Tecnológica / De Baja';
-            } elseif ($u?->esTicketAbierto()) {
-                $situacion = 'En Reparación';
-            }
+            $situacion = match ($el->estado) {
+                EstadoElemento::OPERATIVO => 'En Sala / Operativo',
+                EstadoElemento::PRESTADO => 'Prestado (' . ($u?->diasPrestado() ?? 0) . ' d)',
+                EstadoElemento::EN_REPARACION => 'En Reparación',
+                EstadoElemento::EN_LIMBO_REUBICACION => 'En Limbo (Pendiente Reubicación)',
+                EstadoElemento::BAJA => 'Basura Tecnológica / De Baja',
+            };
 
             $garantia = 'Sin datos';
             if ($el->fecha_vencimiento_garantia) {
