@@ -9,6 +9,7 @@ use App\Models\Movimiento;
 use App\Models\Usuario;
 use App\Models\Tipo;
 use App\Models\Ubicacion;
+use App\Models\Rol;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
 
@@ -337,5 +338,27 @@ class IntegridadReferencialTest extends TestCase
 
         $activas = Ubicacion::activas()->pluck('id');
         $this->assertNotContains($sala->id, $activas);
+    }
+
+    public function test_rol_asset_admin_existe_en_bd_y_posee_compatibilidad_bidireccional(): void
+    {
+        $this->seed();
+
+        $rolAssetAdmin = Rol::where('rol', 'asset_admin')->first();
+        $this->assertNotNull($rolAssetAdmin);
+
+        $user = Usuario::create([
+            'nombre' => 'Administrador de Activos',
+            'email' => 'asset_admin_test@test.com',
+            'password' => bcrypt('password'),
+            'activo' => true,
+        ]);
+
+        $user->roles()->attach($rolAssetAdmin);
+
+        $this->assertTrue($user->isAssetAdmin());
+        $this->assertTrue($user->hasRole('asset_admin'));
+        $this->assertTrue($user->hasRole('item_admin'));
+        $this->assertTrue($user->canManageElementos());
     }
 }

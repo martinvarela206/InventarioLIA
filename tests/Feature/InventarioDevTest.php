@@ -2866,8 +2866,8 @@ class InventarioDevTest extends TestCase
         ]);
 
         $tipo = Tipo::firstOrCreate(['nombre' => 'Pantalla Test'], ['categoria' => 'periferico']);
-        $elementoOk = Elemento::create(['tipo_id' => $tipo->id, 'modelo' => 'Pantalla Samsung 24', 'nro_serie' => 'SAM-9988']);
-        $elementoRotura = Elemento::create(['tipo_id' => $tipo->id, 'modelo' => 'Pantalla LG 27', 'nro_serie' => 'LG-7766']);
+        $elementoOk = Elemento::create(['nro_lia' => 'LIA-DEV-AUD-01', 'tipo_id' => $tipo->id, 'modelo' => 'Pantalla Samsung 24', 'nro_serie' => 'SAM-9988']);
+        $elementoRotura = Elemento::create(['nro_lia' => 'LIA-DEV-AUD-02', 'tipo_id' => $tipo->id, 'modelo' => 'Pantalla LG 27', 'nro_serie' => 'LG-7766']);
 
         $ticket = Movimiento::create([
             'elemento_id' => $elementoRotura->id,
@@ -3093,7 +3093,7 @@ class InventarioDevTest extends TestCase
 
         // 2. Asociar movimiento de inventario histórico para verificar integridad referencial
         $tipo = Tipo::firstOrCreate(['nombre' => 'Gabinete Test'], ['categoria' => 'equipo']);
-        $elemento = Elemento::create(['tipo_id' => $tipo->id, 'modelo' => 'Server Torre HP', 'nro_serie' => 'HP-7711']);
+        $elemento = Elemento::create(['nro_lia' => 'LIA-DEV-SRV-01', 'tipo_id' => $tipo->id, 'modelo' => 'Server Torre HP', 'nro_serie' => 'HP-7711']);
         $lab = Ubicacion::firstOrCreate(['nombre' => 'Sala Servidores Hist'], ['descripcion' => 'Rack']);
 
         $movimiento = Movimiento::create([

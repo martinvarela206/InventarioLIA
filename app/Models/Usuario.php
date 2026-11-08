@@ -218,6 +218,12 @@ class Usuario extends Authenticatable
     public function hasRole(string|array $role): bool
     {
         $roleList = is_array($role) ? $role : func_get_args();
+        // Compatibilidad bidireccional durante la transición item_admin <-> asset_admin
+        if (in_array('item_admin', $roleList, true) && !in_array('asset_admin', $roleList, true)) {
+            $roleList[] = 'asset_admin';
+        } elseif (in_array('asset_admin', $roleList, true) && !in_array('item_admin', $roleList, true)) {
+            $roleList[] = 'item_admin';
+        }
         return $this->roles->pluck('rol')->intersect($roleList)->isNotEmpty();
     }
 
@@ -236,9 +242,14 @@ class Usuario extends Authenticatable
         return $this->hasRole('app_admin');
     }
 
+    public function isAssetAdmin(): bool
+    {
+        return $this->hasRole('asset_admin');
+    }
+
     public function isItemAdmin(): bool
     {
-        return $this->hasRole('item_admin');
+        return $this->hasRole('asset_admin');
     }
 
     public function isTec(): bool
