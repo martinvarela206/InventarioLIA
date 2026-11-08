@@ -71,7 +71,7 @@ return new class extends Migration
                     SELECT RAISE(ABORT, 'Prohibido eliminar tipos con elementos asociados.');
                 END;
             ");
-        } elseif ($driver === 'mysql') {
+        } elseif (in_array($driver, ['mysql', 'mariadb'], true)) {
             // 1. Prohibir hard delete sobre elementos
             DB::unprepared("
                 CREATE TRIGGER trigger_elementos_before_delete
@@ -149,7 +149,7 @@ return new class extends Migration
     {
         $driver = DB::getDriverName();
 
-        if ($driver === 'sqlite' || $driver === 'mysql') {
+        if (in_array($driver, ['sqlite', 'mysql', 'mariadb'], true)) {
             DB::unprepared('DROP TRIGGER IF EXISTS trigger_elementos_before_delete;');
             DB::unprepared('DROP TRIGGER IF EXISTS trigger_usuarios_before_delete;');
             DB::unprepared('DROP TRIGGER IF EXISTS trigger_ubicaciones_before_delete;');

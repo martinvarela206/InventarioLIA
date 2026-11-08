@@ -363,4 +363,67 @@ class IntegridadReferencialTest extends TestCase
         $this->assertTrue($user->hasRole('item_admin'));
         $this->assertTrue($user->canManageElementos());
     }
+
+    public function test_trigger_inmutabilidad_bloquea_modificacion_de_solicitante_a_null_o_valores_arbitrarios(): void
+    {
+        [$user, $tipo, $ubicacion] = $this->crearDatosBase();
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'LIA-TRIGGER-IMMUTABLE-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Asus',
+        ]);
+
+        $movimiento = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'prestamo',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $user->id,
+            'fecha' => now(),
+            'solicitante' => 'Persona Original',
+            'comentario' => 'Prestamo original',
+        ]);
+
+        // 1. Intentar cambiar solicitante a un nombre arbitrario debe ser abortado por el trigger
+        try {
+            DB::table('movimientos')->where('id', $movimiento->id)->update([
+                'solicitante' => 'Persona Falsa',
+            ]);
+            $this->fail('El trigger debió abortar el cambio arbitrario de solicitante.');
+        } catch (\Throwable $e) {
+            $this->assertStringContainsString('inmutables', $e->getMessage());
+        }
+
+        // 2. Intentar cambiar solicitante a NULL debe ser abortado por el trigger (evita el bypass NULL)
+        try {
+            DB::table('movimientos')->where('id', $movimiento->id)->update([
+                'solicitante' => null,
+            ]);
+            $this->fail('El trigger debió abortar el vaciado de solicitante a NULL.');
+        } catch (\Throwable $e) {
+            $this->assertStringContainsString('inmutables', $e->getMessage());
+        }
+
+        // 3. Modificación autorizada por Ley 25.326: 'Ex-colaborador anonimizado #...' debe ser permitida
+        DB::table('movimientos')->where('id', $movimiento->id)->update([
+            'solicitante' => 'Ex-colaborador anonimizado #999',
+        ]);
+        $this->assertEquals('Ex-colaborador anonimizado #999', $movimiento->fresh()->solicitante);
+
+        // 4. Devolución de préstamo: transicionar fecha_devolucion de NULL a una fecha válida está permitido
+        DB::table('movimientos')->where('id', $movimiento->id)->update([
+            'fecha_devolucion' => now(),
+        ]);
+        $this->assertNotNull($movimiento->fresh()->fecha_devolucion);
+
+        // 5. Pero modificar una fecha_devolucion ya establecida debe ser abortado
+        try {
+            DB::table('movimientos')->where('id', $movimiento->id)->update([
+                'fecha_devolucion' => now()->subDay(),
+            ]);
+            $this->fail('El trigger debió abortar la alteración de una fecha de devolución ya registrada.');
+        } catch (\Throwable $e) {
+            $this->assertStringContainsString('inmutables', $e->getMessage());
+        }
+    }
 }

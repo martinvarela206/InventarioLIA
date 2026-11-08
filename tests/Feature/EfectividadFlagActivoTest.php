@@ -103,10 +103,90 @@ class EfectividadFlagActivoTest extends TestCase
         $usuario = Usuario::factory()->create(['email' => 'sesion@unsj.edu.ar', 'activo' => false]);
         $usuario->roles()->attach(Rol::where('rol', 'tec')->first());
 
-        // Simulamos petición de usuario inactivo al dashboard: es redirigido a bienvenida
+        // Al estar EnsureUserIsActive en el pipeline web global, el usuario es desconectado y enviado al login
         $response = $this->actingAs($usuario)->get('/dashboard');
 
-        $response->assertRedirect(route('bienvenida'));
+        $response->assertRedirect(route('login'));
+        $this->assertGuest();
+    }
+
+    public function test_toggle_activo_rota_remember_token_al_desactivar(): void
+    {
+        $userAdmin = Usuario::factory()->create(['email' => 'admin@unsj.edu.ar', 'activo' => true]);
+        $userAdmin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+
+        $tokenPrevio = 'token_inicial_de_sesion_recordada_12345';
+        $target = Usuario::factory()->create([
+            'email' => 'target_remember@unsj.edu.ar',
+            'activo' => true,
+            'remember_token' => $tokenPrevio,
+        ]);
+
+        $this->actingAs($userAdmin)->post(route('users.toggleActivo', $target->id));
+
+        $target->refresh();
+        $this->assertFalse((bool) $target->activo);
+        $this->assertNotEquals($tokenPrevio, $target->remember_token);
+        $this->assertNotEmpty($target->remember_token);
+    }
+
+    public function test_toggle_activo_bloquea_autodesactivacion(): void
+    {
+        $admin = Usuario::factory()->create(['email' => 'self_admin@unsj.edu.ar', 'activo' => true]);
+        $admin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+
+        $response = $this->actingAs($admin)->post(route('users.toggleActivo', $admin->id));
+
+        $response->assertSessionHasErrors(['error']);
+        $admin->refresh();
+        $this->assertTrue((bool) $admin->activo);
+    }
+
+    public function test_user_admin_no_puede_desactivar_a_un_app_admin(): void
+    {
+        $userAdmin = Usuario::factory()->create(['email' => 'user_admin_only@unsj.edu.ar', 'activo' => true]);
+        $userAdmin->roles()->attach(Rol::where('rol', 'user_admin')->first());
+
+        $appAdmin = Usuario::factory()->create(['email' => 'target_app_admin@unsj.edu.ar', 'activo' => true]);
+        $appAdmin->roles()->attach(Rol::where('rol', 'app_admin')->first());
+
+        $response = $this->actingAs($userAdmin)->post(route('users.toggleActivo', $appAdmin->id));
+
+        $response->assertSessionHasErrors(['error']);
+        $appAdmin->refresh();
+        $this->assertTrue((bool) $appAdmin->activo);
+    }
+
+    public function test_no_se_puede_desactivar_al_ultimo_app_admin_o_user_admin_activo(): void
+    {
+        $roleAppAdmin = Rol::where('rol', 'app_admin')->first();
+        $roleUserAdmin = Rol::where('rol', 'user_admin')->first();
+
+        // Limpiamos cualquier otro app_admin activo
+        Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'app_admin'))->update(['activo' => false]);
+
+        $actorAdmin = Usuario::factory()->create(['email' => 'actor_admin@unsj.edu.ar', 'activo' => true]);
+        $actorAdmin->roles()->attach([$roleAppAdmin->id, $roleUserAdmin->id]);
+
+        $segundoAppAdmin = Usuario::factory()->create(['email' => 'segundo_app_admin@unsj.edu.ar', 'activo' => true]);
+        $segundoAppAdmin->roles()->attach([$roleAppAdmin->id, $roleUserAdmin->id]);
+
+        // Hay 2 app_admin activos; el actor desactiva al segundo app_admin (permitido)
+        $response1 = $this->actingAs($actorAdmin)->post(route('users.toggleActivo', $segundoAppAdmin->id));
+        $response1->assertRedirect(route('users.index'));
+        $segundoAppAdmin->refresh();
+        $this->assertFalse((bool) $segundoAppAdmin->activo);
+
+        // Ahora solo queda 1 app_admin activo ($actorAdmin).
+        // Creamos otro usuario con user_admin que intente desactivar al único app_admin activo:
+        $otroUserAdmin = Usuario::factory()->create(['email' => 'solo_user_admin@unsj.edu.ar', 'activo' => true]);
+        $otroUserAdmin->roles()->attach($roleUserAdmin->id);
+
+        // Intentar desactivar al único app_admin activo: es bloqueado por jerarquía y por ser el único
+        $response2 = $this->actingAs($otroUserAdmin)->post(route('users.toggleActivo', $actorAdmin->id));
+        $response2->assertSessionHasErrors(['error']);
+        $actorAdmin->refresh();
+        $this->assertTrue((bool) $actorAdmin->activo);
     }
 
     public function test_usuario_inactivo_no_posee_permisos_activos_aunque_tenga_roles(): void

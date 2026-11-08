@@ -39,6 +39,10 @@ class Usuario extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'dni',
+        'direccion',
+        'whatsapp',
+        'fecha_nacimiento',
     ];
 
     protected $casts = [
