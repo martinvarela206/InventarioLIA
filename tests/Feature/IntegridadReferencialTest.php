@@ -127,4 +127,88 @@ class IntegridadReferencialTest extends TestCase
             'comentario' => 'Movimiento que debe sobrevivir al borrado logico',
         ]);
     }
+
+    public function test_trigger_impide_borrado_fisico_de_movimiento_incluso_por_sql_crudo(): void
+    {
+        [$user, $tipo, $ubicacion] = $this->crearDatosBase();
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'LIA-TRIGGER-01',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Asus',
+        ]);
+
+        $movimiento = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $user->id,
+            'fecha' => now(),
+            'comentario' => 'Movimiento inmutable con trigger',
+        ]);
+
+        $this->expectException(QueryException::class);
+        // Borrado directo por SQL crudo que esquiva eventos de Eloquent
+        DB::table('movimientos')->where('id', $movimiento->id)->delete();
+    }
+
+    public function test_trigger_impide_modificacion_de_campos_inmutables_de_movimiento_por_sql_crudo(): void
+    {
+        [$user, $tipo, $ubicacion] = $this->crearDatosBase();
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'LIA-TRIGGER-02',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Apple',
+        ]);
+
+        $movimiento = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $user->id,
+            'fecha' => now(),
+            'comentario' => 'Comentario original inmutable',
+        ]);
+
+        $this->expectException(QueryException::class);
+        // Intentar alterar el comentario directamente por base de datos
+        DB::table('movimientos')->where('id', $movimiento->id)->update([
+            'comentario' => 'Comentario alterado maliciosamente',
+        ]);
+    }
+
+    public function test_trigger_permite_actualizar_fecha_devolucion_y_estado_ticket(): void
+    {
+        [$user, $tipo, $ubicacion] = $this->crearDatosBase();
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'LIA-TRIGGER-03',
+            'tipo_id' => $tipo->id,
+            'marca' => 'Acer',
+        ]);
+
+        $movimiento = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'externo_prestamo',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $user->id,
+            'fecha' => now(),
+            'fecha_prestamo' => now()->toDateString(),
+            'solicitante' => 'Prof. Perez',
+            'comentario' => 'Prestamo autorizado',
+        ]);
+
+        // Actualizar fecha_devolucion y estado_ticket es la única mutación permitida por el trigger
+        DB::table('movimientos')->where('id', $movimiento->id)->update([
+            'fecha_devolucion' => now()->toDateString(),
+            'estado_ticket' => 'cerrado',
+        ]);
+
+        $this->assertDatabaseHas('movimientos', [
+            'id' => $movimiento->id,
+            'fecha_devolucion' => now()->toDateString(),
+            'estado_ticket' => 'cerrado',
+        ]);
+    }
 }
