@@ -101,6 +101,7 @@ Route::middleware('auth')->group(function () {
 
         // Hilo y Seguimiento de Tickets (apertura, consulta y comentarios: rev, subtec, tec)
         Route::middleware('role:rev,subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
+            Route::get('/tickets/buscar-rapido', [TicketController::class, 'apiBuscar'])->name('tickets.buscar-rapido');
             Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
             Route::get('/tickets/{ticket}/pdf', [TicketController::class, 'exportarPdf'])->name('tickets.pdf');
             Route::post('/tickets/{ticket}/comentar', [TicketController::class, 'comentar'])->name('tickets.comentar');

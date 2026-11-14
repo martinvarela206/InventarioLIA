@@ -14,12 +14,14 @@ use App\Models\TicketComentarioAdjunto;
 use App\Models\Ubicacion;
 use App\Services\ImageSanitizer;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -160,6 +162,78 @@ class TicketController extends Controller
         $conteoTodos = Movimiento::tickets()->count();
 
         return view('tickets.index', compact('tickets', 'estado', 'areas', 'conteoAbiertos', 'conteoResueltos', 'conteoBajas', 'conteoTodos'));
+    }
+
+    /**
+     * Endpoint API para autocompletado y búsqueda rápida en vivo de tickets.
+     * Retorna máximo 5 coincidencias para el desplegable interactivo.
+     */
+    public function apiBuscar(Request $request): JsonResponse
+    {
+        $term = trim((string) $request->get('q', ''));
+        if (strlen($term) < 1) {
+            return response()->json([]);
+        }
+
+        // Si el término incluye prefijos como '#' o 'TCK-', normalizar para buscar por ID numérico
+        $cleanId = ltrim(preg_replace('/^tck-?/i', '', $term) ?? '', '#');
+
+        $query = Movimiento::tickets()
+            ->with(['elemento.tipo', 'ambitoTicket', 'ubicacion'])
+            ->where(function ($q) use ($term, $cleanId) {
+                if (is_numeric($cleanId) && (int) $cleanId > 0) {
+                    $q->orWhere('id', (int) $cleanId);
+                }
+                $q->orWhere('comentario', 'like', "%{$term}%")
+                    ->orWhere('solicitante', 'like', "%{$term}%")
+                    ->orWhereHas('ambitoTicket', function ($aq) use ($term) {
+                        $aq->where('nombre', 'like', "%{$term}%")
+                            ->orWhere('descripcion', 'like', "%{$term}%");
+                    })
+                    ->orWhereHas('elemento', function ($eq) use ($term) {
+                        $eq->where('nro_lia', 'like', "%{$term}%")
+                            ->orWhere('nro_unsj', 'like', "%{$term}%")
+                            ->orWhere('marca', 'like', "%{$term}%")
+                            ->orWhere('modelo', 'like', "%{$term}%");
+                    });
+            })
+            ->orderBy('id', 'desc')
+            ->limit(5);
+
+        $tickets = $query->get()->map(function (Movimiento $t) {
+            $esGeneral = $t->esTicketGeneral();
+            $ambitoNombre = $t->ambitoTicket?->nombre ?? 'Infraestructura General';
+
+            $activoTexto = null;
+            if (! $esGeneral && $t->elemento) {
+                $el = $t->elemento;
+                $nro = $el->nro_lia ?: ($el->nro_unsj ?: 'S/N');
+                $tipo = $el->tipo?->nombre ? ucfirst($el->tipo->nombre) : 'Equipo';
+                $activoTexto = "{$nro} • {$tipo} {$el->marca} {$el->modelo}";
+            }
+
+            $estadoLabel = match ($t->estado_ticket) {
+                'resuelto' => 'Resuelto',
+                'baja' => 'Baja',
+                'solucionado' => 'Solución Propuesta',
+                default => 'Abierto',
+            };
+
+            return [
+                'id' => $t->id,
+                'codigo' => '#'.str_pad((string) $t->id, 4, '0', STR_PAD_LEFT),
+                'asunto' => Str::limit($t->comentario, 65),
+                'solicitante' => $t->solicitante ?: 'Sin solicitante',
+                'estado' => $t->estado_ticket ?: 'abierto',
+                'estado_label' => $estadoLabel,
+                'es_general' => $esGeneral,
+                'ambito_nombre' => $ambitoNombre,
+                'activo_info' => $activoTexto,
+                'url' => route('tickets.show', $t->id),
+            ];
+        });
+
+        return response()->json($tickets);
     }
 
     /**
