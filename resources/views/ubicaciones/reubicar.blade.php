@@ -99,7 +99,7 @@
             <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                     <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-1 flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 bg-blue-500 rounded-full inline-block"></span>
+                        <span class="w-2.5 h-2.5 bg-amber-500 rounded-full inline-block"></span>
                         <span>Opción 2: Reubicación Discriminada (Destinos Independientes)</span>
                     </h2>
                     <p class="text-xs text-gray-500">Defina individualmente el laboratorio o puesto de destino para cada activo.</p>

@@ -113,13 +113,13 @@
                             <span class="text-xs font-black text-gray-700 bg-gray-100 px-2 py-0.5 rounded font-mono">#{{ $t->id }}</span>
                             
                             @if($t->estado_ticket === 'resuelto')
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Resuelto</span>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Resuelto</span>
                             @elseif($t->estado_ticket === 'baja')
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">Baja / Irreparable</span>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">Baja / Irreparable</span>
                             @elseif($t->estado_ticket === 'solucionado')
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">Solución Propuesta</span>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-[#fbc101]">Solución Propuesta</span>
                             @else
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">Abierto / En Taller</span>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 border border-[#fbc101] animate-pulse">Abierto / En Taller</span>
                             @endif
 
                             @if($t->areas && $t->areas->isNotEmpty())
@@ -183,7 +183,7 @@
                             </div>
                         @endif
 
-                        <a href="{{ route('tickets.show', $t->id) }}" class="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-amber-500 hover:text-black text-white font-bold text-xs py-2 px-4 rounded-xl transition-all shadow-sm">
+                        <a href="{{ route('tickets.show', $t->id) }}" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold text-xs py-2 px-4 rounded-xl transition-all shadow-xs">
                             <span>Gestionar / Resolver</span>
                             <span>→</span>
                         </a>

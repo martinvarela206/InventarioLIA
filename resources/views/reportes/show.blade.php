@@ -6,11 +6,11 @@
     <!-- BARRA SUPERIOR DE ACCIONES (Oculta al imprimir) -->
     <div class="print:hidden flex flex-wrap items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
         <div class="flex items-center gap-2">
-            <a href="{{ route('reportes.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-3.5 py-2 rounded-xl text-xs shadow-sm transition-all">
+            <a href="{{ route('reportes.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50/50 border border-gray-300 text-gray-700 font-bold px-3.5 py-2 rounded-xl text-xs shadow-2xs transition-all">
                 <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Volver a Reportes</span>
             </a>
-            <span class="text-xs bg-amber-100 text-amber-900 font-extrabold px-2.5 py-1 rounded-xl border border-amber-300">
+            <span class="text-xs bg-amber-50 text-amber-900 font-extrabold px-2.5 py-1 rounded-xl border border-[#fbc101]">
                 {{ count($filas) }} registros
             </span>
             <span id="badge-columnas-ocultas" class="hidden text-xs bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded-full border border-rose-300">
@@ -25,7 +25,7 @@
             </button>
 
             <!-- Botón Imprimir / PDF -->
-            <button type="button" onclick="window.print()" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition-all">
+            <button type="button" onclick="window.print()" class="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50/50 border border-gray-300 text-gray-700 font-bold px-4 py-2 rounded-xl text-xs shadow-2xs transition-all">
                 <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 <span>Imprimir / PDF</span>
             </button>

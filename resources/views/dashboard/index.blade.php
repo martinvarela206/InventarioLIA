@@ -116,7 +116,7 @@
             <div class="flex items-center gap-2.5">
                 <span class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
                 <h2 class="font-bold text-gray-900 text-lg">Préstamos Externos Activos</h2>
-                <span class="text-xs bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-full">
+                <span class="text-xs bg-amber-50 text-amber-900 font-extrabold px-2.5 py-1 rounded-xl border border-[#fbc101]">
                     {{ $prestamosActivos->count() }} equipos fuera
                 </span>
             </div>
@@ -166,7 +166,7 @@
                                     {{ $p->fecha_prestamo ? $p->fecha_prestamo->format('d/m/Y') : '-' }}
                                 </td>
                                 <td class="py-3 px-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold {{ $alerta ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800' }}">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold border {{ $alerta ? 'bg-rose-50 text-rose-800 border-rose-300' : 'bg-amber-50 text-amber-900 border border-[#fbc101]' }}">
                                         {{ $dias }} días
                                     </span>
                                 </td>

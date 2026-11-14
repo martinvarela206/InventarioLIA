@@ -26,19 +26,20 @@
                         Declarado Irreparable (Baja Patrimonial)
                     </span>
                 @elseif($ticket->estado_ticket === 'solucionado')
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                    <span class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-[#fbc101]">
                         Solución Técnica Registrada (Pendiente de Cierre)
                     </span>
                 @else
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
+                    <span class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 border border-[#fbc101] animate-pulse">
                         Abierto / En Taller de Reparaciones
                     </span>
                 @endif
             </div>
         </div>
         <div>
-            <a href="{{ route('tickets.index') }}" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold px-4 py-2 rounded-xl text-sm transition-all shadow-sm">
-                ← Volver a Bandeja
+            <a href="{{ route('tickets.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50/50 border border-gray-300 text-gray-700 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-2xs">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver a Bandeja</span>
             </a>
         </div>
     </div>
@@ -248,9 +249,9 @@
                     <!-- Timeline tipo Foro -->
                     <div class="space-y-4">
                         @foreach($ticket->comentarios as $cmt)
-                            <div class="flex items-start gap-3 p-4 rounded-xl border transition-all {{ $cmt->tipo === 'solucion_propuesta' ? 'bg-blue-50/50 border-blue-200' : 'bg-gray-50/80 border-gray-200' }}">
+                            <div class="flex items-start gap-3 p-4 rounded-xl border transition-all {{ $cmt->tipo === 'solucion_propuesta' ? 'bg-amber-50/50 border-amber-300' : 'bg-gray-50/80 border-gray-200' }}">
                                 <!-- Avatar -->
-                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black shrink-0 shadow-2xs {{ $cmt->tipo === 'solucion_propuesta' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-white' }}">
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black shrink-0 shadow-2xs {{ $cmt->tipo === 'solucion_propuesta' ? 'bg-amber-400 text-black' : 'bg-gray-800 text-white' }}">
                                     {{ strtoupper(substr($cmt->usuario?->nombre ?: ($cmt->usuario?->email ?? 'U'), 0, 2)) }}
                                 </div>
 
@@ -271,7 +272,7 @@
                                             @endif
 
                                             @if($cmt->tipo === 'solucion_propuesta')
-                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-300">Diagnóstico / Solución</span>
+                                                <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-900 border border-[#fbc101]">Diagnóstico / Solución</span>
                                             @endif
                                         </div>
 
@@ -389,10 +390,10 @@
 
             <!-- Panel de Solución Técnica para SubTécnico (si el usuario es SubTec y no puede cerrar) -->
             @if($ticket->esTicketAbierto() && Auth::user()->canSolveTickets() && !Auth::user()->canCloseTickets())
-                <div class="bg-white rounded-2xl border border-blue-300 shadow-sm p-6 space-y-4">
+                <div class="bg-white rounded-2xl border border-amber-300 shadow-sm p-6 space-y-4">
                     <div class="border-b border-gray-100 pb-3">
                         <h2 class="text-base font-black text-gray-900 flex items-center gap-2">
-                            <span class="w-6 h-6 bg-blue-500 text-white rounded-lg flex items-center justify-center text-xs font-black">⚙</span>
+                            <span class="w-6 h-6 bg-amber-400 text-black rounded-lg flex items-center justify-center text-xs font-black">⚙</span>
                             Diagnóstico y Solución Técnica (SubTécnico)
                         </h2>
                         <p class="text-xs text-gray-500 mt-0.5">Como SubTécnico, registre las tareas técnicas efectuadas. El cierre formal y la asignación física de sala serán concluidos por un Técnico.</p>
@@ -406,7 +407,7 @@
                             </label>
                             <textarea name="solucion" rows="3" required
                                       placeholder="Detalle el trabajo realizado: mantenimiento, reemplazo de componente, comprobación de booteo, etc."
-                                      class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"></textarea>
+                                      class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-200 focus:border-amber-400 transition-all"></textarea>
                         </div>
 
                         <div>
@@ -414,7 +415,7 @@
                                 Fotos de evidencia del arreglo / mediciones (opcional):
                             </label>
                             <input type="file" name="fotos[]" multiple accept="image/*"
-                                   class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-blue-100 hover:file:text-blue-900 cursor-pointer">
+                                   class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-amber-100 hover:file:text-amber-900 cursor-pointer">
                         </div>
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex items-center gap-2">
@@ -428,8 +429,8 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <button type="submit" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-5 py-2.5 rounded-xl text-sm transition-all shadow-md">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            <button type="submit" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-5 py-2.5 rounded-xl text-xs transition-all shadow-xs">
+                                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                 <span>Registrar Solución Técnica</span>
                             </button>
                         </div>
@@ -506,9 +507,9 @@
                             </button>
 
                             <button type="button" onclick="confirmarResolucion()"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-6 py-2.5 rounded-xl text-sm transition-all shadow-md">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                Resolver Ticket y Asignar a Sala
+                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-6 py-2.5 rounded-xl text-xs transition-all shadow-xs">
+                                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                <span>Resolver Ticket y Asignar a Sala</span>
                             </button>
                         </div>
                     </form>
