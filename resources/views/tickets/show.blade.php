@@ -48,43 +48,79 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <!-- Columna Izquierda: Activo, Falla y Fotos (5 cols) -->
         <div class="lg:col-span-5 space-y-6">
-            <!-- Ficha del Activo -->
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
-                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Activo Involucrado</h2>
-                    <a href="{{ route('elementos.show', $ticket->elemento_id) }}" class="text-xs font-bold text-amber-600 hover:text-amber-800 flex items-center gap-1">
-                        Ver Ficha Completa →
-                    </a>
-                </div>
-
-                <div class="flex items-start gap-3">
-                    <div class="w-12 h-12 bg-amber-100 text-amber-800 rounded-xl flex items-center justify-center font-black text-sm shrink-0">
-                        {{ strtoupper(substr($ticket->elemento?->tipo?->nombre ?? 'LIA', 0, 3)) }}
+            <!-- Ficha del Activo o del Ámbito General -->
+            @if($ticket->esTicketGeneral())
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-xs p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Ámbito / Espacio Reportado</h2>
+                        <span class="inline-flex items-center gap-1 text-xs font-extrabold text-amber-900 bg-amber-50 border border-[#fbc101] px-2.5 py-1 rounded-xl">
+                            Infraestructura LIA
+                        </span>
                     </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-lg font-black text-gray-900">{{ $ticket->elemento?->nro_lia ?: 'Sin Nro LIA' }}</span>
-                            @if($ticket->elemento?->nro_unsj)
-                                <span class="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded">UNSJ: {{ $ticket->elemento->nro_unsj }}</span>
+
+                    <div class="flex items-start gap-3">
+                        <div class="w-12 h-12 bg-amber-100 text-amber-800 rounded-xl flex items-center justify-center font-black text-sm shrink-0">
+                            <svg class="w-6 h-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        </div>
+                        <div>
+                            <span class="text-lg font-black text-gray-900">{{ $ticket->ambitoTicket?->nombre ?? 'LIA General' }}</span>
+                            @if($ticket->ambitoTicket?->descripcion)
+                                <div class="text-xs font-semibold text-gray-500 mt-0.5">
+                                    {{ $ticket->ambitoTicket->descripcion }}
+                                </div>
                             @endif
                         </div>
-                        <div class="text-xs font-semibold text-gray-500 mt-0.5">
-                            {{ ucfirst($ticket->elemento?->tipo?->nombre ?? 'N/A') }} • <span class="text-gray-900">{{ $ticket->elemento?->marca }}</span> {{ $ticket->elemento?->modelo }}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100 text-xs">
+                        <div>
+                            <span class="text-gray-400 block font-medium">Ubicación / Sala</span>
+                            <span class="font-bold text-gray-800">{{ $ticket->ambitoTicket?->nombre ?? 'Laboratorios LIA' }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 block font-medium">Sector / Referencia</span>
+                            <span class="font-bold text-gray-800">{{ $ticket->puesto ?: 'No especificado' }}</span>
                         </div>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100 text-xs">
-                    <div>
-                        <span class="text-gray-400 block font-medium">Ubicación Actual</span>
-                        <span class="font-bold text-gray-800">{{ $ticket->ubicacion?->nombre ?? 'Depósito' }}</span>
+            @else
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Activo Involucrado</h2>
+                        <a href="{{ route('elementos.show', $ticket->elemento_id) }}" class="text-xs font-bold text-amber-600 hover:text-amber-800 flex items-center gap-1">
+                            Ver Ficha Completa →
+                        </a>
                     </div>
-                    <div>
-                        <span class="text-gray-400 block font-medium">Puesto</span>
-                        <span class="font-bold text-gray-800">{{ $ticket->puesto ?: ($ticket->elemento?->puesto ?: 'S/P') }}</span>
+
+                    <div class="flex items-start gap-3">
+                        <div class="w-12 h-12 bg-amber-100 text-amber-800 rounded-xl flex items-center justify-center font-black text-sm shrink-0">
+                            {{ strtoupper(substr($ticket->elemento?->tipo?->nombre ?? 'LIA', 0, 3)) }}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg font-black text-gray-900">{{ $ticket->elemento?->nro_lia ?: 'Sin Nro LIA' }}</span>
+                                @if($ticket->elemento?->nro_unsj)
+                                    <span class="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded">UNSJ: {{ $ticket->elemento->nro_unsj }}</span>
+                                @endif
+                            </div>
+                            <div class="text-xs font-semibold text-gray-500 mt-0.5">
+                                {{ ucfirst($ticket->elemento?->tipo?->nombre ?? 'N/A') }} • <span class="text-gray-900">{{ $ticket->elemento?->marca }}</span> {{ $ticket->elemento?->modelo }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100 text-xs">
+                        <div>
+                            <span class="text-gray-400 block font-medium">Ubicación Actual</span>
+                            <span class="font-bold text-gray-800">{{ $ticket->ubicacion?->nombre ?? 'Depósito' }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400 block font-medium">Puesto</span>
+                            <span class="font-bold text-gray-800">{{ $ticket->puesto ?: ($ticket->elemento?->puesto ?: 'S/P') }}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
+            @endif
 
             <!-- Falla Reportada -->
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
@@ -466,52 +502,62 @@
                             <span class="text-[11px] text-gray-400 mt-1 block">Este registro quedará asentado de forma inmutable en el historial cronológico del inventario.</span>
                         </div>
 
-                        <!-- Confirmación de Ubicación Física -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                                    Sala de Destino (Reincorporación)
-                                </label>
-                                <select name="ubicacion_id" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                        @if($ticket->esTicketGeneral())
+                            <div class="pt-4 border-t border-gray-100 flex items-center justify-end">
+                                <button type="button" onclick="confirmarResolucionGeneral()"
+                                        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-6 py-2.5 rounded-xl text-xs transition-all shadow-xs">
+                                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    <span>Resolver y Cerrar Incidencia</span>
+                                </button>
+                            </div>
+                        @else
+                            <!-- Confirmación de Ubicación Física -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                                        Sala de Destino (Reincorporación)
+                                    </label>
+                                    <select name="ubicacion_id" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                                        @php
+                                            $ubicacionSugerida = $movPrevio?->ubicacion_id ?: $ticket->ubicacion_id;
+                                        @endphp
+                                        @foreach($ubicaciones as $ub)
+                                            <option value="{{ $ub->id }}" {{ old('ubicacion_id', $ubicacionSugerida) == $ub->id ? 'selected' : '' }}>
+                                                 {{ $ub->nombre }} {{ $movPrevio && $movPrevio->ubicacion_id == $ub->id ? '(Sala Previa)' : '' }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <span class="text-[11px] text-gray-400 mt-1 block">Heredada por defecto del movimiento previo al ingreso.</span>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                                        Puesto de Destino
+                                    </label>
                                     @php
-                                        $ubicacionSugerida = $movPrevio?->ubicacion_id ?: $ticket->ubicacion_id;
+                                        $puestoSugerido = $movPrevio?->puesto ?: ($ticket->puesto ?: $ticket->elemento?->puesto);
                                     @endphp
-                                    @foreach($ubicaciones as $ub)
-                                        <option value="{{ $ub->id }}" {{ old('ubicacion_id', $ubicacionSugerida) == $ub->id ? 'selected' : '' }}>
-                                             {{ $ub->nombre }} {{ $movPrevio && $movPrevio->ubicacion_id == $ub->id ? '(Sala Previa)' : '' }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <span class="text-[11px] text-gray-400 mt-1 block">Heredada por defecto del movimiento previo al ingreso.</span>
+                                    <input type="text" name="puesto" value="{{ old('puesto', $puestoSugerido) }}" placeholder="Ej. Puesto 08, Rack 01..."
+                                           class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                                    <span class="text-[11px] text-gray-400 mt-1 block">Puesto o mesa donde el activo quedará prestando servicio.</span>
+                                </div>
                             </div>
 
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                                    Puesto de Destino
-                                </label>
-                                @php
-                                    $puestoSugerido = $movPrevio?->puesto ?: ($ticket->puesto ?: $ticket->elemento?->puesto);
-                                @endphp
-                                <input type="text" name="puesto" value="{{ old('puesto', $puestoSugerido) }}" placeholder="Ej. Puesto 08, Rack 01..."
-                                       class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
-                                <span class="text-[11px] text-gray-400 mt-1 block">Puesto o mesa donde el activo quedará prestando servicio.</span>
+                            <!-- Botones de Acción Doble -->
+                            <div class="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                <button type="button" onclick="confirmarBaja()" 
+                                        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 hover:border-rose-500 font-bold px-4 py-2.5 rounded-xl text-sm transition-all shadow-2xs">
+                                    <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    Declarar Irreparable (Baja / Basura Tec.)
+                                </button>
+
+                                <button type="button" onclick="confirmarResolucion()"
+                                        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-6 py-2.5 rounded-xl text-xs transition-all shadow-xs">
+                                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    <span>Resolver Ticket y Asignar a Sala</span>
+                                </button>
                             </div>
-                        </div>
-
-                        <!-- Botones de Acción Doble -->
-                        <div class="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <button type="button" onclick="confirmarBaja()" 
-                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 hover:border-rose-500 font-bold px-4 py-2.5 rounded-xl text-sm transition-all shadow-2xs">
-                                <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                Declarar Irreparable (Baja / Basura Tec.)
-                            </button>
-
-                            <button type="button" onclick="confirmarResolucion()"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-6 py-2.5 rounded-xl text-xs transition-all shadow-xs">
-                                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                <span>Resolver Ticket y Asignar a Sala</span>
-                            </button>
-                        </div>
+                        @endif
                     </form>
                 </div>
             @endif
@@ -533,6 +579,22 @@
 </div>
 
 <script>
+    function confirmarResolucionGeneral() {
+        const form = document.getElementById('form_resolver_ticket');
+        const solucion = form.querySelector('textarea[name="solucion"]').value.trim();
+
+        if (solucion.length < 5) {
+            alert('Por favor detalle la solución técnica y verificación realizada antes de resolver la incidencia.');
+            form.querySelector('textarea[name="solucion"]').focus();
+            return;
+        }
+
+        document.getElementById('accion_input').value = 'resolver';
+        if (confirm('¿Confirmar la resolución y cierre de la incidencia de infraestructura?')) {
+            form.submit();
+        }
+    }
+
     function confirmarResolucion() {
         const form = document.getElementById('form_resolver_ticket');
         const solucion = form.querySelector('textarea[name="solucion"]').value.trim();

@@ -112,7 +112,7 @@ class TicketController extends Controller
     {
         $estado = $request->input('estado', 'abierto');
 
-        $query = Movimiento::tickets()->with(['elemento.tipo', 'ubicacion', 'usuario', 'adjuntos', 'areas']);
+        $query = Movimiento::tickets()->with(['elemento.tipo', 'ambitoTicket', 'ubicacion', 'usuario', 'adjuntos', 'areas']);
 
         if ($estado === 'resuelto') {
             $query->where('estado_ticket', 'resuelto');
@@ -135,6 +135,10 @@ class TicketController extends Controller
             $query->where(function ($q) use ($term) {
                 $q->where('comentario', 'like', "%{$term}%")
                     ->orWhere('solicitante', 'like', "%{$term}%")
+                    ->orWhereHas('ambitoTicket', function ($aq) use ($term) {
+                        $aq->where('nombre', 'like', "%{$term}%")
+                            ->orWhere('descripcion', 'like', "%{$term}%");
+                    })
                     ->orWhereHas('elemento', function ($eq) use ($term) {
                         $eq->where('nro_lia', 'like', "%{$term}%")
                             ->orWhere('nro_unsj', 'like', "%{$term}%")
@@ -163,6 +167,7 @@ class TicketController extends Controller
         $ticket = Movimiento::with([
             'elemento.tipo',
             'elemento.ultimoMovimiento.ubicacion',
+            'ambitoTicket',
             'ubicacion',
             'usuario',
             'adjuntos',
@@ -178,18 +183,18 @@ class TicketController extends Controller
             abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
         }
 
-        // Movimiento previo al ingreso del ticket para heredar ubicación original
-        $movPrevio = Movimiento::where('elemento_id', $ticket->elemento_id)
+        // Movimiento previo al ingreso del ticket para heredar ubicación original (solo si aplica a activo)
+        $movPrevio = $ticket->elemento_id ? Movimiento::where('elemento_id', $ticket->elemento_id)
             ->where('id', '<', $ticket->id)
             ->where('tipo_movimiento', '!=', 'reparacion')
             ->orderBy('id', 'desc')
-            ->first();
+            ->first() : null;
 
-        // Último préstamo registrado para contexto de auditoría operativa
-        $ultimoPrestamo = Movimiento::where('elemento_id', $ticket->elemento_id)
+        // Último préstamo registrado para contexto de auditoría operativa (solo si aplica a activo)
+        $ultimoPrestamo = $ticket->elemento_id ? Movimiento::where('elemento_id', $ticket->elemento_id)
             ->whereNotNull('fecha_prestamo')
             ->orderBy('id', 'desc')
-            ->first();
+            ->first() : null;
 
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $areas = Area::where('activo', true)->orderBy('nombre')->get();
@@ -403,9 +408,14 @@ class TicketController extends Controller
             return redirect()->back()->withErrors($e->errors())->withInput();
         }
 
-        $msg = ($validated['accion'] === 'baja')
-            ? "El activo {$movimientoResolucion->elemento->nro_lia} ha sido declarado irreparable y registrado como Basura Tecnológica / De Baja."
-            : "Ticket #{$id} resuelto con éxito y activo reintegrado a la sala correspondiente.";
+        if ($ticket->esTicketGeneral()) {
+            $msg = "Incidencia general #{$id} resuelta y cerrada con éxito.";
+        } elseif ($validated['accion'] === 'baja') {
+            $nroLia = $movimientoResolucion->elemento?->nro_lia ?? 'reportado';
+            $msg = "El activo {$nroLia} ha sido declarado irreparable y registrado como Basura Tecnológica / De Baja.";
+        } else {
+            $msg = "Ticket #{$id} resuelto con éxito y activo reintegrado a la sala correspondiente.";
+        }
 
         return redirect()->route('tickets.index')->with('success', $msg);
     }
