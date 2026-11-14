@@ -71,9 +71,9 @@
         </div>
 
         <div class="space-y-3 text-xs text-gray-700 leading-relaxed max-h-[60vh] overflow-y-auto pr-1">
-            <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-1">
-                <div class="font-bold text-blue-900 text-sm">1. Ley 25.326 de Protección de Datos Personales (Art. 16)</div>
-                <p class="text-blue-800">
+            <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+                <div class="font-bold text-amber-950 text-sm">1. Ley 25.326 de Protección de Datos Personales (Art. 16)</div>
+                <p class="text-amber-900">
                     Establece el derecho a la supresión y disociación de los datos personales cuando ha cesado la finalidad legítima para su conservación, impidiendo la permanencia indefinida de registros sensibles de personas ya desvinculadas.
                 </p>
             </div>
