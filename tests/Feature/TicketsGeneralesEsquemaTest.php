@@ -164,4 +164,100 @@ class TicketsGeneralesEsquemaTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('LIA-99999');
     }
+
+    public function test_bandeja_tickets_muestra_badge_infraestructura_y_nombre_de_ambito(): void
+    {
+        $ticket = Movimiento::create([
+            'elemento_id' => null,
+            'ambito_ticket_id' => $this->ambito->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'user_id' => $this->tecnico->id,
+            'fecha' => now(),
+            'solicitante' => 'Docente A',
+            'comentario' => 'Problema en iluminación general',
+        ]);
+
+        $response = $this->actingAs($this->tecnico)->get(route('tickets.index'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Infraestructura / Espacio');
+        $response->assertSee('Laboratorio A');
+        $response->assertSee('Problema en iluminación general');
+    }
+
+    public function test_detalle_ticket_show_muestra_ficha_de_infraestructura_sin_errores(): void
+    {
+        $ticket = Movimiento::create([
+            'elemento_id' => null,
+            'ambito_ticket_id' => $this->ambito->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'puesto' => 'Puesto 03',
+            'user_id' => $this->tecnico->id,
+            'fecha' => now(),
+            'solicitante' => 'Docente B',
+            'comentario' => 'Falta conector RJ45 en mesa',
+        ]);
+
+        $response = $this->actingAs($this->tecnico)->get(route('tickets.show', $ticket->id));
+
+        $response->assertStatus(200);
+        $response->assertSee('Ámbito / Espacio Reportado');
+        $response->assertSee('Infraestructura LIA');
+        $response->assertSee('Laboratorio A');
+        $response->assertSee('Puesto 03');
+    }
+
+    public function test_tecnico_puede_resolver_ticket_general(): void
+    {
+        $ticket = Movimiento::create([
+            'elemento_id' => null,
+            'ambito_ticket_id' => $this->ambito->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'user_id' => $this->tecnico->id,
+            'fecha' => now(),
+            'solicitante' => 'Docente C',
+            'comentario' => 'Llave térmica salta con frecuencia',
+        ]);
+
+        $response = $this->actingAs($this->tecnico)->post(route('tickets.resolver', $ticket->id), [
+            'accion' => 'resolver',
+            'solucion' => 'Se reemplazó la llave termomagnética por una de 25A y se equilibraron fases.',
+        ]);
+
+        $response->assertRedirect(route('tickets.index'));
+        $response->assertSessionHas('success');
+
+        $this->assertEquals('resuelto', $ticket->fresh()->estado_ticket);
+
+        $resolucion = Movimiento::where('ticket_id', $ticket->id)->first();
+        $this->assertNotNull($resolucion);
+        $this->assertNull($resolucion->elemento_id);
+        $this->assertEquals('resuelto', $resolucion->estado_ticket);
+        $this->assertStringContainsString('RESOLUCIÓN INCIDENCIA GENERAL', $resolucion->comentario);
+    }
+
+    public function test_revisor_no_puede_resolver_ticket_general(): void
+    {
+        $ticket = Movimiento::create([
+            'elemento_id' => null,
+            'ambito_ticket_id' => $this->ambito->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'user_id' => $this->tecnico->id,
+            'fecha' => now(),
+            'solicitante' => 'Docente D',
+            'comentario' => 'Cerradura trabada',
+        ]);
+
+        $response = $this->actingAs($this->revisor)->post(route('tickets.resolver', $ticket->id), [
+            'accion' => 'resolver',
+            'solucion' => 'Intento ilegal de cierre por un revisor.',
+        ]);
+
+        $response->assertStatus(403);
+        $this->assertEquals('abierto', $ticket->fresh()->estado_ticket);
+    }
 }

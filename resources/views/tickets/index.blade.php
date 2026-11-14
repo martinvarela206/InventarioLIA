@@ -138,17 +138,32 @@
                             </span>
                         </div>
 
-                        <!-- Info del Activo -->
-                        <div class="flex flex-wrap items-center gap-2">
-                            <a href="{{ route('elementos.show', $t->elemento_id) }}" class="text-base font-black text-gray-900 hover:text-amber-600 transition-colors">
-                                {{ $t->elemento?->nro_lia ?: 'Sin Nro LIA' }}
-                            </a>
-                            @if($t->elemento?->nro_unsj)
-                                <span class="text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded">UNSJ: {{ $t->elemento->nro_unsj }}</span>
-                            @endif
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{{ ucfirst($t->elemento?->tipo?->nombre ?? 'N/A') }}</span>
-                            <span class="text-xs text-gray-500">• {{ $t->elemento?->marca }} {{ $t->elemento?->modelo }}</span>
-                        </div>
+                        <!-- Info del Activo o Ámbito General -->
+                        @if($t->esTicketGeneral())
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-black bg-amber-50 text-amber-900 border border-[#fbc101]">
+                                    <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                    Infraestructura / Espacio
+                                </span>
+                                <span class="text-base font-black text-gray-900">
+                                    {{ $t->ambitoTicket?->nombre ?? 'LIA General' }}
+                                </span>
+                                @if($t->puesto)
+                                    <span class="text-xs font-bold text-gray-600 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-lg">Sector / Ref: {{ $t->puesto }}</span>
+                                @endif
+                            </div>
+                        @else
+                            <div class="flex flex-wrap items-center gap-2">
+                                <a href="{{ route('elementos.show', $t->elemento_id) }}" class="text-base font-black text-gray-900 hover:text-amber-600 transition-colors">
+                                    {{ $t->elemento?->nro_lia ?: 'Sin Nro LIA' }}
+                                </a>
+                                @if($t->elemento?->nro_unsj)
+                                    <span class="text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded">UNSJ: {{ $t->elemento->nro_unsj }}</span>
+                                @endif
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{{ ucfirst($t->elemento?->tipo?->nombre ?? 'N/A') }}</span>
+                                <span class="text-xs text-gray-500">• {{ $t->elemento?->marca }} {{ $t->elemento?->modelo }}</span>
+                            </div>
+                        @endif
 
                         <!-- Descripción de la Falla -->
                         <p class="text-xs text-gray-700 bg-gray-50/70 p-3 rounded-xl border border-gray-100 leading-relaxed">
@@ -160,7 +175,7 @@
                         <div class="flex flex-wrap items-center gap-4 text-xs text-gray-500 pt-0.5">
                             <span>Informante: <strong class="text-gray-800">{{ $t->solicitante ?: ($t->usuario?->nombre ?? 'Sistema') }}</strong></span>
                             <span>•</span>
-                            <span>Ubicación: <strong class="text-gray-800">{{ $t->ubicacion?->nombre ?? 'Depósito' }} ({{ $t->puesto ?: 'S/P' }})</strong></span>
+                            <span>Ubicación: <strong class="text-gray-800">{{ $t->esTicketGeneral() ? ($t->ambitoTicket?->nombre ?? 'LIA General') : ($t->ubicacion?->nombre ?? 'Depósito') }} ({{ $t->puesto ?: 'S/P' }})</strong></span>
                             @if($t->adjuntos->isNotEmpty())
                                 <span>•</span>
                                 <span class="inline-flex items-center gap-1 font-bold text-amber-700">

@@ -27,16 +27,8 @@ class ResolverTicketAction
         }
 
         return DB::transaction(function () use ($ticketId, $datos, $user) {
-            // 0. Obtener metadatos del ticket para adquisición canónica de locks
-            $ticketMeta = Movimiento::where('id', $ticketId)->firstOrFail(['id', 'elemento_id']);
-
-            // 1. Bloquear primero el Elemento (orden canónico de adquisición para prevenir deadlocks)
-            /** @var Elemento $el */
-            $el = Elemento::where('id', $ticketMeta->elemento_id)->lockForUpdate()->firstOrFail();
-
-            // 2. Bloquear luego el Ticket (Movimiento)
             /** @var Movimiento $tkt */
-            $tkt = Movimiento::where('id', $ticketMeta->id)->lockForUpdate()->firstOrFail();
+            $tkt = Movimiento::where('id', $ticketId)->lockForUpdate()->firstOrFail();
 
             if ($tkt->tipo_movimiento !== 'reparacion') {
                 throw ValidationException::withMessages([
@@ -56,6 +48,42 @@ class ResolverTicketAction
                 ]);
             }
 
+            $solucion = trim((string) ($datos['solucion'] ?? ''));
+            if (strlen($solucion) < 5) {
+                throw ValidationException::withMessages([
+                    'solucion' => 'El detalle técnico de la solución debe contener al menos 5 caracteres.',
+                ]);
+            }
+
+            // Rama A: Incidencia General de Infraestructura / Espacios (sin activo patrimonial)
+            if ($tkt->esTicketGeneral()) {
+                $comentario = "RESOLUCIÓN INCIDENCIA GENERAL (Ticket #{$tkt->id}): {$solucion}";
+
+                $movimientoResolucion = Movimiento::create([
+                    'elemento_id' => null,
+                    'ambito_ticket_id' => $tkt->ambito_ticket_id,
+                    'tipo_movimiento' => 'interno',
+                    'estado_ticket' => 'resuelto',
+                    'ubicacion_id' => $tkt->ubicacion_id,
+                    'puesto' => $tkt->puesto,
+                    'user_id' => $user->id,
+                    'fecha' => now(),
+                    'ticket_id' => $tkt->id,
+                    'correccion_de_id' => null,
+                    'comentario' => $comentario,
+                ]);
+
+                $tkt->update([
+                    'estado_ticket' => 'resuelto',
+                ]);
+
+                return $movimientoResolucion;
+            }
+
+            // Rama B: Incidencia sobre Activo Patrimonial Específico
+            /** @var Elemento $el */
+            $el = Elemento::where('id', $tkt->elemento_id)->lockForUpdate()->firstOrFail();
+
             $accion = $datos['accion'] ?? 'resolver';
             if (! in_array($accion, ['resolver', 'baja'])) {
                 throw ValidationException::withMessages([
@@ -66,13 +94,6 @@ class ResolverTicketAction
             if ($el->estado === EstadoElemento::BAJA && $accion === 'resolver') {
                 throw ValidationException::withMessages([
                     'accion' => 'No es posible reactivar o resolver como operativo un activo clasificado como baja patrimonial.',
-                ]);
-            }
-
-            $solucion = trim((string) ($datos['solucion'] ?? ''));
-            if (strlen($solucion) < 5) {
-                throw ValidationException::withMessages([
-                    'solucion' => 'El detalle técnico de la solución debe contener al menos 5 caracteres.',
                 ]);
             }
 
