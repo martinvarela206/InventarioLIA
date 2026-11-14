@@ -132,8 +132,9 @@
         </div>
 
         <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
-            <a href="{{ route('elementos.show', $elemento->id) }}" class="px-5 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 font-bold text-gray-800 rounded-xl shadow-sm text-sm transition-all inline-flex items-center gap-1.5">
-                Cancelar
+            <a href="{{ route('elementos.show', $elemento->id) }}" class="px-5 py-2.5 bg-white hover:bg-amber-50/50 border border-gray-300 font-bold text-gray-700 rounded-xl shadow-2xs text-xs transition-all inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                <span>Cancelar</span>
             </a>
             <button type="submit" class="px-6 py-2.5 bg-[#fbc101] hover:bg-amber-400 font-extrabold text-black rounded-xl shadow-sm transition-all text-sm inline-flex items-center gap-2">
                 <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>

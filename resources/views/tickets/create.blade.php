@@ -62,54 +62,31 @@
         <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
             <div class="border-b border-gray-100 pb-3 flex items-center justify-between">
                 <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <span class="w-6 h-6 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center text-xs font-black">1</span>
+                    <span class="w-6 h-6 bg-amber-400 text-black rounded-lg flex items-center justify-center text-xs font-black">1</span>
                     Activo que Requiere Intervención
                     <span class="text-rose-500 font-bold">*</span>
                 </h2>
                 <span class="text-xs text-gray-400">Identifique el equipo por Nro LIA o UNSJ</span>
             </div>
 
-            <!-- Input oculto para el ID final seleccionado -->
-            <input type="hidden" name="elemento_id" id="elemento_id_input" value="{{ old('elemento_id', $elemento?->id) }}">
-
-            @if($elemento)
-                <!-- Tarjeta del equipo preseleccionado -->
-                <div id="elemento_seleccionado_card" class="bg-amber-50/70 border border-amber-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-white rounded-lg border border-amber-200 flex items-center justify-center font-black text-amber-700 text-sm shadow-2xs">
-                            {{ $elemento->tipo?->nombre ? strtoupper(substr($elemento->tipo->nombre, 0, 3)) : 'LIA' }}
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <span class="font-black text-gray-900 text-base">{{ $elemento->nro_lia ?: 'Sin Nro LIA' }}</span>
-                                @if($elemento->nro_unsj)
-                                    <span class="text-xs font-bold text-gray-600 bg-white px-2 py-0.5 rounded border border-gray-200">UNSJ: {{ $elemento->nro_unsj }}</span>
-                                @endif
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900">{{ ucfirst($elemento->tipo?->nombre ?? 'N/A') }}</span>
-                            </div>
-                            <div class="text-xs text-gray-600 mt-0.5">
-                                <span class="font-bold">{{ $elemento->marca }}</span> {{ $elemento->modelo }} 
-                                • Ubicación actual: <span class="font-semibold text-gray-800">{{ $elemento->ultimoMovimiento?->ubicacion?->nombre ?? 'Sin asignar' }} ({{ $elemento->ultimoMovimiento?->puesto ?: ($elemento->puesto ?: 'S/P') }})</span>
-                            </div>
-                        </div>
-                    </div>
-                    <button type="button" onclick="cambiarElemento()" class="text-xs font-bold text-amber-800 hover:text-amber-950 underline self-start sm:self-auto">
-                        Cambiar equipo
-                    </button>
-                </div>
-            @endif
+            <!-- Tarjeta del equipo preseleccionado o seleccionado -->
+            <x-asset-selected-card 
+                id="ticket-asset-card"
+                :elemento="$elemento"
+                onReset="cambiarActivoTicket"
+            />
 
             <!-- Buscador en tiempo real de activo (si no está seleccionado o si se desea cambiar) -->
-            <div id="buscador_elemento_container" class="{{ $elemento ? 'hidden' : '' }} space-y-2">
-                <div class="relative">
-                    <input type="text" id="buscador_activo_input" 
-                           placeholder="Escriba Nro LIA (ej. LIA-042) o Nro UNSJ..." 
-                           autocomplete="off"
-                           class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all">
-                    <div id="sugerencias_activo" class="hidden absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto divide-y divide-gray-100">
-                    </div>
-                </div>
-                <p class="text-xs text-gray-400">Escriba al menos 2 caracteres para desplegar sugerencias interactivas.</p>
+            <div id="ticket-buscador-container" class="{{ $elemento ? 'hidden' : '' }} space-y-2">
+                <x-asset-search 
+                    id="ticket-asset-search"
+                    mode="select"
+                    placeholder="Escriba Nro LIA (ej. LIA-042), Nro UNSJ o modelo..."
+                    hiddenName="elemento_id"
+                    hiddenValue="{{ old('elemento_id', $elemento?->id) }}"
+                    onSelect="seleccionarActivoTicket"
+                />
+                <p class="text-xs text-gray-400">Escriba al menos 2 caracteres para desplegar sugerencias con ubicación en vivo.</p>
             </div>
         </div>
 
@@ -117,7 +94,7 @@
         <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
             <div class="border-b border-gray-100 pb-3 flex items-center justify-between">
                 <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <span class="w-6 h-6 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center text-xs font-black">2</span>
+                    <span class="w-6 h-6 bg-amber-400 text-black rounded-lg flex items-center justify-center text-xs font-black">2</span>
                     Descripción de la Falla y Síntomas
                     <span class="text-rose-500 font-bold">*</span>
                 </h2>
@@ -153,7 +130,7 @@
         <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
             <div class="border-b border-gray-100 pb-3 flex items-center justify-between">
                 <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <span class="w-6 h-6 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center text-xs font-black">3</span>
+                    <span class="w-6 h-6 bg-amber-400 text-black rounded-lg flex items-center justify-center text-xs font-black">3</span>
                     Informante y Logística de Ubicación
                 </h2>
                 <span class="text-xs text-gray-400">Trazabilidad de origen y destino del activo</span>
@@ -263,7 +240,7 @@
         <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
             <div class="border-b border-gray-100 pb-3 flex items-center justify-between">
                 <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <span class="w-6 h-6 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center text-xs font-black">4</span>
+                    <span class="w-6 h-6 bg-amber-400 text-black rounded-lg flex items-center justify-center text-xs font-black">4</span>
                     Evidencia Fotográfica
                 </h2>
                 <span class="text-xs text-gray-400">Cámara en vivo o selección desde galería</span>
@@ -308,145 +285,76 @@
 </div>
 
 <script>
-    // Buscador interactivo de activos
-    const inputActivo = document.getElementById('buscador_activo_input');
-    const sugerenciasBox = document.getElementById('sugerencias_activo');
-    const idInput = document.getElementById('elemento_id_input');
-    let timerBuscar = null;
+    // Manejador del componente unificado de búsqueda
+    window.seleccionarActivoTicket = function(item) {
+        const idInput = document.getElementById('ticket-asset-search-hidden');
+        if (idInput) idInput.value = item.id;
 
-    if (inputActivo) {
-        inputActivo.addEventListener('input', function() {
-            const query = this.value.trim();
-            clearTimeout(timerBuscar);
+        const card = document.getElementById('ticket-asset-card');
+        const buscadorContainer = document.getElementById('ticket-buscador-container');
 
-            if (query.length < 2) {
-                sugerenciasBox.classList.add('hidden');
-                sugerenciasBox.innerHTML = '';
-                return;
-            }
+        const lia = item.nro_lia && item.nro_lia !== 'S/N' ? item.nro_lia : 'Sin Nro LIA';
+        const unsj = item.nro_unsj && item.nro_unsj !== 'S/N' ? item.nro_unsj : '';
+        const tipo = item.tipo || 'Activo';
+        const marcaModelo = `${item.marca || ''} ${item.modelo || ''}`.trim() || 'Activo sin marca';
+        const sala = item.ubicacion_actual || 'Sin sala registrada';
+        const puesto = item.puesto ? ` (${item.puesto})` : '';
+        const ubicacionCompleta = `${sala}${puesto}`;
 
-            timerBuscar = setTimeout(() => {
-                fetch(`{{ route('movimientos.buscar-rapido') }}?q=${encodeURIComponent(query)}`)
-                    .then(res => res.json())
-                    .then(items => {
-                        if (!items || items.length === 0) {
-                            sugerenciasBox.innerHTML = '<div class="p-3 text-xs text-gray-400 italic">No se encontraron activos coincidentes.</div>';
-                            sugerenciasBox.classList.remove('hidden');
-                            return;
-                        }
-
-                        let html = '';
-                        items.forEach(el => {
-                            html += `
-                                <div onclick="seleccionarActivo(${el.id}, '${el.nro_lia || ''}', '${el.nro_unsj || ''}', '${el.tipo || ''}', '${el.marca || ''}', '${el.modelo || ''}', '${el.ubicacion || 'Sin sala'}') "
-                                     class="p-3 hover:bg-amber-50 cursor-pointer flex items-center justify-between transition-colors">
-                                    <div>
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="font-bold text-gray-900 text-sm">${el.nro_lia || 'Sin LIA'}</span>
-                                            ${el.nro_unsj ? `<span class="text-[11px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">UNSJ: ${el.nro_unsj}</span>` : ''}
-                                            <span class="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-semibold">${el.tipo}</span>
-                                        </div>
-                                        <div class="text-xs text-gray-500 mt-0.5">${el.marca || ''} ${el.modelo || ''} • Sala: ${el.ubicacion || 'Sin sala'}</div>
-                                    </div>
-                                    <span class="text-xs font-bold text-amber-600">Seleccionar →</span>
-                                </div>
-                            `;
-                        });
-                        sugerenciasBox.innerHTML = html;
-                        sugerenciasBox.classList.remove('hidden');
-                    })
-                    .catch(() => {
-                        sugerenciasBox.classList.add('hidden');
-                    });
-            }, 250);
-        });
-    }
-
-    function toggleTrasladoFisico(trasladar) {
-        const container = document.getElementById('selector_destino_container');
-        const select = document.getElementById('ubicacion_destino_select');
-        if (!container || !select) return;
-
-        if (trasladar) {
-            container.classList.remove('hidden');
-            if (!select.value) {
-                // Seleccionar Oficina de Hardware por defecto si está disponible
-                for (let i = 0; i < select.options.length; i++) {
-                    if (select.options[i].text.toLowerCase().includes('hardware')) {
-                        select.selectedIndex = i;
-                        break;
-                    }
-                }
-            }
+        document.getElementById('ticket-asset-card-avatar').innerText = tipo.substring(0, 3).toUpperCase();
+        document.getElementById('ticket-asset-card-lia').innerText = lia;
+        
+        const unsjEl = document.getElementById('ticket-asset-card-unsj');
+        if (unsj) {
+            unsjEl.innerText = `UNSJ: ${unsj}`;
+            unsjEl.classList.remove('hidden');
         } else {
-            container.classList.add('hidden');
-            select.value = '';
-        }
-    }
-
-    function seleccionarActivo(id, lia, unsj, tipo, marca, modelo, ubicacion) {
-        idInput.value = id;
-        sugerenciasBox.classList.add('hidden');
-
-        const card = document.getElementById('elemento_seleccionado_card');
-        const container = document.getElementById('buscador_elemento_container');
-
-        if (card) {
-            card.remove();
+            unsjEl.classList.add('hidden');
         }
 
-        const newCard = document.createElement('div');
-        newCard.id = 'elemento_seleccionado_card';
-        newCard.className = 'bg-amber-50/70 border border-amber-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3';
-        newCard.innerHTML = `
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-white rounded-lg border border-amber-200 flex items-center justify-center font-black text-amber-700 text-sm shadow-2xs">
-                    ${tipo.substring(0, 3).toUpperCase()}
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="font-black text-gray-900 text-base">${lia || 'Sin Nro LIA'}</span>
-                        ${unsj ? `<span class="text-xs font-bold text-gray-600 bg-white px-2 py-0.5 rounded border border-gray-200">UNSJ: ${unsj}</span>` : ''}
-                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900">${tipo}</span>
-                    </div>
-                    <div class="text-xs text-gray-600 mt-0.5">
-                        <span class="font-bold">${marca}</span> ${modelo} • Ubicación: <span class="font-semibold text-gray-800">${ubicacion}</span>
-                    </div>
-                </div>
-            </div>
-            <button type="button" onclick="cambiarElemento()" class="text-xs font-bold text-amber-800 hover:text-amber-950 underline self-start sm:self-auto">
-                Cambiar equipo
-            </button>
-        `;
+        document.getElementById('ticket-asset-card-tipo').innerText = tipo.toUpperCase();
+        document.getElementById('ticket-asset-card-modelo').innerText = marcaModelo;
+        document.getElementById('ticket-asset-card-ubicacion').innerText = ubicacionCompleta;
 
-        container.parentNode.insertBefore(newCard, container);
-        container.classList.add('hidden');
+        const badgeContainer = document.getElementById('ticket-asset-card-badge-container');
+        const badgeClase = item.es_prestamo_activo ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+        const badgeTexto = item.es_prestamo_activo ? 'Prestado' : 'En Sala';
+        badgeContainer.innerHTML = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${badgeClase}">${badgeTexto}</span>`;
 
+        card.classList.remove('hidden');
+        buscadorContainer.classList.add('hidden');
+
+        // Actualizar Sección 3 (Logística de Origen)
         const ubicacionTexto = document.getElementById('ubicacion_actual_texto');
         if (ubicacionTexto) {
             ubicacionTexto.innerHTML = `
-                ${ubicacion || 'Sin ubicación registrada'}
+                ${ubicacionCompleta}
                 <span class="text-xs font-normal text-gray-600 block mt-0.5">Ubicación física detectada del activo</span>
             `;
         }
-    }
+    };
 
-    function cambiarElemento() {
-        idInput.value = '';
-        const card = document.getElementById('elemento_seleccionado_card');
+    window.cambiarActivoTicket = function() {
+        const idInput = document.getElementById('ticket-asset-search-hidden');
+        if (idInput) idInput.value = '';
+
+        const card = document.getElementById('ticket-asset-card');
+        const buscadorContainer = document.getElementById('ticket-buscador-container');
         if (card) card.classList.add('hidden');
-        const container = document.getElementById('buscador_elemento_container');
-        if (container) {
-            container.classList.remove('hidden');
-            inputActivo.value = '';
-            inputActivo.focus();
+        if (buscadorContainer) {
+            buscadorContainer.classList.remove('hidden');
+            const input = document.getElementById('ticket-asset-search-input');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
         }
 
         const ubicacionTexto = document.getElementById('ubicacion_actual_texto');
         if (ubicacionTexto) {
             ubicacionTexto.innerHTML = '<span class="italic text-gray-400 font-normal text-xs">Se detectará automáticamente al seleccionar el equipo arriba.</span>';
         }
-    }
+    };
 
     function previewFotos(event) {
         const container = document.getElementById('preview_fotos_container');
