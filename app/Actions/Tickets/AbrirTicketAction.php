@@ -18,7 +18,7 @@ class AbrirTicketAction
      *
      * @throws ValidationException
      */
-    public function execute(int|Elemento $elemento, array $datos, ?Usuario $usuario = null, array $fotos = []): Movimiento
+    public function execute(int|Elemento|null $elemento, array $datos, ?Usuario $usuario = null, array $fotos = []): Movimiento
     {
         $elementoId = $elemento instanceof Elemento ? $elemento->id : $elemento;
         $user = $usuario ?? auth()->user();
@@ -27,6 +27,62 @@ class AbrirTicketAction
         }
 
         return DB::transaction(function () use ($elementoId, $datos, $user, $fotos) {
+            $comentario = trim((string) ($datos['comentario'] ?? ''));
+            if (strlen($comentario) < 5) {
+                throw ValidationException::withMessages([
+                    'comentario' => 'La descripción del problema técnico debe contener al menos 5 caracteres.',
+                ]);
+            }
+
+            $solicitante = trim((string) ($datos['solicitante'] ?? ''));
+            if ($solicitante === '') {
+                $solicitante = $user->nombre ?: $user->email;
+            }
+
+            // Flujo A: Incidencia General / Infraestructura / Espacios (sin activo patrimonial)
+            if ($elementoId === null) {
+                if (empty($datos['ambito_ticket_id'])) {
+                    throw ValidationException::withMessages([
+                        'ambito_ticket_id' => 'Debe seleccionar un ámbito institucional o espacio físico para registrar un ticket general.',
+                    ]);
+                }
+
+                $movimiento = Movimiento::create([
+                    'elemento_id' => null,
+                    'ambito_ticket_id' => (int) $datos['ambito_ticket_id'],
+                    'tipo_movimiento' => 'reparacion',
+                    'estado_ticket' => 'abierto',
+                    'ubicacion_id' => ! empty($datos['ubicacion_id']) ? (int) $datos['ubicacion_id'] : null,
+                    'puesto' => $datos['puesto'] ?? null,
+                    'user_id' => $user->id,
+                    'fecha' => now(),
+                    'solicitante' => $solicitante,
+                    'comentario' => $comentario,
+                ]);
+
+                if (! empty($datos['area_id'])) {
+                    $movimiento->areas()->attach($datos['area_id'], [
+                        'user_id' => $user->id,
+                        'created_at' => now(),
+                    ]);
+                }
+
+                foreach ($fotos as $foto) {
+                    if ($foto && $foto->isValid()) {
+                        $path = ImageSanitizer::sanitizeAndStore($foto, 'tickets', 'local');
+                        MovimientoAdjunto::create([
+                            'movimiento_id' => $movimiento->id,
+                            'archivo_path' => $path,
+                            'nombre_original' => $foto->getClientOriginalName(),
+                            'mime_type' => $foto->getMimeType(),
+                        ]);
+                    }
+                }
+
+                return $movimiento;
+            }
+
+            // Flujo B: Incidencia sobre Activo Patrimonial Específico
             /** @var Elemento $el */
             $el = Elemento::where('id', $elementoId)->lockForUpdate()->firstOrFail();
 
@@ -63,18 +119,6 @@ class AbrirTicketAction
                         'fecha_devolucion' => now()->toDateString(),
                     ]);
                 }
-            }
-
-            $comentario = trim((string) ($datos['comentario'] ?? ''));
-            if (strlen($comentario) < 5) {
-                throw ValidationException::withMessages([
-                    'comentario' => 'La descripción del problema técnico debe contener al menos 5 caracteres.',
-                ]);
-            }
-
-            $solicitante = trim((string) ($datos['solicitante'] ?? ''));
-            if ($solicitante === '') {
-                $solicitante = $user->nombre ?: $user->email;
             }
 
             // Ubicación del ticket

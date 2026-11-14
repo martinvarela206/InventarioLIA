@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Tickets\AbrirTicketAction;
 use App\Actions\Tickets\ResolverTicketAction;
+use App\Http\Requests\StoreTicketRequest;
 use App\Models\Area;
 use App\Models\Elemento;
 use App\Models\Movimiento;
@@ -54,19 +55,9 @@ class TicketController extends Controller
     /**
      * Registra el movimiento inicial de reparación y sus adjuntos fotográficos.
      */
-    public function store(Request $request, AbrirTicketAction $abrirTicketAction): RedirectResponse
+    public function store(StoreTicketRequest $request, AbrirTicketAction $abrirTicketAction): RedirectResponse
     {
-        $validated = $request->validate([
-            'elemento_id' => 'required|exists:elementos,id',
-            'area_id' => 'nullable|exists:areas,id',
-            'comentario' => 'required|string|min:5',
-            'solicitante' => 'nullable|string|max:150',
-            'tipo_traslado' => 'nullable|in:insitu,taller',
-            'ubicacion_id' => 'nullable|exists:ubicaciones,id',
-            'puesto' => 'nullable|string|max:50',
-            'fotos' => 'nullable|array|max:5',
-            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120', // hasta 5MB por imagen, max 5 fotos
-        ]);
+        $validated = $request->validated();
 
         $user = Auth::user();
         $isTec = $user->hasRole(['tec', 'subtec', 'user_admin', 'item_admin', 'asset_admin']);
@@ -85,8 +76,10 @@ class TicketController extends Controller
         $validated['solicitante'] = $solicitante;
         $fotos = $request->file('fotos') ?? [];
 
+        $elementoId = ! empty($validated['elemento_id']) ? (int) $validated['elemento_id'] : null;
+
         try {
-            $ticket = $abrirTicketAction->execute($validated['elemento_id'], $validated, $user, $fotos);
+            $ticket = $abrirTicketAction->execute($elementoId, $validated, $user, $fotos);
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         }
@@ -94,12 +87,20 @@ class TicketController extends Controller
         $elemento = $ticket->elemento;
 
         if ($user->hasRole('tec')) {
+            $msg = $elemento
+                ? "Ticket #{$ticket->id} iniciado correctamente para el activo {$elemento->nro_lia}."
+                : "Ticket general de infraestructura #{$ticket->id} registrado correctamente.";
+
             return redirect()->route('tickets.show', $ticket->id)
-                ->with('success', "Ticket #{$ticket->id} iniciado correctamente para el activo {$elemento->nro_lia}.");
+                ->with('success', $msg);
         }
 
+        $msg = $elemento
+            ? "Ticket #{$ticket->id} registrado correctamente. El equipo técnico ha sido notificado."
+            : "Incidencia general de infraestructura #{$ticket->id} reportada con éxito.";
+
         return redirect()->route('dashboard.index')
-            ->with('success', "Ticket #{$ticket->id} registrado correctamente. El equipo técnico ha sido notificado.");
+            ->with('success', $msg);
     }
 
     /**
