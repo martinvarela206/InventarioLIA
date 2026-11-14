@@ -36,7 +36,13 @@
                 @endif
             </div>
         </div>
-        <div>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('tickets.pdf', $ticket->id) }}" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-3.5 py-2 rounded-xl text-xs transition-all shadow-xs" title="Descargar Informe Técnico Oficial en PDF">
+                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Descargar PDF</span>
+            </a>
             <a href="{{ route('tickets.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50/50 border border-gray-300 text-gray-700 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-2xs">
                 <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Volver a Bandeja</span>

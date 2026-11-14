@@ -13,10 +13,13 @@ use App\Models\TicketComentario;
 use App\Models\TicketComentarioAdjunto;
 use App\Models\Ubicacion;
 use App\Services\ImageSanitizer;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -200,6 +203,74 @@ class TicketController extends Controller
         $areas = Area::where('activo', true)->orderBy('nombre')->get();
 
         return view('tickets.show', compact('ticket', 'movPrevio', 'ultimoPrestamo', 'ubicaciones', 'areas'));
+    }
+
+    /**
+     * Exporta el informe técnico oficial del ticket en formato PDF con adjuntos en Base64.
+     */
+    public function exportarPdf(int $id): Response
+    {
+        $ticket = Movimiento::with([
+            'elemento.tipo',
+            'ambitoTicket',
+            'ubicacion',
+            'usuario',
+            'adjuntos',
+            'resoluciones.usuario',
+            'resoluciones.ubicacion',
+            'comentarios.usuario',
+            'comentarios.adjuntos',
+            'areas',
+        ])->findOrFail($id);
+
+        if (! $ticket->esTicket()) {
+            abort(404, 'El movimiento indicado no corresponde a un ticket de soporte técnico.');
+        }
+
+        // Procesar imágenes a Base64 para garantizar renderizado seguro en el motor Dompdf sin peticiones loopback
+        $fotosBase64 = [];
+
+        // 1. Fotos adjuntas al ticket inicial
+        foreach ($ticket->adjuntos as $adj) {
+            $path = Storage::disk('local')->path($adj->archivo_path);
+            if (file_exists($path)) {
+                $mime = $adj->mime_type ?: (mime_content_type($path) ?: 'image/jpeg');
+                $data = base64_encode((string) file_get_contents($path));
+                $fotosBase64[] = [
+                    'nombre' => $adj->nombre_original,
+                    'contexto' => 'Apertura',
+                    'data_uri' => "data:{$mime};base64,{$data}",
+                ];
+            }
+        }
+
+        // 2. Fotos adjuntas en comentarios del hilo
+        foreach ($ticket->comentarios as $com) {
+            foreach ($com->adjuntos as $adj) {
+                $path = Storage::disk('local')->path($adj->archivo_path);
+                if (file_exists($path)) {
+                    $mime = $adj->mime_type ?: (mime_content_type($path) ?: 'image/jpeg');
+                    $data = base64_encode((string) file_get_contents($path));
+                    $fotosBase64[] = [
+                        'nombre' => $adj->nombre_original,
+                        'contexto' => 'Comentario #'.$com->id,
+                        'data_uri' => "data:{$mime};base64,{$data}",
+                    ];
+                }
+            }
+        }
+
+        $pdf = Pdf::loadView('tickets.pdf', compact('ticket', 'fotosBase64'))
+            ->setPaper('a4', 'portrait')
+            ->setOption([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true,
+                'defaultFont' => 'sans-serif',
+            ]);
+
+        $fileName = 'ticket-'.str_pad((string) $ticket->id, 5, '0', STR_PAD_LEFT).'-informe.pdf';
+
+        return $pdf->download($fileName);
     }
 
     /**
