@@ -136,4 +136,32 @@ class TicketsGeneralesEsquemaTest extends TestCase
 
         $response->assertSessionHasErrors(['elemento_id', 'ambito_ticket_id']);
     }
+
+    public function test_formulario_create_renderiza_selector_dual_y_ambitos_activos(): void
+    {
+        $inactivo = AmbitoTicket::create([
+            'nombre' => 'Ámbito Oculto Inactivo',
+            'activo' => false,
+        ]);
+
+        $response = $this->actingAs($this->tecnico)->get(route('tickets.create'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Sobre Activo Patrimonial');
+        $response->assertSee('Infraestructura / Espacio LIA');
+        $response->assertSee('Laboratorio A');
+        $response->assertDontSee('Ámbito Oculto Inactivo');
+    }
+
+    public function test_formulario_create_con_elemento_precarga_datos_de_hardware(): void
+    {
+        $elemento = Elemento::factory()->create([
+            'nro_lia' => 'LIA-99999',
+        ]);
+
+        $response = $this->actingAs($this->tecnico)->get(route('tickets.create', ['elemento_id' => $elemento->id]));
+
+        $response->assertStatus(200);
+        $response->assertSee('LIA-99999');
+    }
 }
