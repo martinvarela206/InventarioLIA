@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
 
         $defaultPassword = config('auth.seed_default_password')
             ?? env('SEED_DEFAULT_PASSWORD')
-            ?? (app()->isProduction() ? throw new \RuntimeException('En entorno de producción debe definirse SEED_DEFAULT_PASSWORD para inicializar los usuarios.') : 'LiaSegura2026!');
+            ?? (app()->isProduction() ? throw new \RuntimeException('En entorno de producción debe definirse SEED_DEFAULT_PASSWORD para inicializar los usuarios.') : 'pass1234!');
         $hashedPassword = Hash::make($defaultPassword);
 
         $users = [
