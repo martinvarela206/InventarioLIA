@@ -1,7 +1,7 @@
 @props(['movimiento'])
 
 @if($movimiento->esPrestamo())
-    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Préstamo</span>
+    <span class="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-xl bg-amber-50 text-amber-900 border border-[#fbc101]">Préstamo</span>
 @else
-    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Interno</span>
+    <span class="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-xl bg-gray-50 text-gray-800 border border-gray-300">Interno</span>
 @endif

@@ -31,7 +31,7 @@ enum EstadoElemento: string
     {
         return match ($this) {
             self::OPERATIVO => 'bg-emerald-100 text-emerald-800 border-emerald-300',
-            self::PRESTADO => 'bg-blue-100 text-blue-800 border-blue-300',
+            self::PRESTADO => 'bg-amber-50 text-amber-900 border-[#fbc101]',
             self::EN_REPARACION => 'bg-amber-100 text-amber-800 border-amber-300',
             self::EN_LIMBO_REUBICACION => 'bg-purple-100 text-purple-800 border-purple-300',
             self::BAJA => 'bg-rose-100 text-rose-800 border-rose-300',

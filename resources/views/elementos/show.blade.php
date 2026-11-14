@@ -37,7 +37,7 @@
             <!-- Header Banner -->
             <div class="bg-gradient-to-r from-amber-100 to-amber-50 p-5 border-b border-amber-200/60">
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 bg-amber-200/80 text-amber-900 rounded-md">
+                    <span class="inline-flex items-center text-xs font-bold uppercase tracking-wider px-2.5 py-1 bg-amber-50 text-amber-900 border border-[#fbc101] rounded-xl">
                         {{ strtoupper($elemento->tipo?->nombre ?? 'Activo') }}
                     </span>
                     {!! $elemento->presenter()->statusBadge() !!}
@@ -106,8 +106,8 @@
 
             <!-- Direct Actions -->
             <div class="p-4 bg-gray-50 border-t border-gray-100 flex flex-col gap-2">
-                <a href="{{ route('reportes.show', ['tipo' => 'ubicacion-trazabilidad', 'elemento_id' => $elemento->id]) }}" class="inline-flex items-center justify-center gap-1.5 text-center text-xs text-gray-700 hover:text-black font-semibold py-2 px-3 border border-gray-200 rounded-lg bg-white hover:bg-gray-100 transition-colors shadow-xs">
-                    <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <a href="{{ route('reportes.show', ['tipo' => 'ubicacion-trazabilidad', 'elemento_id' => $elemento->id]) }}" class="inline-flex items-center justify-center gap-2 text-center text-xs text-black font-extrabold py-2.5 px-4 rounded-xl bg-[#fbc101] hover:bg-amber-400 transition-all shadow-xs w-full">
+                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     <span>Ver Reporte de Trazabilidad Oficial</span>
@@ -148,9 +148,8 @@
                                 <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                                     <div class="flex items-center gap-2">
                                         {!! $m->presenter()->tipoBadge() !!}
-                                        {!! $m->presenter()->estadoBadge() !!}
                                         @if($index === 0)
-                                            <span class="text-[10px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded">Último Movimiento</span>
+                                            <span class="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-xl bg-amber-100 text-amber-950 border border-[#fbc101]">Último Movimiento</span>
                                         @endif
                                     </div>
                                     <span class="text-xs text-gray-500 font-mono">
@@ -191,8 +190,9 @@
                                         </div>
                                         <div class="flex items-center gap-3">
                                             <span>Registrado por: <strong class="text-gray-800">{{ $m->usuario?->nombre ?? 'Sistema' }}</strong></span>
-                                            <button type="button" onclick="abrirModalCorreccion({{ $m->id }}, '{{ $m->ubicacion_id }}', '{{ $m->puesto }}', '{{ addslashes($m->solicitante ?? '') }}')" class="text-xs text-amber-800 hover:text-black font-bold hover:underline bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded transition-colors">
-                                                Enmendar Error
+                                            <button type="button" onclick="abrirModalCorreccion({{ $m->id }}, '{{ $m->ubicacion_id }}', '{{ $m->puesto }}', '{{ addslashes($m->solicitante ?? '') }}')" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-all">
+                                                <svg class="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                <span>Enmendar Error</span>
                                             </button>
                                         </div>
                                     </div>
