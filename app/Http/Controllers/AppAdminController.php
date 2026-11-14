@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActividadLia;
+use App\Models\AmbitoTicket;
 use App\Models\AvisoSeguridad;
 use App\Models\Cargo;
 use App\Models\Carrera;
@@ -34,6 +35,8 @@ class AppAdminController extends Controller
         $reportesActivos = ReporteConfigurado::activos()->count();
         $totalAvisos = AvisoSeguridad::count();
         $avisosActivos = AvisoSeguridad::activos()->count();
+        $totalAmbitos = AmbitoTicket::count();
+        $ambitosActivos = AmbitoTicket::activos()->count();
 
         $ultimasActividades = ActividadLia::with('autor')->latest()->take(3)->get();
         $ultimosEspacios = EspacioLia::orderBy('orden')->take(4)->get();
@@ -52,6 +55,8 @@ class AppAdminController extends Controller
             'reportesActivos',
             'totalAvisos',
             'avisosActivos',
+            'totalAmbitos',
+            'ambitosActivos',
             'ultimasActividades',
             'ultimosEspacios',
             'personalDestacado',
@@ -638,5 +643,79 @@ class AppAdminController extends Controller
         $aviso->delete();
 
         return redirect()->route('app_admin.avisos')->with('success', "Aviso \"{$titulo}\" eliminado correctamente.");
+    }
+
+    /**
+     * Gestión del catálogo de ámbitos para incidencias técnicas y tickets generales.
+     */
+    public function ambitosIndex(): View
+    {
+        $ambitos = AmbitoTicket::withCount('tickets')
+            ->orderBy('orden', 'asc')
+            ->orderBy('nombre', 'asc')
+            ->get();
+
+        return view('admin.app.ambitos-tickets', compact('ambitos'));
+    }
+
+    public function ambitoStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100|unique:ambitos_tickets,nombre',
+            'descripcion' => 'nullable|string|max:255',
+            'orden' => 'nullable|integer|min:0',
+            'activo' => 'nullable|boolean',
+        ]);
+
+        $validated['activo'] = $request->has('activo');
+        $validated['orden'] = (int) ($request->input('orden', 0));
+
+        AmbitoTicket::create($validated);
+
+        return redirect()->route('app_admin.ambitos')
+            ->with('success', 'Ámbito de incidencias registrado exitosamente en el catálogo oficial.');
+    }
+
+    public function ambitoUpdate(Request $request, AmbitoTicket $ambito): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100|unique:ambitos_tickets,nombre,'.$ambito->id,
+            'descripcion' => 'nullable|string|max:255',
+            'orden' => 'nullable|integer|min:0',
+            'activo' => 'nullable|boolean',
+        ]);
+
+        $validated['activo'] = $request->has('activo');
+        $validated['orden'] = (int) ($request->input('orden', 0));
+
+        $ambito->update($validated);
+
+        return redirect()->route('app_admin.ambitos')
+            ->with('success', "Ámbito '{$ambito->nombre}' actualizado correctamente.");
+    }
+
+    public function ambitoToggle(AmbitoTicket $ambito): RedirectResponse
+    {
+        $ambito->update(['activo' => ! $ambito->activo]);
+        $estado = $ambito->activo ? 'habilitado' : 'deshabilitado';
+
+        return redirect()->route('app_admin.ambitos')
+            ->with('success', "El ámbito '{$ambito->nombre}' fue {$estado} para la apertura de tickets.");
+    }
+
+    public function ambitoDestroy(AmbitoTicket $ambito): RedirectResponse
+    {
+        if ($ambito->tickets()->exists()) {
+            $ambito->update(['activo' => false]);
+
+            return redirect()->route('app_admin.ambitos')
+                ->with('warning', "El ámbito '{$ambito->nombre}' posee tickets históricos vinculados y no puede eliminarse; fue deshabilitado para preservar la trazabilidad.");
+        }
+
+        $nombre = $ambito->nombre;
+        $ambito->delete();
+
+        return redirect()->route('app_admin.ambitos')
+            ->with('success', "Ámbito '{$nombre}' eliminado exitosamente.");
     }
 }

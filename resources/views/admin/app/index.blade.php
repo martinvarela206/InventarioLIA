@@ -148,6 +148,23 @@
                 <span>→</span>
             </div>
         </a>
+
+        <!-- Ámbitos de Tickets Generales -->
+        <a href="{{ route('app_admin.ambitos') }}" class="bg-white rounded-2xl p-5 border border-gray-200 hover:border-amber-400 hover:shadow-md transition-all group block">
+            <div class="flex justify-between items-start mb-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-900 border border-[#fbc101] rounded-xl font-bold text-xs">
+                    <svg class="w-4 h-4 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    Ámbitos
+                </span>
+                <span class="text-2xl font-black text-gray-900">{{ $ambitosActivos }} <span class="text-xs text-gray-400 font-normal">/ {{ $totalAmbitos }}</span></span>
+            </div>
+            <h3 class="font-bold text-gray-900 text-sm group-hover:text-amber-800 transition-colors">Ámbitos de Incidencias</h3>
+            <p class="text-xs text-gray-500 mt-1">Opciones y espacios configurables para tickets generales de infraestructura.</p>
+            <div class="mt-4 pt-2 border-t border-gray-100 text-xs text-amber-700 font-bold flex items-center justify-between">
+                <span>Gestionar ámbitos</span>
+                <span>→</span>
+            </div>
+        </a>
     </div>
 
     <!-- Secciones de Vista Previa -->

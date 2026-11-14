@@ -205,6 +205,13 @@ Route::middleware('auth')->group(function () {
             Route::put('/app-admin/avisos/{aviso}', [AppAdminController::class, 'avisoUpdate'])->name('app_admin.avisos.update');
             Route::post('/app-admin/avisos/{aviso}/toggle', [AppAdminController::class, 'avisoToggle'])->name('app_admin.avisos.toggle');
             Route::delete('/app-admin/avisos/{aviso}', [AppAdminController::class, 'avisoDestroy'])->name('app_admin.avisos.destroy');
+
+            // Catálogo de Ámbitos para Incidencias y Tickets Generales (app_admin)
+            Route::get('/app-admin/ambitos-tickets', [AppAdminController::class, 'ambitosIndex'])->name('app_admin.ambitos');
+            Route::post('/app-admin/ambitos-tickets', [AppAdminController::class, 'ambitoStore'])->name('app_admin.ambitos.store');
+            Route::put('/app-admin/ambitos-tickets/{ambito}', [AppAdminController::class, 'ambitoUpdate'])->name('app_admin.ambitos.update');
+            Route::post('/app-admin/ambitos-tickets/{ambito}/toggle', [AppAdminController::class, 'ambitoToggle'])->name('app_admin.ambitos.toggle');
+            Route::delete('/app-admin/ambitos-tickets/{ambito}', [AppAdminController::class, 'ambitoDestroy'])->name('app_admin.ambitos.destroy');
         });
     });
 });
