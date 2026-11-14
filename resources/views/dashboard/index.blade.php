@@ -13,9 +13,9 @@
             </h1>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('tickets.create') }}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                Iniciar Ticket
+            <a href="{{ route('tickets.create') }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm">
+                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                <span>Iniciar Ticket</span>
             </a>
             @if(Auth::user()->canManageMovimientos())
                 <a href="{{ route('movimientos.rapido') }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-4 py-2.5 rounded-xl shadow-sm transition-all text-sm">
@@ -80,18 +80,18 @@
         </a>
 
         <!-- En Reparación / Tickets -->
-        <a href="{{ Auth::user()->hasRole('tec') ? route('tickets.index') : route('reportes.show', 'historial-reparaciones') }}" title="Ver tickets y reparaciones técnicas" class="bg-white rounded-2xl p-5 border border-indigo-200 shadow-sm relative overflow-hidden block hover:-translate-y-1 hover:shadow-md hover:border-indigo-400 transition-all group cursor-pointer">
-            <div class="absolute right-3 top-3 text-indigo-100 group-hover:text-indigo-200 transition-colors -z-0">
+        <a href="{{ Auth::user()->hasRole('tec') ? route('tickets.index') : route('reportes.show', 'historial-reparaciones') }}" title="Ver tickets y reparaciones técnicas" class="bg-white rounded-2xl p-5 border border-amber-200 shadow-sm relative overflow-hidden block hover:-translate-y-1 hover:shadow-md hover:border-amber-400 transition-all group cursor-pointer">
+            <div class="absolute right-3 top-3 text-amber-100 group-hover:text-amber-200 transition-colors -z-0">
                 <svg class="w-16 h-16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
             </div>
             <div class="flex items-center justify-between relative z-10">
-                <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider block">En Reparación</span>
-                <span class="text-xs font-semibold text-indigo-600 group-hover:text-indigo-900 transition-colors flex items-center gap-0.5">Tickets <span class="group-hover:translate-x-0.5 transition-transform">→</span></span>
+                <span class="text-xs font-bold text-amber-900 uppercase tracking-wider block">En Reparación</span>
+                <span class="text-xs font-semibold text-amber-700 group-hover:text-amber-950 transition-colors flex items-center gap-0.5">Tickets <span class="group-hover:translate-x-0.5 transition-transform">→</span></span>
             </div>
-            <div class="text-3xl font-black text-indigo-700 mt-2 relative z-10">{{ number_format($totalEnReparacion) }}</div>
-            <span class="text-xs text-indigo-600 mt-1 block relative z-10">Taller y diagnóstico</span>
+            <div class="text-3xl font-black text-amber-800 mt-2 relative z-10">{{ number_format($totalEnReparacion) }}</div>
+            <span class="text-xs text-amber-700 mt-1 block relative z-10">Taller y diagnóstico</span>
         </a>
 
         <!-- Obsoletos / Bajas -->
@@ -172,9 +172,9 @@
                                 </td>
                                 <td class="py-3 px-4 text-right whitespace-nowrap">
                                     @if(Auth::user()->canManageMovimientos())
-                                        <a href="{{ route('movimientos.rapido', ['elemento_id' => $p->elemento_id]) }}" class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-1.5 px-3 rounded-lg shadow-2xs transition-colors">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                            Registrar Devolución
+                                        <a href="{{ route('movimientos.rapido', ['elemento_id' => $p->elemento_id]) }}" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold text-xs py-1.5 px-3 rounded-xl shadow-2xs transition-all">
+                                            <svg class="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                                            <span>Registrar Devolución</span>
                                         </a>
                                     @else
                                         <span class="text-xs text-gray-400 font-medium italic">En préstamo activo</span>

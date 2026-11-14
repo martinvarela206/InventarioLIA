@@ -17,7 +17,7 @@
             </p>
         </div>
         <div>
-            <a href="{{ route('ubicaciones.index') }}" class="px-4 py-2 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 shadow-2xs transition-all inline-flex items-center gap-1.5">
+            <a href="{{ route('ubicaciones.index') }}" class="px-4 py-2 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 bg-white hover:bg-amber-50/50 shadow-2xs transition-all inline-flex items-center gap-1.5">
                 <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Volver a Espacios Físicos</span>
             </a>

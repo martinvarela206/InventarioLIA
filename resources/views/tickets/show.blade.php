@@ -101,7 +101,7 @@
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
                 <div class="flex items-center justify-between border-b border-gray-100 pb-2">
                     <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                         <span>Áreas Involucradas (Multidisciplinario)</span>
                     </h2>
                 </div>
@@ -264,7 +264,7 @@
                                                 @if($cmt->usuario->hasRole('tec'))
                                                     <span class="px-2 py-0.2 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">Técnico</span>
                                                 @elseif($cmt->usuario->hasRole('subtec'))
-                                                    <span class="px-2 py-0.2 rounded text-[10px] font-black bg-indigo-100 text-indigo-900 border border-indigo-300">SubTécnico</span>
+                                                    <span class="px-2 py-0.2 rounded text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">SubTécnico</span>
                                                 @elseif($cmt->usuario->hasRole('rev'))
                                                     <span class="px-2 py-0.2 rounded text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">Revisor</span>
                                                 @endif

@@ -49,8 +49,9 @@
         </div>
 
         <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
-            <a href="{{ route('ubicaciones.index') }}" class="px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-800 font-bold rounded-xl text-xs shadow-sm transition-all inline-flex items-center gap-1.5">
-                Cancelar
+            <a href="{{ route('ubicaciones.index') }}" class="px-4 py-2.5 bg-white hover:bg-amber-50/50 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs shadow-2xs transition-all inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                <span>Cancelar</span>
             </a>
             <button type="submit" class="px-5 py-2.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold rounded-xl text-xs shadow-sm transition-all inline-flex items-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>

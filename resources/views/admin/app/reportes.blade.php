@@ -136,7 +136,7 @@
                                         <span class="px-2 py-0.5 bg-sky-50 text-sky-800 border border-sky-200 rounded font-semibold text-[10px]">🏢 Sala</span>
                                     @endif
                                     @if($rep->requiereTipo())
-                                        <span class="px-2 py-0.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded font-semibold text-[10px]">🏷️ Tipo</span>
+                                        <span class="px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded font-semibold text-[10px]">🏷️ Tipo</span>
                                     @endif
                                     @if($rep->requiereNroLia())
                                         <span class="px-2 py-0.5 bg-purple-50 text-purple-800 border border-purple-200 rounded font-semibold text-[10px]">🔢 N° LIA</span>
