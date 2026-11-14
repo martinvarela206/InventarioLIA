@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Tickets\AbrirTicketAction;
 use App\Actions\Tickets\ResolverTicketAction;
 use App\Http\Requests\StoreTicketRequest;
+use App\Models\AmbitoTicket;
 use App\Models\Area;
 use App\Models\Elemento;
 use App\Models\Movimiento;
@@ -40,6 +41,7 @@ class TicketController extends Controller
 
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $areas = Area::where('activo', true)->orderBy('nombre')->get();
+        $ambitos = AmbitoTicket::activos()->get();
         $solicitantesFrecuentes = Movimiento::whereNotNull('solicitante')
             ->where('solicitante', '!=', '')
             ->select('solicitante')
@@ -49,7 +51,7 @@ class TicketController extends Controller
             ->limit(25)
             ->pluck('solicitante');
 
-        return view('tickets.create', compact('informante', 'isTec', 'elemento', 'ubicaciones', 'areas', 'solicitantesFrecuentes'));
+        return view('tickets.create', compact('informante', 'isTec', 'elemento', 'ubicaciones', 'areas', 'solicitantesFrecuentes', 'ambitos'));
     }
 
     /**
