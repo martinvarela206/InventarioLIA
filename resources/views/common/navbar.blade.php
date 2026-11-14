@@ -194,12 +194,12 @@
                         @auth
                             @if(Auth::user()->hasRole('registered'))
                                 <a href="{{ route('profile.edit') }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-black/10 text-black font-extrabold text-xs xl:text-sm transition-all whitespace-nowrap" title="Mi perfil de usuario">
-                                    <img src="{{ Auth::user()->foto_url }}" alt="{{ Auth::user()->nombre }}" class="w-6 h-6 rounded-full object-cover border border-black/20 shadow-xs bg-white shrink-0" onerror="this.src='/assets/placeholder-user.png'">
+                                    <img src="{{ Auth::user()->foto_url }}" alt="{{ Auth::user()->nombre }}" class="w-7 h-7 rounded-full object-cover border-2 border-[#aa8301] shadow-xs bg-white shrink-0" onerror="this.src='/assets/placeholder-user.png'">
                                     <span>{{ Auth::user()->nombre }}</span>
                                 </a>
                             @else
                                 <span class="inline-flex items-center gap-2 px-3 py-2 text-black font-extrabold text-xs xl:text-sm whitespace-nowrap">
-                                    <img src="{{ Auth::user()->foto_url }}" alt="{{ Auth::user()->nombre }}" class="w-6 h-6 rounded-full object-cover border border-black/20 shadow-xs bg-white shrink-0" onerror="this.src='/assets/placeholder-user.png'">
+                                    <img src="{{ Auth::user()->foto_url }}" alt="{{ Auth::user()->nombre }}" class="w-7 h-7 rounded-full object-cover border-2 border-[#aa8301] shadow-xs bg-white shrink-0" onerror="this.src='/assets/placeholder-user.png'">
                                     <span>{{ Auth::user()->nombre }}</span>
                                 </span>
                             @endif
@@ -330,12 +330,12 @@
                     <div class="flex items-center justify-between px-2 py-1">
                         @if(Auth::user()->hasRole('registered'))
                             <a href="{{ route('profile.edit') }}" class="font-bold text-sm text-black flex items-center gap-2">
-                                <img src="{{ Auth::user()->foto_url }}" alt="{{ Auth::user()->nombre }}" class="w-6 h-6 rounded-full object-cover border border-black/20 shadow-xs bg-white shrink-0" onerror="this.src='/assets/placeholder-user.png'">
+                                <img src="{{ Auth::user()->foto_url }}" alt="{{ Auth::user()->nombre }}" class="w-7 h-7 rounded-full object-cover border-2 border-[#aa8301] shadow-xs bg-white shrink-0" onerror="this.src='/assets/placeholder-user.png'">
                                 <span>{{ Auth::user()->nombre }}</span>
                             </a>
                         @else
                             <span class="font-bold text-sm text-black flex items-center gap-2">
-                                <img src="{{ Auth::user()->foto_url }}" alt="{{ Auth::user()->nombre }}" class="w-6 h-6 rounded-full object-cover border border-black/20 shadow-xs bg-white shrink-0" onerror="this.src='/assets/placeholder-user.png'">
+                                <img src="{{ Auth::user()->foto_url }}" alt="{{ Auth::user()->nombre }}" class="w-7 h-7 rounded-full object-cover border-2 border-[#aa8301] shadow-xs bg-white shrink-0" onerror="this.src='/assets/placeholder-user.png'">
                                 <span>{{ Auth::user()->nombre }}</span>
                             </span>
                         @endif
