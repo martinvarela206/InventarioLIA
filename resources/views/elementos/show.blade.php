@@ -141,7 +141,7 @@
                     @forelse($elemento->movimientos as $index => $m)
                         <div class="relative group">
                             <!-- Bullet -->
-                            <div class="absolute -left-[29px] top-1.5 w-3.5 h-3.5 rounded-full {{ $index === 0 ? 'bg-amber-500 ring-4 ring-amber-100' : 'bg-gray-300' }}"></div>
+                            <div class="absolute -left-[29px] top-1.5 w-3.5 h-3.5 rounded-full {{ $index === 0 ? 'bg-[#fbc101] ring-4 ring-amber-200 border border-[#aa8301]' : 'bg-amber-400 border border-amber-600' }}"></div>
                             
                             <!-- Card -->
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200/80 hover:border-amber-300 transition-colors">
