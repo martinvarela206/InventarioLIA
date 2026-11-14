@@ -114,4 +114,15 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Default Seed User Password
+    |--------------------------------------------------------------------------
+    |
+    | Password utilized by seeders to initialize default system accounts.
+    |
+    */
+
+    'seed_default_password' => env('SEED_DEFAULT_PASSWORD', 'pass1234!'),
+
 ];

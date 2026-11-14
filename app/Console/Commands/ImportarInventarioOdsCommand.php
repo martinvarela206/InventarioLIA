@@ -105,7 +105,7 @@ class ImportarInventarioOdsCommand extends Command
         // Pre-cargar catálogos y usuario por defecto
         $defaultUser = Usuario::first();
         if (! $defaultUser) {
-            $defaultPass = config('app.seed_default_password', 'LiaSegura2026!');
+            $defaultPass = config('auth.seed_default_password', 'pass1234!');
             $defaultUser = Usuario::create([
                 'nombre' => 'Administrador Sistema',
                 'email' => 'admin@lia.unsj.edu.ar',

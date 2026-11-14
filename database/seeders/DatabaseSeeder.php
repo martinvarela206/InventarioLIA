@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             AtributoSeeder::class,
             UbicacionSeeder::class,
             AppAdminSeeder::class,
+            AreaSeeder::class,
+            AmbitoTicketSeeder::class,
             ReporteConfiguradoSeeder::class,
         ];
 
