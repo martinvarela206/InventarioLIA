@@ -24,6 +24,7 @@ class Movimiento extends Model
         'elemento_id',
         'tipo_movimiento',
         'estado_ticket',
+        'ambito_ticket_id',
         'ubicacion_id',
         'puesto',
         'user_id',
@@ -124,6 +125,11 @@ class Movimiento extends Model
         return $this->belongsTo(Elemento::class, 'elemento_id');
     }
 
+    public function ambitoTicket(): BelongsTo
+    {
+        return $this->belongsTo(AmbitoTicket::class, 'ambito_ticket_id');
+    }
+
     public function ubicacion(): BelongsTo
     {
         return $this->belongsTo(Ubicacion::class, 'ubicacion_id');
@@ -195,6 +201,11 @@ class Movimiento extends Model
     public function esTicket(): bool
     {
         return $this->tipo_movimiento === 'reparacion';
+    }
+
+    public function esTicketGeneral(): bool
+    {
+        return $this->esTicket() && is_null($this->elemento_id);
     }
 
     public function esBaja(): bool
