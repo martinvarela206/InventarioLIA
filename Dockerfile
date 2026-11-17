@@ -1,5 +1,5 @@
 # DEFINICIÓN GLOBAL DE ARGUMENTOS DE COMPILACIÓN
-ARG PHP_VERSION=8.2.35
+ARG PHP_VERSION=8.4
 
 # ETAPA 1: Compilación de Assets (Node 20 LTS)
 FROM node:20-bookworm-slim AS build-stage
@@ -7,7 +7,7 @@ WORKDIR /app
 COPY . .
 RUN npm install && npm run build
 
-# ETAPA 2: Servidor de Aplicación (PHP 8.2.35 Parcheado >= 8.2.35 / 8.3.36 / 8.4.27 / 8.5.12 + Apache)
+# ETAPA 2: Servidor de Aplicación (PHP 8.4 + Apache)
 FROM php:${PHP_VERSION}-apache
 ARG PHP_VERSION
 
