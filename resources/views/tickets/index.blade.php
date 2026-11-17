@@ -70,13 +70,13 @@
                 @endforeach
             </select>
 
-            <div class="relative w-full sm:w-64">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar LIA, UNSJ, problema..." 
-                       class="w-full bg-white border border-gray-300 rounded-xl pl-9 pr-4 py-2 text-xs font-semibold text-gray-900 focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                </div>
-            </div>
+            <!-- Buscador Interactivo con Autocompletado y Spinner -->
+            <x-ticket-search 
+                id="bandeja-ticket-search"
+                inputName="search"
+                value="{{ request('search') }}"
+                placeholder="Buscar LIA, UNSJ, problema, ámbito o #ID..."
+            />
             @if(request('area_id') || request('search'))
                 <a href="{{ route('tickets.index', ['estado' => $estado]) }}" class="text-xs font-bold text-gray-500 hover:text-gray-900 px-2 py-1">
                     Limpiar
@@ -113,13 +113,13 @@
                             <span class="text-xs font-black text-gray-700 bg-gray-100 px-2 py-0.5 rounded font-mono">#{{ $t->id }}</span>
                             
                             @if($t->estado_ticket === 'resuelto')
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Resuelto</span>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Resuelto</span>
                             @elseif($t->estado_ticket === 'baja')
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">Baja / Irreparable</span>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">Baja / Irreparable</span>
                             @elseif($t->estado_ticket === 'solucionado')
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">Solución Propuesta</span>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-[#fbc101]">Solución Propuesta</span>
                             @else
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">Abierto / En Taller</span>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 border border-[#fbc101] animate-pulse">Abierto / En Taller</span>
                             @endif
 
                             @if($t->areas && $t->areas->isNotEmpty())
@@ -138,17 +138,32 @@
                             </span>
                         </div>
 
-                        <!-- Info del Activo -->
-                        <div class="flex flex-wrap items-center gap-2">
-                            <a href="{{ route('elementos.show', $t->elemento_id) }}" class="text-base font-black text-gray-900 hover:text-amber-600 transition-colors">
-                                {{ $t->elemento?->nro_lia ?: 'Sin Nro LIA' }}
-                            </a>
-                            @if($t->elemento?->nro_unsj)
-                                <span class="text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded">UNSJ: {{ $t->elemento->nro_unsj }}</span>
-                            @endif
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{{ ucfirst($t->elemento?->tipo?->nombre ?? 'N/A') }}</span>
-                            <span class="text-xs text-gray-500">• {{ $t->elemento?->marca }} {{ $t->elemento?->modelo }}</span>
-                        </div>
+                        <!-- Info del Activo o Ámbito General -->
+                        @if($t->esTicketGeneral())
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-black bg-amber-50 text-amber-900 border border-[#fbc101]">
+                                    <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                    Infraestructura / Espacio
+                                </span>
+                                <span class="text-base font-black text-gray-900">
+                                    {{ $t->ambitoTicket?->nombre ?? 'LIA General' }}
+                                </span>
+                                @if($t->puesto)
+                                    <span class="text-xs font-bold text-gray-600 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-lg">Sector / Ref: {{ $t->puesto }}</span>
+                                @endif
+                            </div>
+                        @else
+                            <div class="flex flex-wrap items-center gap-2">
+                                <a href="{{ route('elementos.show', $t->elemento_id) }}" class="text-base font-black text-gray-900 hover:text-amber-600 transition-colors">
+                                    {{ $t->elemento?->nro_lia ?: 'Sin Nro LIA' }}
+                                </a>
+                                @if($t->elemento?->nro_unsj)
+                                    <span class="text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded">UNSJ: {{ $t->elemento->nro_unsj }}</span>
+                                @endif
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{{ ucfirst($t->elemento?->tipo?->nombre ?? 'N/A') }}</span>
+                                <span class="text-xs text-gray-500">• {{ $t->elemento?->marca }} {{ $t->elemento?->modelo }}</span>
+                            </div>
+                        @endif
 
                         <!-- Descripción de la Falla -->
                         <p class="text-xs text-gray-700 bg-gray-50/70 p-3 rounded-xl border border-gray-100 leading-relaxed">
@@ -160,7 +175,7 @@
                         <div class="flex flex-wrap items-center gap-4 text-xs text-gray-500 pt-0.5">
                             <span>Informante: <strong class="text-gray-800">{{ $t->solicitante ?: ($t->usuario?->nombre ?? 'Sistema') }}</strong></span>
                             <span>•</span>
-                            <span>Ubicación: <strong class="text-gray-800">{{ $t->ubicacion?->nombre ?? 'Depósito' }} ({{ $t->puesto ?: 'S/P' }})</strong></span>
+                            <span>Ubicación: <strong class="text-gray-800">{{ $t->esTicketGeneral() ? ($t->ambitoTicket?->nombre ?? 'LIA General') : ($t->ubicacion?->nombre ?? 'Depósito') }} ({{ $t->puesto ?: 'S/P' }})</strong></span>
                             @if($t->adjuntos->isNotEmpty())
                                 <span>•</span>
                                 <span class="inline-flex items-center gap-1 font-bold text-amber-700">
@@ -183,7 +198,7 @@
                             </div>
                         @endif
 
-                        <a href="{{ route('tickets.show', $t->id) }}" class="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-amber-500 hover:text-black text-white font-bold text-xs py-2 px-4 rounded-xl transition-all shadow-sm">
+                        <a href="{{ route('tickets.show', $t->id) }}" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold text-xs py-2 px-4 rounded-xl transition-all shadow-xs">
                             <span>Gestionar / Resolver</span>
                             <span>→</span>
                         </a>

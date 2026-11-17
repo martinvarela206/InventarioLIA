@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Actions\Tickets\AbrirTicketAction;
 use App\Actions\Tickets\ResolverTicketAction;
+use App\Http\Requests\StoreTicketRequest;
+use App\Models\AmbitoTicket;
 use App\Models\Area;
 use App\Models\Elemento;
 use App\Models\Movimiento;
@@ -11,10 +13,15 @@ use App\Models\TicketComentario;
 use App\Models\TicketComentarioAdjunto;
 use App\Models\Ubicacion;
 use App\Services\ImageSanitizer;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -39,6 +46,7 @@ class TicketController extends Controller
 
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $areas = Area::where('activo', true)->orderBy('nombre')->get();
+        $ambitos = AmbitoTicket::activos()->get();
         $solicitantesFrecuentes = Movimiento::whereNotNull('solicitante')
             ->where('solicitante', '!=', '')
             ->select('solicitante')
@@ -48,25 +56,15 @@ class TicketController extends Controller
             ->limit(25)
             ->pluck('solicitante');
 
-        return view('tickets.create', compact('informante', 'isTec', 'elemento', 'ubicaciones', 'areas', 'solicitantesFrecuentes'));
+        return view('tickets.create', compact('informante', 'isTec', 'elemento', 'ubicaciones', 'areas', 'solicitantesFrecuentes', 'ambitos'));
     }
 
     /**
      * Registra el movimiento inicial de reparación y sus adjuntos fotográficos.
      */
-    public function store(Request $request, AbrirTicketAction $abrirTicketAction): RedirectResponse
+    public function store(StoreTicketRequest $request, AbrirTicketAction $abrirTicketAction): RedirectResponse
     {
-        $validated = $request->validate([
-            'elemento_id' => 'required|exists:elementos,id',
-            'area_id' => 'nullable|exists:areas,id',
-            'comentario' => 'required|string|min:5',
-            'solicitante' => 'nullable|string|max:150',
-            'tipo_traslado' => 'nullable|in:insitu,taller',
-            'ubicacion_id' => 'nullable|exists:ubicaciones,id',
-            'puesto' => 'nullable|string|max:50',
-            'fotos' => 'nullable|array|max:5',
-            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120', // hasta 5MB por imagen, max 5 fotos
-        ]);
+        $validated = $request->validated();
 
         $user = Auth::user();
         $isTec = $user->hasRole(['tec', 'subtec', 'user_admin', 'item_admin', 'asset_admin']);
@@ -85,8 +83,10 @@ class TicketController extends Controller
         $validated['solicitante'] = $solicitante;
         $fotos = $request->file('fotos') ?? [];
 
+        $elementoId = ! empty($validated['elemento_id']) ? (int) $validated['elemento_id'] : null;
+
         try {
-            $ticket = $abrirTicketAction->execute($validated['elemento_id'], $validated, $user, $fotos);
+            $ticket = $abrirTicketAction->execute($elementoId, $validated, $user, $fotos);
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         }
@@ -94,12 +94,20 @@ class TicketController extends Controller
         $elemento = $ticket->elemento;
 
         if ($user->hasRole('tec')) {
+            $msg = $elemento
+                ? "Ticket #{$ticket->id} iniciado correctamente para el activo {$elemento->nro_lia}."
+                : "Ticket general de infraestructura #{$ticket->id} registrado correctamente.";
+
             return redirect()->route('tickets.show', $ticket->id)
-                ->with('success', "Ticket #{$ticket->id} iniciado correctamente para el activo {$elemento->nro_lia}.");
+                ->with('success', $msg);
         }
 
+        $msg = $elemento
+            ? "Ticket #{$ticket->id} registrado correctamente. El equipo técnico ha sido notificado."
+            : "Incidencia general de infraestructura #{$ticket->id} reportada con éxito.";
+
         return redirect()->route('dashboard.index')
-            ->with('success', "Ticket #{$ticket->id} registrado correctamente. El equipo técnico ha sido notificado.");
+            ->with('success', $msg);
     }
 
     /**
@@ -109,7 +117,7 @@ class TicketController extends Controller
     {
         $estado = $request->input('estado', 'abierto');
 
-        $query = Movimiento::tickets()->with(['elemento.tipo', 'ubicacion', 'usuario', 'adjuntos', 'areas']);
+        $query = Movimiento::tickets()->with(['elemento.tipo', 'ambitoTicket', 'ubicacion', 'usuario', 'adjuntos', 'areas']);
 
         if ($estado === 'resuelto') {
             $query->where('estado_ticket', 'resuelto');
@@ -132,6 +140,10 @@ class TicketController extends Controller
             $query->where(function ($q) use ($term) {
                 $q->where('comentario', 'like', "%{$term}%")
                     ->orWhere('solicitante', 'like', "%{$term}%")
+                    ->orWhereHas('ambitoTicket', function ($aq) use ($term) {
+                        $aq->where('nombre', 'like', "%{$term}%")
+                            ->orWhere('descripcion', 'like', "%{$term}%");
+                    })
                     ->orWhereHas('elemento', function ($eq) use ($term) {
                         $eq->where('nro_lia', 'like', "%{$term}%")
                             ->orWhere('nro_unsj', 'like', "%{$term}%")
@@ -153,6 +165,78 @@ class TicketController extends Controller
     }
 
     /**
+     * Endpoint API para autocompletado y búsqueda rápida en vivo de tickets.
+     * Retorna máximo 5 coincidencias para el desplegable interactivo.
+     */
+    public function apiBuscar(Request $request): JsonResponse
+    {
+        $term = trim((string) $request->get('q', ''));
+        if (strlen($term) < 1) {
+            return response()->json([]);
+        }
+
+        // Si el término incluye prefijos como '#' o 'TCK-', normalizar para buscar por ID numérico
+        $cleanId = ltrim(preg_replace('/^tck-?/i', '', $term) ?? '', '#');
+
+        $query = Movimiento::tickets()
+            ->with(['elemento.tipo', 'ambitoTicket', 'ubicacion'])
+            ->where(function ($q) use ($term, $cleanId) {
+                if (is_numeric($cleanId) && (int) $cleanId > 0) {
+                    $q->orWhere('id', (int) $cleanId);
+                }
+                $q->orWhere('comentario', 'like', "%{$term}%")
+                    ->orWhere('solicitante', 'like', "%{$term}%")
+                    ->orWhereHas('ambitoTicket', function ($aq) use ($term) {
+                        $aq->where('nombre', 'like', "%{$term}%")
+                            ->orWhere('descripcion', 'like', "%{$term}%");
+                    })
+                    ->orWhereHas('elemento', function ($eq) use ($term) {
+                        $eq->where('nro_lia', 'like', "%{$term}%")
+                            ->orWhere('nro_unsj', 'like', "%{$term}%")
+                            ->orWhere('marca', 'like', "%{$term}%")
+                            ->orWhere('modelo', 'like', "%{$term}%");
+                    });
+            })
+            ->orderBy('id', 'desc')
+            ->limit(5);
+
+        $tickets = $query->get()->map(function (Movimiento $t) {
+            $esGeneral = $t->esTicketGeneral();
+            $ambitoNombre = $t->ambitoTicket?->nombre ?? 'Infraestructura General';
+
+            $activoTexto = null;
+            if (! $esGeneral && $t->elemento) {
+                $el = $t->elemento;
+                $nro = $el->nro_lia ?: ($el->nro_unsj ?: 'S/N');
+                $tipo = $el->tipo?->nombre ? ucfirst($el->tipo->nombre) : 'Equipo';
+                $activoTexto = "{$nro} • {$tipo} {$el->marca} {$el->modelo}";
+            }
+
+            $estadoLabel = match ($t->estado_ticket) {
+                'resuelto' => 'Resuelto',
+                'baja' => 'Baja',
+                'solucionado' => 'Solución Propuesta',
+                default => 'Abierto',
+            };
+
+            return [
+                'id' => $t->id,
+                'codigo' => '#'.str_pad((string) $t->id, 4, '0', STR_PAD_LEFT),
+                'asunto' => Str::limit($t->comentario, 65),
+                'solicitante' => $t->solicitante ?: 'Sin solicitante',
+                'estado' => $t->estado_ticket ?: 'abierto',
+                'estado_label' => $estadoLabel,
+                'es_general' => $esGeneral,
+                'ambito_nombre' => $ambitoNombre,
+                'activo_info' => $activoTexto,
+                'url' => route('tickets.show', $t->id),
+            ];
+        });
+
+        return response()->json($tickets);
+    }
+
+    /**
      * Vista de detalle y gestión de un Ticket específico.
      */
     public function show(int $id): View
@@ -160,6 +244,7 @@ class TicketController extends Controller
         $ticket = Movimiento::with([
             'elemento.tipo',
             'elemento.ultimoMovimiento.ubicacion',
+            'ambitoTicket',
             'ubicacion',
             'usuario',
             'adjuntos',
@@ -175,23 +260,91 @@ class TicketController extends Controller
             abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
         }
 
-        // Movimiento previo al ingreso del ticket para heredar ubicación original
-        $movPrevio = Movimiento::where('elemento_id', $ticket->elemento_id)
+        // Movimiento previo al ingreso del ticket para heredar ubicación original (solo si aplica a activo)
+        $movPrevio = $ticket->elemento_id ? Movimiento::where('elemento_id', $ticket->elemento_id)
             ->where('id', '<', $ticket->id)
             ->where('tipo_movimiento', '!=', 'reparacion')
             ->orderBy('id', 'desc')
-            ->first();
+            ->first() : null;
 
-        // Último préstamo registrado para contexto de auditoría operativa
-        $ultimoPrestamo = Movimiento::where('elemento_id', $ticket->elemento_id)
+        // Último préstamo registrado para contexto de auditoría operativa (solo si aplica a activo)
+        $ultimoPrestamo = $ticket->elemento_id ? Movimiento::where('elemento_id', $ticket->elemento_id)
             ->whereNotNull('fecha_prestamo')
             ->orderBy('id', 'desc')
-            ->first();
+            ->first() : null;
 
         $ubicaciones = Ubicacion::orderBy('nombre')->get();
         $areas = Area::where('activo', true)->orderBy('nombre')->get();
 
         return view('tickets.show', compact('ticket', 'movPrevio', 'ultimoPrestamo', 'ubicaciones', 'areas'));
+    }
+
+    /**
+     * Exporta el informe técnico oficial del ticket en formato PDF con adjuntos en Base64.
+     */
+    public function exportarPdf(int $id): Response
+    {
+        $ticket = Movimiento::with([
+            'elemento.tipo',
+            'ambitoTicket',
+            'ubicacion',
+            'usuario',
+            'adjuntos',
+            'resoluciones.usuario',
+            'resoluciones.ubicacion',
+            'comentarios.usuario',
+            'comentarios.adjuntos',
+            'areas',
+        ])->findOrFail($id);
+
+        if (! $ticket->esTicket()) {
+            abort(404, 'El movimiento indicado no corresponde a un ticket de soporte técnico.');
+        }
+
+        // Procesar imágenes a Base64 para garantizar renderizado seguro en el motor Dompdf sin peticiones loopback
+        $fotosBase64 = [];
+
+        // 1. Fotos adjuntas al ticket inicial
+        foreach ($ticket->adjuntos as $adj) {
+            $path = Storage::disk('local')->path($adj->archivo_path);
+            if (file_exists($path)) {
+                $mime = $adj->mime_type ?: (mime_content_type($path) ?: 'image/jpeg');
+                $data = base64_encode((string) file_get_contents($path));
+                $fotosBase64[] = [
+                    'nombre' => $adj->nombre_original,
+                    'contexto' => 'Apertura',
+                    'data_uri' => "data:{$mime};base64,{$data}",
+                ];
+            }
+        }
+
+        // 2. Fotos adjuntas en comentarios del hilo
+        foreach ($ticket->comentarios as $com) {
+            foreach ($com->adjuntos as $adj) {
+                $path = Storage::disk('local')->path($adj->archivo_path);
+                if (file_exists($path)) {
+                    $mime = $adj->mime_type ?: (mime_content_type($path) ?: 'image/jpeg');
+                    $data = base64_encode((string) file_get_contents($path));
+                    $fotosBase64[] = [
+                        'nombre' => $adj->nombre_original,
+                        'contexto' => 'Comentario #'.$com->id,
+                        'data_uri' => "data:{$mime};base64,{$data}",
+                    ];
+                }
+            }
+        }
+
+        $pdf = Pdf::loadView('tickets.pdf', compact('ticket', 'fotosBase64'))
+            ->setPaper('a4', 'portrait')
+            ->setOption([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true,
+                'defaultFont' => 'sans-serif',
+            ]);
+
+        $fileName = 'ticket-'.str_pad((string) $ticket->id, 5, '0', STR_PAD_LEFT).'-informe.pdf';
+
+        return $pdf->download($fileName);
     }
 
     /**
@@ -400,9 +553,14 @@ class TicketController extends Controller
             return redirect()->back()->withErrors($e->errors())->withInput();
         }
 
-        $msg = ($validated['accion'] === 'baja')
-            ? "El activo {$movimientoResolucion->elemento->nro_lia} ha sido declarado irreparable y registrado como Basura Tecnológica / De Baja."
-            : "Ticket #{$id} resuelto con éxito y activo reintegrado a la sala correspondiente.";
+        if ($ticket->esTicketGeneral()) {
+            $msg = "Incidencia general #{$id} resuelta y cerrada con éxito.";
+        } elseif ($validated['accion'] === 'baja') {
+            $nroLia = $movimientoResolucion->elemento?->nro_lia ?? 'reportado';
+            $msg = "El activo {$nroLia} ha sido declarado irreparable y registrado como Basura Tecnológica / De Baja.";
+        } else {
+            $msg = "Ticket #{$id} resuelto con éxito y activo reintegrado a la sala correspondiente.";
+        }
 
         return redirect()->route('tickets.index')->with('success', $msg);
     }

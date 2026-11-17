@@ -25,11 +25,11 @@
         </div>
         <div>
             @if(Auth::user()->hasRole('tec'))
-                <a href="{{ route('tickets.index') }}" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold px-4 py-2 rounded-xl text-sm transition-all shadow-sm">
+                <a href="{{ route('tickets.index') }}" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold px-4 py-2 rounded-xl text-sm transition-all shadow-xs">
                     ← Bandeja de Tickets
                 </a>
             @else
-                <a href="{{ route('dashboard.index') }}" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold px-4 py-2 rounded-xl text-sm transition-all shadow-sm">
+                <a href="{{ route('dashboard.index') }}" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold px-4 py-2 rounded-xl text-sm transition-all shadow-xs">
                     ← Volver al Dashboard
                 </a>
             @endif
@@ -55,69 +55,93 @@
         </div>
     @endif
 
-    <form action="{{ route('tickets.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+    <form action="{{ route('tickets.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6" id="form-crear-ticket">
         @csrf
 
-        <!-- SECCIÓN 1: IDENTIFICACIÓN DEL ACTIVO -->
-        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+        <!-- SELECTOR DUAL DE MODALIDAD: ACTIVO VS GENERAL -->
+        <div class="bg-gray-100 p-1.5 rounded-2xl flex items-center gap-2 max-w-xl mx-auto shadow-2xs border border-gray-200">
+            <button type="button" id="tab-modalidad-activo" onclick="setModalidad('activo')"
+                    class="flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                <span>Sobre Activo Patrimonial</span>
+            </button>
+            <button type="button" id="tab-modalidad-general" onclick="setModalidad('general')"
+                    class="flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                <span>Infraestructura / Espacio LIA</span>
+            </button>
+        </div>
+        <input type="hidden" name="modalidad" id="modalidad_input" value="{{ old('modalidad', (old('ambito_ticket_id') && !old('elemento_id') && !$elemento) ? 'general' : 'activo') }}">
+
+        <!-- SECCIÓN 1: IDENTIFICACIÓN DEL ORIGEN (ACTIVO O ÁMBITO) -->
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-xs p-6 space-y-4">
             <div class="border-b border-gray-100 pb-3 flex items-center justify-between">
                 <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <span class="w-6 h-6 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center text-xs font-black">1</span>
-                    Activo que Requiere Intervención
+                    <span class="w-6 h-6 bg-[#fbc101] text-black rounded-lg flex items-center justify-center text-xs font-black">1</span>
+                    <span id="seccion-1-titulo">Activo que Requiere Intervención</span>
                     <span class="text-rose-500 font-bold">*</span>
                 </h2>
-                <span class="text-xs text-gray-400">Identifique el equipo por Nro LIA o UNSJ</span>
+                <span class="text-xs text-gray-400" id="seccion-1-subtitulo">Identifique el equipo por Nro LIA o UNSJ</span>
             </div>
 
-            <!-- Input oculto para el ID final seleccionado -->
-            <input type="hidden" name="elemento_id" id="elemento_id_input" value="{{ old('elemento_id', $elemento?->id) }}">
+            <!-- Panel Modalidad A: Activo Patrimonial Específico -->
+            <div id="panel-modalidad-activo" class="space-y-4">
+                <!-- Tarjeta del equipo preseleccionado o seleccionado -->
+                <x-asset-selected-card 
+                    id="ticket-asset-card"
+                    :elemento="$elemento"
+                    onReset="cambiarActivoTicket"
+                />
 
-            @if($elemento)
-                <!-- Tarjeta del equipo preseleccionado -->
-                <div id="elemento_seleccionado_card" class="bg-amber-50/70 border border-amber-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-white rounded-lg border border-amber-200 flex items-center justify-center font-black text-amber-700 text-sm shadow-2xs">
-                            {{ $elemento->tipo?->nombre ? strtoupper(substr($elemento->tipo->nombre, 0, 3)) : 'LIA' }}
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <span class="font-black text-gray-900 text-base">{{ $elemento->nro_lia ?: 'Sin Nro LIA' }}</span>
-                                @if($elemento->nro_unsj)
-                                    <span class="text-xs font-bold text-gray-600 bg-white px-2 py-0.5 rounded border border-gray-200">UNSJ: {{ $elemento->nro_unsj }}</span>
-                                @endif
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900">{{ ucfirst($elemento->tipo?->nombre ?? 'N/A') }}</span>
-                            </div>
-                            <div class="text-xs text-gray-600 mt-0.5">
-                                <span class="font-bold">{{ $elemento->marca }}</span> {{ $elemento->modelo }} 
-                                • Ubicación actual: <span class="font-semibold text-gray-800">{{ $elemento->ultimoMovimiento?->ubicacion?->nombre ?? 'Sin asignar' }} ({{ $elemento->ultimoMovimiento?->puesto ?: ($elemento->puesto ?: 'S/P') }})</span>
-                            </div>
-                        </div>
-                    </div>
-                    <button type="button" onclick="cambiarElemento()" class="text-xs font-bold text-amber-800 hover:text-amber-950 underline self-start sm:self-auto">
-                        Cambiar equipo
-                    </button>
+                <!-- Buscador en tiempo real de activo -->
+                <div id="ticket-buscador-container" class="{{ $elemento ? 'hidden' : '' }} space-y-2">
+                    <x-asset-search 
+                        id="ticket-asset-search"
+                        mode="select"
+                        placeholder="Escriba Nro LIA (ej. LIA-042), Nro UNSJ o modelo..."
+                        hiddenName="elemento_id"
+                        hiddenValue="{{ old('elemento_id', $elemento?->id) }}"
+                        onSelect="seleccionarActivoTicket"
+                    />
+                    <p class="text-xs text-gray-400">Escriba al menos 2 caracteres para desplegar sugerencias con ubicación en vivo.</p>
                 </div>
-            @endif
+            </div>
 
-            <!-- Buscador en tiempo real de activo (si no está seleccionado o si se desea cambiar) -->
-            <div id="buscador_elemento_container" class="{{ $elemento ? 'hidden' : '' }} space-y-2">
-                <div class="relative">
-                    <input type="text" id="buscador_activo_input" 
-                           placeholder="Escriba Nro LIA (ej. LIA-042) o Nro UNSJ..." 
-                           autocomplete="off"
-                           class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all">
-                    <div id="sugerencias_activo" class="hidden absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto divide-y divide-gray-100">
-                    </div>
+            <!-- Panel Modalidad B: Incidencia General / Infraestructura / Espacios -->
+            <div id="panel-modalidad-general" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5" for="ambito_ticket_select">
+                        Ámbito o Espacio Físico Afectado <span class="text-rose-500 font-bold">*</span>
+                    </label>
+                    <select name="ambito_ticket_id" id="ambito_ticket_select"
+                            class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400 transition-all">
+                        <option value="">-- Seleccione el ámbito institucional afectado --</option>
+                        @foreach($ambitos as $amb)
+                            <option value="{{ $amb->id }}" {{ old('ambito_ticket_id') == $amb->id ? 'selected' : '' }}>
+                                {{ $amb->nombre }} @if($amb->descripcion) • {{ $amb->descripcion }} @endif
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-[11px] text-gray-400 mt-1">Opciones configuradas por la administración institucional del LIA.</p>
                 </div>
-                <p class="text-xs text-gray-400">Escriba al menos 2 caracteres para desplegar sugerencias interactivas.</p>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5" for="puesto_general_input">
+                        Sector, Puesto o Referencia Física Específica (Opcional)
+                    </label>
+                    <input type="text" name="puesto" id="puesto_general_input" value="{{ old('puesto') }}"
+                           placeholder="Ej. Puesto 14, Pared Oeste, Tablero Eléctrico Principal, Climatizador 2..."
+                           class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400">
+                    <span class="text-[11px] text-gray-400 mt-1 block">Permite al técnico ubicar exactamente el punto de falla dentro del espacio seleccionado.</span>
+                </div>
             </div>
         </div>
 
         <!-- SECCIÓN 2: DETALLES DEL PROBLEMA -->
-        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-xs p-6 space-y-4">
             <div class="border-b border-gray-100 pb-3 flex items-center justify-between">
                 <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <span class="w-6 h-6 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center text-xs font-black">2</span>
+                    <span class="w-6 h-6 bg-[#fbc101] text-black rounded-lg flex items-center justify-center text-xs font-black">2</span>
                     Descripción de la Falla y Síntomas
                     <span class="text-rose-500 font-bold">*</span>
                 </h2>
@@ -128,7 +152,7 @@
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                     Área o Especialidad Inicial Involucrada
                 </label>
-                <select name="area_id" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all">
+                <select name="area_id" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400 transition-all">
                     <option value="">-- Seleccionar área inicial (opcional) --</option>
                     @foreach($areas as $ar)
                         <option value="{{ $ar->id }}" {{ old('area_id') == $ar->id ? 'selected' : '' }}>
@@ -145,15 +169,15 @@
                 </label>
                 <textarea name="comentario" rows="4" required
                           placeholder="Describa el comportamiento anómalo detectado: reinicios espontáneos, código de error en pantalla, capacitor inflado, artefactos visuales, daño físico, ruido en ventilador, etc."
-                          class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all">{{ old('comentario') }}</textarea>
+                          class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400 transition-all">{{ old('comentario') }}</textarea>
             </div>
         </div>
 
         <!-- SECCIÓN 3: INFORMANTE Y LOGÍSTICA DE UBICACIÓN -->
-        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-xs p-6 space-y-5">
             <div class="border-b border-gray-100 pb-3 flex items-center justify-between">
                 <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <span class="w-6 h-6 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center text-xs font-black">3</span>
+                    <span class="w-6 h-6 bg-[#fbc101] text-black rounded-lg flex items-center justify-center text-xs font-black">3</span>
                     Informante y Logística de Ubicación
                 </h2>
                 <span class="text-xs text-gray-400">Trazabilidad de origen y destino del activo</span>
@@ -166,7 +190,7 @@
                 </label>
                 @if($isTec)
                     <input type="text" name="solicitante" list="lista-solicitantes-ticket" value="{{ old('solicitante', $informante) }}" required
-                           class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                           class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400">
                     <datalist id="lista-solicitantes-ticket">
                         @foreach($solicitantesFrecuentes ?? [] as $sol)
                             <option value="{{ $sol }}"></option>
@@ -181,8 +205,19 @@
                 @endif
             </div>
 
-            <!-- Separación clara: Origen vs Decisión de Traslado -->
-            <div class="pt-2 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Bloque Condicional para Modalidad General -->
+            <div id="bloque-logistica-general" class="hidden bg-amber-50/50 border border-[#fbc101] rounded-xl p-4 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div class="text-xs text-amber-900">
+                    <strong class="font-extrabold block text-sm mb-0.5">Intervención In Situ en el Espacio Reportado</strong>
+                    <span>Al tratarse de una incidencia de infraestructura o espacio físico, la inspección y resolución técnica se ejecutarán directamente en el lugar indicado sin traslados de inventario.</span>
+                </div>
+            </div>
+
+            <!-- Separación clara para Modalidad Activo: Origen vs Decisión de Traslado -->
+            <div id="bloque-logistica-activo" class="pt-2 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-5">
                 <!-- Origen (Solo Lectura Informativa) -->
                 <div class="bg-gray-50/80 border border-gray-200 rounded-xl p-4 flex flex-col justify-between">
                     <div>
@@ -246,7 +281,7 @@
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                             Seleccionar Sala de Destino Técnico <span class="text-rose-500">*</span>
                         </label>
-                        <select name="ubicacion_id" id="ubicacion_destino_select" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
+                        <select name="ubicacion_id" id="ubicacion_destino_select" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400">
                             <option value="">Seleccione sala o taller...</option>
                             @foreach($ubicaciones as $ub)
                                 <option value="{{ $ub->id }}" {{ old('ubicacion_id') == $ub->id || (!old('ubicacion_id') && str_contains(strtolower($ub->nombre), 'hardware')) ? 'selected' : '' }}>
@@ -260,10 +295,10 @@
         </div>
 
         <!-- SECCIÓN 4: ADJUNTOS FOTOGRÁFICOS -->
-        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-xs p-6 space-y-4">
             <div class="border-b border-gray-100 pb-3 flex items-center justify-between">
                 <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                    <span class="w-6 h-6 bg-gray-100 text-gray-700 rounded-lg flex items-center justify-center text-xs font-black">4</span>
+                    <span class="w-6 h-6 bg-[#fbc101] text-black rounded-lg flex items-center justify-center text-xs font-black">4</span>
                     Evidencia Fotográfica
                 </h2>
                 <span class="text-xs text-gray-400">Cámara en vivo o selección desde galería</span>
@@ -278,7 +313,7 @@
                         </svg>
                     </div>
                     <span class="text-sm font-bold text-gray-800">Tomar foto con la cámara o seleccionar imágenes</span>
-                    <span class="text-xs text-gray-400 mt-1">PNG, JPG, WebP hasta 10MB por imagen. Puede seleccionar varias fotos.</span>
+                    <span class="text-xs text-gray-400 mt-1">PNG, JPG, WebP hasta 5MB por imagen. Puede seleccionar varias fotos.</span>
                     <input type="file" name="fotos[]" id="fotos_input" accept="image/*;capture=camera" multiple class="hidden" onchange="previewFotos(event)">
                 </label>
             </div>
@@ -299,154 +334,158 @@
                     Cancelar
                 </a>
             @endif
-            <button type="submit" class="inline-flex items-center justify-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-6 py-2.5 rounded-xl text-sm transition-all shadow-md w-full sm:w-auto text-center">
+            <button type="submit" class="inline-flex items-center justify-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-6 py-2.5 rounded-xl text-sm transition-all shadow-xs w-full sm:w-auto text-center">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                <span>Crear Ticket de Reparación</span>
+                <span>Crear Ticket de Incidencia</span>
             </button>
         </div>
     </form>
 </div>
 
 <script>
-    // Buscador interactivo de activos
-    const inputActivo = document.getElementById('buscador_activo_input');
-    const sugerenciasBox = document.getElementById('sugerencias_activo');
-    const idInput = document.getElementById('elemento_id_input');
-    let timerBuscar = null;
+    // Conmutador interactivo entre Modalidad Activo y Modalidad General
+    function setModalidad(modo) {
+        const inputModo = document.getElementById('modalidad_input');
+        const tabActivo = document.getElementById('tab-modalidad-activo');
+        const tabGeneral = document.getElementById('tab-modalidad-general');
+        const panelActivo = document.getElementById('panel-modalidad-activo');
+        const panelGeneral = document.getElementById('panel-modalidad-general');
+        const seccion1Titulo = document.getElementById('seccion-1-titulo');
+        const seccion1Subtitulo = document.getElementById('seccion-1-subtitulo');
+        const bloqueLogisticaActivo = document.getElementById('bloque-logistica-activo');
+        const bloqueLogisticaGeneral = document.getElementById('bloque-logistica-general');
+        const hiddenElementoInput = document.getElementById('ticket-asset-search-hidden');
+        const ambitoSelect = document.getElementById('ambito_ticket_select');
 
-    if (inputActivo) {
-        inputActivo.addEventListener('input', function() {
-            const query = this.value.trim();
-            clearTimeout(timerBuscar);
+        if (inputModo) inputModo.value = modo;
 
-            if (query.length < 2) {
-                sugerenciasBox.classList.add('hidden');
-                sugerenciasBox.innerHTML = '';
-                return;
-            }
+        if (modo === 'general') {
+            // Estilos de pestañas
+            tabGeneral.className = "flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all bg-[#fbc101] text-black shadow-xs";
+            tabActivo.className = "flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all text-gray-600 hover:text-gray-900";
 
-            timerBuscar = setTimeout(() => {
-                fetch(`{{ route('movimientos.buscar-rapido') }}?q=${encodeURIComponent(query)}`)
-                    .then(res => res.json())
-                    .then(items => {
-                        if (!items || items.length === 0) {
-                            sugerenciasBox.innerHTML = '<div class="p-3 text-xs text-gray-400 italic">No se encontraron activos coincidentes.</div>';
-                            sugerenciasBox.classList.remove('hidden');
-                            return;
-                        }
+            // Paneles
+            panelGeneral.classList.remove('hidden');
+            panelActivo.classList.add('hidden');
+            bloqueLogisticaGeneral.classList.remove('hidden');
+            bloqueLogisticaActivo.classList.add('hidden');
 
-                        let html = '';
-                        items.forEach(el => {
-                            html += `
-                                <div onclick="seleccionarActivo(${el.id}, '${el.nro_lia || ''}', '${el.nro_unsj || ''}', '${el.tipo || ''}', '${el.marca || ''}', '${el.modelo || ''}', '${el.ubicacion || 'Sin sala'}') "
-                                     class="p-3 hover:bg-amber-50 cursor-pointer flex items-center justify-between transition-colors">
-                                    <div>
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="font-bold text-gray-900 text-sm">${el.nro_lia || 'Sin LIA'}</span>
-                                            ${el.nro_unsj ? `<span class="text-[11px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">UNSJ: ${el.nro_unsj}</span>` : ''}
-                                            <span class="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-semibold">${el.tipo}</span>
-                                        </div>
-                                        <div class="text-xs text-gray-500 mt-0.5">${el.marca || ''} ${el.modelo || ''} • Sala: ${el.ubicacion || 'Sin sala'}</div>
-                                    </div>
-                                    <span class="text-xs font-bold text-amber-600">Seleccionar →</span>
-                                </div>
-                            `;
-                        });
-                        sugerenciasBox.innerHTML = html;
-                        sugerenciasBox.classList.remove('hidden');
-                    })
-                    .catch(() => {
-                        sugerenciasBox.classList.add('hidden');
-                    });
-            }, 250);
-        });
-    }
+            seccion1Titulo.innerText = "Ámbito o Espacio Físico Afectado";
+            seccion1Subtitulo.innerText = "Seleccione el laboratorio o servicio del LIA involucrado";
 
-    function toggleTrasladoFisico(trasladar) {
-        const container = document.getElementById('selector_destino_container');
-        const select = document.getElementById('ubicacion_destino_select');
-        if (!container || !select) return;
-
-        if (trasladar) {
-            container.classList.remove('hidden');
-            if (!select.value) {
-                // Seleccionar Oficina de Hardware por defecto si está disponible
-                for (let i = 0; i < select.options.length; i++) {
-                    if (select.options[i].text.toLowerCase().includes('hardware')) {
-                        select.selectedIndex = i;
-                        break;
-                    }
-                }
-            }
+            // Limpiar selección de hardware si se pasa a general
+            if (hiddenElementoInput) hiddenElementoInput.disabled = true;
+            if (ambitoSelect) ambitoSelect.disabled = false;
         } else {
-            container.classList.add('hidden');
-            select.value = '';
+            // Estilos de pestañas
+            tabActivo.className = "flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all bg-[#fbc101] text-black shadow-xs";
+            tabGeneral.className = "flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all text-gray-600 hover:text-gray-900";
+
+            // Paneles
+            panelActivo.classList.remove('hidden');
+            panelGeneral.classList.add('hidden');
+            bloqueLogisticaActivo.classList.remove('hidden');
+            bloqueLogisticaGeneral.classList.add('hidden');
+
+            seccion1Titulo.innerText = "Activo que Requiere Intervención";
+            seccion1Subtitulo.innerText = "Identifique el equipo por Nro LIA o UNSJ";
+
+            if (hiddenElementoInput) hiddenElementoInput.disabled = false;
+            if (ambitoSelect) {
+                ambitoSelect.disabled = true;
+                ambitoSelect.value = '';
+            }
         }
     }
 
-    function seleccionarActivo(id, lia, unsj, tipo, marca, modelo, ubicacion) {
-        idInput.value = id;
-        sugerenciasBox.classList.add('hidden');
+    // Inicializar modalidad según valor previo o input oculto
+    document.addEventListener('DOMContentLoaded', function() {
+        const modoInicial = document.getElementById('modalidad_input')?.value || 'activo';
+        setModalidad(modoInicial);
+    });
 
-        const card = document.getElementById('elemento_seleccionado_card');
-        const container = document.getElementById('buscador_elemento_container');
+    // Control de visibilidad para traslado a taller
+    function toggleTrasladoFisico(requiereTraslado) {
+        const container = document.getElementById('selector_destino_container');
+        if (container) {
+            if (requiereTraslado) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+    }
 
-        if (card) {
-            card.remove();
+    // Manejador del componente unificado de búsqueda
+    window.seleccionarActivoTicket = function(item) {
+        const idInput = document.getElementById('ticket-asset-search-hidden');
+        if (idInput) idInput.value = item.id;
+
+        const card = document.getElementById('ticket-asset-card');
+        const buscadorContainer = document.getElementById('ticket-buscador-container');
+
+        const lia = item.nro_lia && item.nro_lia !== 'S/N' ? item.nro_lia : 'Sin Nro LIA';
+        const unsj = item.nro_unsj && item.nro_unsj !== 'S/N' ? item.nro_unsj : '';
+        const tipo = item.tipo || 'Activo';
+        const marcaModelo = `${item.marca || ''} ${item.modelo || ''}`.trim() || 'Activo sin marca';
+        const sala = item.ubicacion_actual || 'Sin sala registrada';
+        const puesto = item.puesto ? ` (${item.puesto})` : '';
+        const ubicacionCompleta = `${sala}${puesto}`;
+
+        document.getElementById('ticket-asset-card-avatar').innerText = tipo.substring(0, 3).toUpperCase();
+        document.getElementById('ticket-asset-card-lia').innerText = lia;
+        
+        const unsjEl = document.getElementById('ticket-asset-card-unsj');
+        if (unsj) {
+            unsjEl.innerText = `UNSJ: ${unsj}`;
+            unsjEl.classList.remove('hidden');
+        } else {
+            unsjEl.classList.add('hidden');
         }
 
-        const newCard = document.createElement('div');
-        newCard.id = 'elemento_seleccionado_card';
-        newCard.className = 'bg-amber-50/70 border border-amber-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3';
-        newCard.innerHTML = `
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-white rounded-lg border border-amber-200 flex items-center justify-center font-black text-amber-700 text-sm shadow-2xs">
-                    ${tipo.substring(0, 3).toUpperCase()}
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="font-black text-gray-900 text-base">${lia || 'Sin Nro LIA'}</span>
-                        ${unsj ? `<span class="text-xs font-bold text-gray-600 bg-white px-2 py-0.5 rounded border border-gray-200">UNSJ: ${unsj}</span>` : ''}
-                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900">${tipo}</span>
-                    </div>
-                    <div class="text-xs text-gray-600 mt-0.5">
-                        <span class="font-bold">${marca}</span> ${modelo} • Ubicación: <span class="font-semibold text-gray-800">${ubicacion}</span>
-                    </div>
-                </div>
-            </div>
-            <button type="button" onclick="cambiarElemento()" class="text-xs font-bold text-amber-800 hover:text-amber-950 underline self-start sm:self-auto">
-                Cambiar equipo
-            </button>
-        `;
+        document.getElementById('ticket-asset-card-tipo').innerText = tipo.toUpperCase();
+        document.getElementById('ticket-asset-card-modelo').innerText = marcaModelo;
+        document.getElementById('ticket-asset-card-ubicacion').innerText = ubicacionCompleta;
 
-        container.parentNode.insertBefore(newCard, container);
-        container.classList.add('hidden');
+        const badgeContainer = document.getElementById('ticket-asset-card-badge-container');
+        const badgeClase = item.es_prestamo_activo ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+        const badgeTexto = item.es_prestamo_activo ? 'Prestado' : 'En Sala';
+        badgeContainer.innerHTML = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${badgeClase}">${badgeTexto}</span>`;
 
+        card.classList.remove('hidden');
+        buscadorContainer.classList.add('hidden');
+
+        // Actualizar Sección 3 (Logística de Origen)
         const ubicacionTexto = document.getElementById('ubicacion_actual_texto');
         if (ubicacionTexto) {
             ubicacionTexto.innerHTML = `
-                ${ubicacion || 'Sin ubicación registrada'}
+                ${ubicacionCompleta}
                 <span class="text-xs font-normal text-gray-600 block mt-0.5">Ubicación física detectada del activo</span>
             `;
         }
-    }
+    };
 
-    function cambiarElemento() {
-        idInput.value = '';
-        const card = document.getElementById('elemento_seleccionado_card');
+    window.cambiarActivoTicket = function() {
+        const idInput = document.getElementById('ticket-asset-search-hidden');
+        if (idInput) idInput.value = '';
+
+        const card = document.getElementById('ticket-asset-card');
+        const buscadorContainer = document.getElementById('ticket-buscador-container');
         if (card) card.classList.add('hidden');
-        const container = document.getElementById('buscador_elemento_container');
-        if (container) {
-            container.classList.remove('hidden');
-            inputActivo.value = '';
-            inputActivo.focus();
+        if (buscadorContainer) {
+            buscadorContainer.classList.remove('hidden');
+            const input = document.getElementById('ticket-asset-search-input');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
         }
 
         const ubicacionTexto = document.getElementById('ubicacion_actual_texto');
         if (ubicacionTexto) {
             ubicacionTexto.innerHTML = '<span class="italic text-gray-400 font-normal text-xs">Se detectará automáticamente al seleccionar el equipo arriba.</span>';
         }
-    }
+    };
 
     function previewFotos(event) {
         const container = document.getElementById('preview_fotos_container');

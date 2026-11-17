@@ -61,7 +61,7 @@
             </span>
             <div class="flex items-center gap-2 text-xs">
                 <span class="inline-flex items-center gap-1 text-gray-600">
-                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> Sistema: {{ $reportes->where('es_sistema', true)->count() }}
+                    <span class="w-2.5 h-2.5 rounded-full bg-gray-700 inline-block"></span> Sistema: {{ $reportes->where('es_sistema', true)->count() }}
                 </span>
                 <span class="text-gray-300">|</span>
                 <span class="inline-flex items-center gap-1 text-gray-600">
@@ -119,7 +119,7 @@
                                     </span>
                                     <div>
                                         @if($rep->es_sistema)
-                                            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-300">
                                                 🔒 Sistema LIA
                                             </span>
                                         @else
@@ -136,7 +136,7 @@
                                         <span class="px-2 py-0.5 bg-sky-50 text-sky-800 border border-sky-200 rounded font-semibold text-[10px]">🏢 Sala</span>
                                     @endif
                                     @if($rep->requiereTipo())
-                                        <span class="px-2 py-0.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded font-semibold text-[10px]">🏷️ Tipo</span>
+                                        <span class="px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded font-semibold text-[10px]">🏷️ Tipo</span>
                                     @endif
                                     @if($rep->requiereNroLia())
                                         <span class="px-2 py-0.5 bg-purple-50 text-purple-800 border border-purple-200 rounded font-semibold text-[10px]">🔢 N° LIA</span>
@@ -179,7 +179,7 @@
                                     <a href="{{ route('reportes.show', $rep->slug) }}" class="p-1.5 text-gray-600 hover:text-amber-800 hover:bg-amber-100 rounded-lg transition-colors" title="Ver / Ejecutar Reporte">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     </a>
-                                    <button type="button" onclick="editarReporte({{ json_encode($rep) }})" class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer" title="Editar Configuración">
+                                    <button type="button" onclick="editarReporte({{ json_encode($rep) }})" class="p-1.5 text-amber-800 hover:text-black hover:bg-amber-100 rounded-lg transition-colors cursor-pointer" title="Editar Configuración">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </button>
                                     @if(!$rep->es_sistema)

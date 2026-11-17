@@ -13,15 +13,16 @@
                 <span class="text-gray-900">Informe de Actividad</span>
             </div>
             <h1 class="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2.5">
-                <span class="p-2 bg-blue-100 text-blue-700 rounded-xl">
+                <span class="p-2 bg-amber-100 text-amber-800 rounded-xl">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 </span>
                 <span>Informe de Auditoría y Trazabilidad: {{ $user->nombre }}</span>
             </h1>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('users.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm">
-                ← Volver a Usuarios
+            <a href="{{ route('users.index') }}" class="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50/50 border border-gray-300 text-gray-700 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-2xs">
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span>Volver a Usuarios</span>
             </a>
             <button onclick="window.print()" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-4 py-2 rounded-xl text-xs transition-all shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
@@ -127,7 +128,7 @@
                 <span class="text-2xl font-black text-gray-900 mt-1 block">{{ $stats['total_reportes'] }}</span>
                 <span class="text-xs text-gray-500">Reportes creados y configurados</span>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center font-bold text-lg">
                 📊
             </div>
         </div>
@@ -189,11 +190,11 @@
                                         </td>
                                         <td class="py-2.5 px-3 max-w-xs truncate">{{ $tc->comentario }}</td>
                                         <td class="py-2.5 px-3 whitespace-nowrap">
-                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase
-                                                {{ $tc->estado_ticket === 'resuelto' ? 'bg-emerald-100 text-emerald-800' : '' }}
-                                                {{ $tc->estado_ticket === 'solucionado' ? 'bg-blue-100 text-blue-800' : '' }}
-                                                {{ $tc->estado_ticket === 'baja' ? 'bg-rose-100 text-rose-800' : '' }}
-                                                {{ in_array($tc->estado_ticket, ['abierto', null]) ? 'bg-amber-100 text-amber-800' : '' }}">
+                                            <span class="px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase border
+                                                {{ $tc->estado_ticket === 'resuelto' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : '' }}
+                                                {{ $tc->estado_ticket === 'solucionado' ? 'bg-amber-50 text-amber-900 border-[#fbc101]' : '' }}
+                                                {{ $tc->estado_ticket === 'baja' ? 'bg-rose-100 text-rose-800 border-rose-300' : '' }}
+                                                {{ in_array($tc->estado_ticket, ['abierto', null]) ? 'bg-amber-100 text-amber-800 border-amber-300' : '' }}">
                                                 {{ $tc->estado_ticket ?: 'Abierto' }}
                                             </span>
                                         </td>
@@ -224,16 +225,16 @@
                             </thead>
                             <tbody class="divide-y divide-gray-100 text-gray-800">
                                 @foreach($ticketComentarios as $tcom)
-                                    <tr class="hover:bg-blue-50/40">
+                                    <tr class="hover:bg-amber-50/40">
                                         <td class="py-2.5 px-3 font-mono font-bold">
-                                            <a href="{{ route('tickets.show', $tcom->ticket_id) }}" class="text-blue-600 hover:text-blue-800">
+                                            <a href="{{ route('tickets.show', $tcom->ticket_id) }}" class="text-gray-900 hover:text-amber-800">
                                                 #{{ $tcom->ticket_id }}
                                             </a>
                                         </td>
                                         <td class="py-2.5 px-3 font-semibold">{{ $tcom->ticket?->elemento?->nro_lia ?: 'S/LIA' }} ({{ $tcom->ticket?->elemento?->tipo?->nombre }})</td>
                                         <td class="py-2.5 px-3 whitespace-nowrap">
                                             @if($tcom->tipo === 'solucion_propuesta')
-                                                <span class="px-2 py-0.5 rounded text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-200">Solución Técnica</span>
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-50 text-amber-900 border border-[#fbc101]">Solución Técnica</span>
                                             @else
                                                 <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700">Comentario / Nota</span>
                                             @endif
@@ -295,7 +296,7 @@
     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4 print:border-none print:shadow-none print:p-0">
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
             <h3 class="text-base font-black text-gray-900 flex items-center gap-2">
-                <span class="w-6 h-6 bg-blue-500 text-white rounded-lg flex items-center justify-center text-xs font-black">2</span>
+                <span class="w-6 h-6 bg-amber-400 text-black rounded-lg flex items-center justify-center text-xs font-black">2</span>
                 <span>Apartado de Configuración y Emisión de Reportes</span>
             </h3>
             <span class="text-xs font-bold text-gray-500">{{ $stats['total_reportes'] }} reportes configurados</span>
@@ -319,7 +320,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100 text-gray-800">
                         @foreach($reportesConfigurados as $rep)
-                            <tr class="hover:bg-blue-50/40">
+                            <tr class="hover:bg-amber-50/40">
                                 <td class="py-2.5 px-3">
                                     <div class="font-bold text-gray-900">{{ $rep->titulo }}</div>
                                     <div class="text-[11px] text-gray-500">{{ $rep->subtitulo ?: $rep->descripcion }}</div>
@@ -374,15 +375,15 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100 text-gray-800">
                         @foreach($movimientos as $mov)
-                            <tr class="hover:bg-emerald-50/40">
+                            <tr class="hover:bg-amber-50/40">
                                 <td class="py-2.5 px-3 font-mono font-bold text-gray-900">#{{ $mov->id }}</td>
                                 <td class="py-2.5 px-3 whitespace-nowrap">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase
-                                        {{ $mov->tipo_movimiento === 'externo_prestamo' ? 'bg-amber-100 text-amber-900' : '' }}
-                                        {{ $mov->tipo_movimiento === 'interno' ? 'bg-blue-100 text-blue-900' : '' }}
-                                        {{ $mov->tipo_movimiento === 'reparacion' ? 'bg-purple-100 text-purple-900' : '' }}
-                                        {{ $mov->tipo_movimiento === 'baja' ? 'bg-rose-100 text-rose-900' : '' }}
-                                        {{ !in_array($mov->tipo_movimiento, ['externo_prestamo', 'interno', 'reparacion', 'baja']) ? 'bg-gray-100 text-gray-800' : '' }}">
+                                    <span class="px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase border
+                                        {{ $mov->tipo_movimiento === 'externo_prestamo' ? 'bg-amber-50 text-amber-900 border-[#fbc101]' : '' }}
+                                        {{ $mov->tipo_movimiento === 'interno' ? 'bg-amber-50 text-amber-900 border-[#fbc101]' : '' }}
+                                        {{ $mov->tipo_movimiento === 'reparacion' ? 'bg-amber-100 text-amber-900 border-amber-300' : '' }}
+                                        {{ $mov->tipo_movimiento === 'baja' ? 'bg-rose-100 text-rose-900 border-rose-300' : '' }}
+                                        {{ !in_array($mov->tipo_movimiento, ['externo_prestamo', 'interno', 'reparacion', 'baja']) ? 'bg-gray-100 text-gray-800 border-gray-300' : '' }}">
                                         {{ str_replace('_', ' ', $mov->tipo_movimiento) }}
                                     </span>
                                 </td>

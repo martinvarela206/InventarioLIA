@@ -13,7 +13,7 @@
                 <span class="text-gray-900">{{ $ubicacionSeleccionada->nombre }}</span>
             </div>
             <h1 class="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2.5">
-                <span class="p-2 bg-indigo-100 text-indigo-700 rounded-xl">
+                <span class="p-2 bg-amber-100 text-amber-800 rounded-xl">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
@@ -25,7 +25,7 @@
         <div class="flex items-center gap-3">
             <!-- Selector de Laboratorio / Sala -->
             <form action="{{ route('auditorias.create') }}" method="GET" class="flex items-center gap-2">
-                <select name="ubicacion_id" onchange="this.form.submit()" class="bg-white border border-gray-300 rounded-xl px-3 py-2 text-xs font-bold text-gray-800 shadow-xs focus:ring-2 focus:ring-indigo-400">
+                <select name="ubicacion_id" onchange="this.form.submit()" class="bg-white border border-gray-300 rounded-xl px-3 py-2 text-xs font-bold text-gray-800 shadow-xs focus:ring-2 focus:ring-amber-200 focus:border-amber-400">
                     @foreach($ubicaciones as $ub)
                         <option value="{{ $ub->id }}" {{ $ubicacionSeleccionada->id == $ub->id ? 'selected' : '' }}>
                             {{ $ub->nombre }}

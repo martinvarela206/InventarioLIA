@@ -54,23 +54,28 @@
     <!-- Search & Multi-Filter Bar -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
         <form action="{{ route('elementos.index') }}" method="GET" class="space-y-3">
-            <div class="flex gap-2 items-center">
+            <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
                 <div class="relative flex-1">
-                    <input type="text" name="search" placeholder="Buscar por LIA, UNSJ, marca, modelo, Nro de serie, puesto, tipo o características..." 
-                        value="{{ request('search') }}" 
-                        class="w-full rounded-xl border border-gray-300 pl-10 pr-4 py-2.5 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 font-medium" />
-                    <svg class="w-5 h-5 text-gray-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <x-asset-search 
+                        id="catalogo-asset-search"
+                        mode="filter"
+                        inputName="search"
+                        value="{{ request('search') }}"
+                        placeholder="Buscar por LIA, UNSJ, marca, modelo, puesto o sala..."
+                    />
                 </div>
-                <button type="submit" class="bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-5 rounded-xl shadow-sm transition-all text-sm inline-flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    Buscar
-                </button>
-                @if(request()->hasAny(['search', 'tipo', 'ubicacion', 'puesto', 'situacion', 'anio', 'gb', 'garantia']))
-                    <a href="{{ route('elementos.index') }}" class="inline-flex items-center gap-1.5 px-3 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs shadow-xs transition-colors">
-                        <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                        Limpiar filtros
-                    </a>
-                @endif
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="submit" class="bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-5 rounded-xl shadow-sm transition-all text-sm inline-flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        Buscar
+                    </button>
+                    @if(request()->hasAny(['search', 'tipo', 'ubicacion', 'puesto', 'situacion', 'anio', 'gb', 'garantia']))
+                        <a href="{{ route('elementos.index') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white hover:bg-amber-50/50 border border-gray-300 text-gray-700 font-bold rounded-xl text-xs shadow-2xs transition-colors">
+                            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                            Limpiar
+                        </a>
+                    @endif
+                </div>
             </div>
 
             <!-- Filters Pill Row -->
@@ -207,7 +212,7 @@
                                         </a>
                                     @endif
                                     @if(Auth::user()->canManageElementos())
-                                        <a href="{{ route('elementos.edit', $el->id) }}" class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors" title="Editar ficha">
+                                        <a href="{{ route('elementos.edit', $el->id) }}" class="p-1.5 text-amber-800 hover:text-black hover:bg-amber-100 rounded-md transition-colors" title="Editar ficha">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         </a>
                                     @endif

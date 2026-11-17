@@ -101,7 +101,9 @@ Route::middleware('auth')->group(function () {
 
         // Hilo y Seguimiento de Tickets (apertura, consulta y comentarios: rev, subtec, tec)
         Route::middleware('role:rev,subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
+            Route::get('/tickets/buscar-rapido', [TicketController::class, 'apiBuscar'])->name('tickets.buscar-rapido');
             Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+            Route::get('/tickets/{ticket}/pdf', [TicketController::class, 'exportarPdf'])->name('tickets.pdf');
             Route::post('/tickets/{ticket}/comentar', [TicketController::class, 'comentar'])->name('tickets.comentar');
             Route::post('/tickets/{ticket}/area', [TicketController::class, 'agregarArea'])->name('tickets.agregarArea');
         });
@@ -205,6 +207,13 @@ Route::middleware('auth')->group(function () {
             Route::put('/app-admin/avisos/{aviso}', [AppAdminController::class, 'avisoUpdate'])->name('app_admin.avisos.update');
             Route::post('/app-admin/avisos/{aviso}/toggle', [AppAdminController::class, 'avisoToggle'])->name('app_admin.avisos.toggle');
             Route::delete('/app-admin/avisos/{aviso}', [AppAdminController::class, 'avisoDestroy'])->name('app_admin.avisos.destroy');
+
+            // Catálogo de Ámbitos para Incidencias y Tickets Generales (app_admin)
+            Route::get('/app-admin/ambitos-tickets', [AppAdminController::class, 'ambitosIndex'])->name('app_admin.ambitos');
+            Route::post('/app-admin/ambitos-tickets', [AppAdminController::class, 'ambitoStore'])->name('app_admin.ambitos.store');
+            Route::put('/app-admin/ambitos-tickets/{ambito}', [AppAdminController::class, 'ambitoUpdate'])->name('app_admin.ambitos.update');
+            Route::post('/app-admin/ambitos-tickets/{ambito}/toggle', [AppAdminController::class, 'ambitoToggle'])->name('app_admin.ambitos.toggle');
+            Route::delete('/app-admin/ambitos-tickets/{ambito}', [AppAdminController::class, 'ambitoDestroy'])->name('app_admin.ambitos.destroy');
         });
     });
 });

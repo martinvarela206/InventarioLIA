@@ -11,7 +11,7 @@
                 <span class="text-gray-900">Auditorías</span>
             </div>
             <h1 class="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2.5">
-                <span class="p-2 bg-indigo-100 text-indigo-700 rounded-xl">
+                <span class="p-2 bg-amber-100 text-amber-800 rounded-xl">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
@@ -23,8 +23,8 @@
             </p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('auditorias.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all hover:shadow">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <a href="{{ route('auditorias.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#fbc101] hover:bg-amber-400 text-black rounded-xl text-xs font-extrabold shadow-sm transition-all">
+                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
                 <span>Nueva Auditoría de Ubicación</span>
@@ -37,7 +37,7 @@
         <form method="GET" action="{{ route('auditorias.index') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <div>
                 <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Sala / Laboratorio</label>
-                <select name="ubicacion_id" class="w-full text-xs rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                <select name="ubicacion_id" class="w-full text-xs rounded-lg border-gray-300 focus:border-amber-400 focus:ring focus:ring-amber-200">
                     <option value="">Todas las salas</option>
                     @foreach($ubicaciones as $ub)
                         <option value="{{ $ub->id }}" {{ request('ubicacion_id') == $ub->id ? 'selected' : '' }}>
@@ -49,7 +49,7 @@
 
             <div>
                 <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Auditor Responsable</label>
-                <select name="user_id" class="w-full text-xs rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                <select name="user_id" class="w-full text-xs rounded-lg border-gray-300 focus:border-amber-400 focus:ring focus:ring-amber-200">
                     <option value="">Todos los auditores</option>
                     @foreach($usuarios as $u)
                         <option value="{{ $u->id }}" {{ request('user_id') == $u->id ? 'selected' : '' }}>
@@ -61,7 +61,7 @@
 
             <div>
                 <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Estado</label>
-                <select name="estado" class="w-full text-xs rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                <select name="estado" class="w-full text-xs rounded-lg border-gray-300 focus:border-amber-400 focus:ring focus:ring-amber-200">
                     <option value="">Todos los estados</option>
                     <option value="en_progreso" {{ request('estado') === 'en_progreso' ? 'selected' : '' }}>En Progreso</option>
                     <option value="finalizada" {{ request('estado') === 'finalizada' ? 'selected' : '' }}>Finalizada</option>
@@ -70,12 +70,12 @@
 
             <div>
                 <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Fecha Desde</label>
-                <input type="date" name="fecha_desde" value="{{ request('fecha_desde') }}" class="w-full text-xs rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                <input type="date" name="fecha_desde" value="{{ request('fecha_desde') }}" class="w-full text-xs rounded-lg border-gray-300 focus:border-amber-400 focus:ring focus:ring-amber-200">
             </div>
 
             <div>
                 <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Fecha Hasta</label>
-                <input type="date" name="fecha_hasta" value="{{ request('fecha_hasta') }}" class="w-full text-xs rounded-lg border-gray-300 focus:border-indigo-500 focus:ring focus:ring-indigo-200">
+                <input type="date" name="fecha_hasta" value="{{ request('fecha_hasta') }}" class="w-full text-xs rounded-lg border-gray-300 focus:border-amber-400 focus:ring focus:ring-amber-200">
             </div>
 
             <div class="flex items-end gap-2">
@@ -89,7 +89,7 @@
             
             <div class="col-span-full pt-1">
                 <label class="inline-flex items-center gap-2 cursor-pointer text-xs text-gray-700">
-                    <input type="checkbox" name="con_inconsistencias" value="1" {{ request('con_inconsistencias') == '1' ? 'checked' : '' }} class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    <input type="checkbox" name="con_inconsistencias" value="1" {{ request('con_inconsistencias') == '1' ? 'checked' : '' }} class="rounded border-gray-300 text-amber-500 focus:ring-amber-400">
                     <span class="font-semibold text-rose-700">Mostrar únicamente auditorías con incidencias o inconsistencias detectadas</span>
                 </label>
             </div>
@@ -110,7 +110,7 @@
                     No hay registros de auditoría que coincidan con los criterios seleccionados o aún no se ha iniciado ningún relevamiento físico.
                 </p>
                 <div class="mt-4">
-                    <a href="{{ route('auditorias.create') }}" class="text-xs text-indigo-600 font-bold hover:underline">
+                    <a href="{{ route('auditorias.create') }}" class="text-xs text-amber-800 font-bold hover:underline">
                         + Comenzar una nueva auditoría ahora
                     </a>
                 </div>
@@ -130,9 +130,9 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100 font-medium">
                         @foreach($auditorias as $aud)
-                            <tr class="hover:bg-gray-50/50 transition-colors">
+                            <tr class="hover:bg-amber-50/30 transition-colors">
                                 <td class="py-3.5 px-4 whitespace-nowrap">
-                                    <span class="font-mono font-bold text-indigo-700">#AUD-{{ str_pad($aud->id, 4, '0', STR_PAD_LEFT) }}</span>
+                                    <span class="font-mono font-bold text-gray-900">#AUD-{{ str_pad($aud->id, 4, '0', STR_PAD_LEFT) }}</span>
                                     <div class="text-[11px] text-gray-500">
                                         {{ $aud->fecha ? $aud->fecha->format('d/m/Y H:i') : '-' }}
                                     </div>
@@ -175,8 +175,8 @@
                                 </td>
                                 <td class="py-3.5 px-4 text-right whitespace-nowrap">
                                     <div class="flex items-center justify-end gap-2">
-                                        <a href="{{ route('auditorias.show', $aud->id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-indigo-50 hover:text-indigo-700 text-gray-700 rounded-lg text-xs font-bold transition-colors">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <a href="{{ route('auditorias.show', $aud->id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-amber-50/60 border border-gray-300 text-gray-700 rounded-lg text-xs font-bold transition-colors">
+                                            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
                                             <span>Ver Informe</span>

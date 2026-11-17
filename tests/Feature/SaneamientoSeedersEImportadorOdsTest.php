@@ -36,8 +36,9 @@ class SaneamientoSeedersEImportadorOdsTest extends TestCase
         // La contraseña por defecto '1234' NO debe funcionar
         $this->assertFalse(Hash::check('1234', $admin->password));
 
-        // Debe coincidir con la contraseña robusta por defecto
-        $this->assertTrue(Hash::check('LiaSegura2026!', $admin->password));
+        // Debe coincidir con la contraseña por defecto configurada para seeders
+        $expectedPassword = config('auth.seed_default_password', 'pass1234!');
+        $this->assertTrue(Hash::check($expectedPassword, $admin->password));
     }
 
     public function test_importador_ods_bloquea_ejecucion_en_produccion_sin_force(): void
