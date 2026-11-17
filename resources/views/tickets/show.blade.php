@@ -58,18 +58,6 @@
         </div>
     </div>
 
-    <!-- Mensajes de Estado / Flash -->
-    @if(session('success'))
-        <div class="p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-2xl text-xs font-bold flex items-center justify-between shadow-2xs">
-            <span>{{ session('success') }}</span>
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="p-4 bg-rose-50 border border-rose-300 text-rose-900 rounded-2xl text-xs font-bold shadow-2xs">
-            {{ session('error') }}
-        </div>
-    @endif
-
     <!-- DISTRIBUCIÓN BOSQUEJO 2: 2 COLUMNAS (Marginal Izquierda + Principal Derecha) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         

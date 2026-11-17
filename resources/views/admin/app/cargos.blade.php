@@ -32,11 +32,6 @@
     </div>
 
     <!-- Mensajes -->
-    @if(session('success'))
-        <div class="bg-emerald-50 border border-emerald-300 text-emerald-900 text-sm font-semibold px-4 py-3 rounded-xl shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
     @if($errors->any())
         <div class="bg-red-50 border border-red-300 text-red-900 text-sm font-semibold px-4 py-3 rounded-xl shadow-sm">
             <ul>
