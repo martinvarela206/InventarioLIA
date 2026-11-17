@@ -17,21 +17,25 @@
                     Ticket #{{ $ticket->id }}
                 </h1>
                 
-                @if($ticket->estado_ticket === 'resuelto')
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                        ✓ Resuelto / Finalizado
+                @if($ticket->estado_ticket === 'cerrado' || $ticket->estado_ticket === 'resuelto')
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black bg-gray-900 text-white shadow-2xs">
+                        ✓ Cerrado
                     </span>
                 @elseif($ticket->estado_ticket === 'baja')
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
-                        ✕ Declarado Irreparable (Baja Patrimonial)
+                        ✕ Baja / Irreparable
                     </span>
                 @elseif($ticket->estado_ticket === 'solucionado')
                     <span class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-[#fbc101]">
-                        ★ Solución Propuesta (Pendiente de Cierre Formal)
+                        ★ Solución Propuesta (Pendiente Cierre Asset Admin)
+                    </span>
+                @elseif($ticket->estado_ticket === 'en_proceso')
+                    <span class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold bg-blue-50 text-blue-900 border border-blue-300">
+                        ⚙ En Proceso
                     </span>
                 @else
                     <span class="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 border border-[#fbc101] animate-pulse">
-                        ● Abierto / En Taller
+                        ● Abierto
                     </span>
                 @endif
             </div>
@@ -54,11 +58,23 @@
         </div>
     </div>
 
+    <!-- Mensajes de Estado / Flash -->
+    @if(session('success'))
+        <div class="p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-2xl text-xs font-bold flex items-center justify-between shadow-2xs">
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="p-4 bg-rose-50 border border-rose-300 text-rose-900 rounded-2xl text-xs font-bold shadow-2xs">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <!-- DISTRIBUCIÓN BOSQUEJO 2: 2 COLUMNAS (Marginal Izquierda + Principal Derecha) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" x-data="{ responderAbierto: false, cerrarAbierto: false }">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         <!-- ========================================================================= -->
-        <!-- COLUMNA IZQUIERDA: METADATOS (Marginal en Desktop: 4 cols)                  -->
+        <!-- COLUMNA IZQUIERDA: METADATOS (Marginal: 4 cols)                           -->
         <!-- ========================================================================= -->
         <div class="lg:col-span-4 space-y-4">
             <div class="bg-white rounded-2xl border border-gray-200 shadow-xs p-5 space-y-4">
@@ -241,11 +257,13 @@
                 @if($ticket->comentarios->isEmpty())
                     <div class="p-8 text-center bg-white rounded-2xl border border-dashed border-gray-200 text-gray-400 text-xs">
                         <p class="font-medium">No se han registrado respuestas en este ticket todavía.</p>
-                        <p class="mt-1">Utilice el botón <strong class="text-gray-700">Responder</strong> para aportar información o proponer una solución técnica.</p>
+                        @if($ticket->esTicketAbierto())
+                            <p class="mt-1">Haga clic en <strong class="text-gray-700">Responder</strong> para aportar información o proponer una solución técnica.</p>
+                        @endif
                     </div>
                 @else
                     @foreach($ticket->comentarios as $cmt)
-                        <div class="bg-white rounded-2xl border transition-all p-5 space-y-3 {{ $cmt->es_solucion ? 'border-amber-400 bg-amber-50/20 shadow-xs' : 'border-gray-200 shadow-2xs' }}">
+                        <div class="bg-white rounded-2xl border transition-all p-5 space-y-3 {{ $cmt->es_solucion ? 'border-[#fbc101] bg-amber-50/20 shadow-xs' : 'border-gray-200 shadow-2xs' }}">
                             <!-- Cabecera de la Respuesta -->
                             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-2">
                                 <div class="flex items-center gap-2">
@@ -299,242 +317,53 @@
             </div>
 
             <!-- ========================================================================= -->
-            <!-- ZONA DE ACCIONES INMEDIATAS (Bosquejo 2: [RESPONDER] y [CERRAR TICKET])    -->
+            <!-- BOTONERA INMEDIATA (Bosquejo 2: [RESPONDER] [CERRAR TICKET] / [REABRIR])   -->
             <!-- ========================================================================= -->
-            <div class="space-y-4 pt-2">
-                <!-- Botonera Principal según Bosquejo 2 -->
-                <div class="flex flex-wrap items-center justify-end gap-3 pt-2">
-                    <!-- Botón Responder -->
-                    @if($ticket->esTicketAbierto())
-                        <button type="button" 
-                                @click="responderAbierto = !responderAbierto; if(responderAbierto) cerrarAbierto = false"
-                                class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-black px-6 py-2.5 rounded-xl text-sm transition-all shadow-sm">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
-                            <span x-show="!responderAbierto">Responder</span>
-                            <span x-show="responderAbierto">Ocultar Respuesta</span>
-                        </button>
-                    @endif
-
-                    <!-- Botón Cerrar Ticket (Exclusivo Asset Admin) -->
-                    @if($ticket->esTicketAbierto() && Auth::user()->canCloseTickets())
-                        <button type="button" 
-                                @click="cerrarAbierto = !cerrarAbierto; if(cerrarAbierto) responderAbierto = false"
-                                class="inline-flex items-center gap-2 bg-gray-900 hover:bg-black text-white font-black px-6 py-2.5 rounded-xl text-sm transition-all shadow-sm">
-                            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                            <span x-show="!cerrarAbierto">Cerrar Ticket</span>
-                            <span x-show="cerrarAbierto">Cancelar Cierre</span>
-                        </button>
-                    @endif
-                </div>
-
-                <!-- FORMULARIO DESPLEGABLE: RESPONDER TICKET -->
+            <div class="pt-4 border-t border-gray-200">
                 @if($ticket->esTicketAbierto())
-                    <div x-show="responderAbierto" 
-                         x-transition:enter="transition ease-out duration-200"
-                         x-transition:enter-start="opacity-0 -translate-y-2"
-                         x-transition:enter-end="opacity-100 translate-y-0"
-                         class="bg-white rounded-2xl border border-amber-300 shadow-md p-6 space-y-4">
-                        <div class="border-b border-gray-100 pb-3 flex items-center justify-between">
-                            <h4 class="text-sm font-black text-gray-900 flex items-center gap-2">
-                                <span class="p-1 bg-[#fbc101] text-black rounded-lg text-xs">✍</span>
-                                <span>Añadir Respuesta al Ticket</span>
-                            </h4>
-                            <span class="text-[11px] text-amber-800 font-semibold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">Soporta Markdown</span>
-                        </div>
+                    <div class="flex flex-wrap items-center justify-end gap-3">
+                        <!-- Botón Responder: Abre página dedicada de respuesta -->
+                        <a href="{{ route('tickets.responder', $ticket->id) }}" 
+                           class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-black px-6 py-2.5 rounded-xl text-sm transition-all shadow-xs hover:shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                            <span>Responder</span>
+                        </a>
 
-                        <form action="{{ route('tickets.comentar', $ticket->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
-                            @csrf
-                            <div>
-                                <textarea name="mensaje" rows="4" required 
-                                          placeholder="Escriba su respuesta, diagnóstico técnico, mediciones o pruebas realizadas (soporta **negritas**, *cursivas*, listas, `código`)..."
-                                          class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400 transition-all"></textarea>
-                            </div>
-
-                            <!-- Selector de Propuesta de Solución (Bosquejo 1 y 2) -->
-                            <div class="p-3 bg-amber-50/70 border border-amber-300 rounded-xl">
-                                <label class="flex items-center gap-2.5 cursor-pointer">
-                                    <input type="checkbox" name="es_solucion" value="1" class="w-4 h-4 rounded text-amber-600 focus:ring-amber-500">
-                                    <div>
-                                        <span class="text-xs font-black text-amber-950 block">Marcar esta respuesta como propuesta de solución técnica</span>
-                                        <span class="text-[11px] text-amber-800 font-normal">Indica que la falla fue subsanada técnicamente. El ticket pasará a estado de solución a la espera del cierre formal por Asset Admin.</span>
-                                    </div>
-                                </label>
-                            </div>
-
-                            <!-- Fotos adjuntas en la respuesta -->
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                                    Adjuntar Fotos de Evidencia (Opcional):
-                                </label>
-                                <input type="file" name="fotos[]" multiple accept="image/*"
-                                       class="block w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-amber-100 hover:file:text-amber-900 cursor-pointer">
-                            </div>
-
-                            <!-- Opciones Técnicas adicionales -->
-                            @if(Auth::user()->hasRole('tec'))
-                                <div class="pt-2 border-t border-gray-100 flex flex-wrap items-center gap-3">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs font-bold text-gray-600">+ Área:</span>
-                                        <select name="nueva_area_id" class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700">
-                                            <option value="">Sin nueva área</option>
-                                            @foreach($areas as $ar)
-                                                @if(!$ticket->areas->contains('id', $ar->id))
-                                                    <option value="{{ $ar->id }}">{{ $ar->nombre }}</option>
-                                                @endif
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-                            @endif
-
-                            <div class="pt-2 border-t border-gray-100 flex items-center justify-end gap-2">
-                                <button type="button" @click="responderAbierto = false" class="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-50">
-                                    Cancelar
+                        <!-- Botón Cerrar Ticket: Exclusivo Asset Admin -->
+                        @if(Auth::user()->hasRole(['asset_admin', 'item_admin', 'app_admin']))
+                            <form action="{{ route('tickets.cerrar', $ticket->id) }}" method="POST" onsubmit="return confirm('¿Confirmar el cierre definitivo de este ticket?')">
+                                @csrf
+                                <button type="submit" 
+                                        class="inline-flex items-center gap-2 bg-gray-900 hover:bg-black text-white font-black px-6 py-2.5 rounded-xl text-sm transition-all shadow-xs hover:shadow-sm">
+                                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    <span>Cerrar Ticket</span>
                                 </button>
-                                <button type="submit" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-5 py-2 rounded-xl text-xs transition-all shadow-xs">
-                                    <span>Publicar Respuesta</span>
-                                </button>
-                            </div>
-                        </form>
+                            </form>
+                        @endif
                     </div>
-                @endif
-
-                <!-- FORMULARIO DESPLEGABLE: CERRAR TICKET (EXCLUSIVO ASSET ADMIN) -->
-                @if($ticket->esTicketAbierto() && Auth::user()->canCloseTickets())
-                    <div x-show="cerrarAbierto" 
-                         x-transition:enter="transition ease-out duration-200"
-                         x-transition:enter-start="opacity-0 -translate-y-2"
-                         x-transition:enter-end="opacity-100 translate-y-0"
-                         class="bg-white rounded-2xl border border-gray-900 shadow-xl p-6 space-y-5">
-                        <div class="border-b border-gray-100 pb-3">
-                            <h4 class="text-base font-black text-gray-900 flex items-center gap-2">
-                                <span class="w-6 h-6 bg-gray-900 text-white rounded-lg flex items-center justify-center text-xs font-black">✓</span>
-                                <span>Cierre Formal del Ticket (Asset Admin)</span>
-                            </h4>
-                            <p class="text-xs text-gray-500 mt-0.5">Como Asset Admin, confirme la resolución definitiva, reasigne la sala física del activo o declare la baja si no tiene reparación.</p>
+                @else
+                    <!-- Estado Cerrado -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+                        <div class="flex items-center gap-2 text-xs font-bold text-gray-500">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            <span>Este ticket ha sido cerrado. Ya no se pueden añadir más respuestas.</span>
                         </div>
 
-                        <form action="{{ route('tickets.resolver', $ticket->id) }}" method="POST" id="form_resolver_ticket" class="space-y-4">
-                            @csrf
-                            <input type="hidden" name="accion" id="accion_input" value="resolver">
-
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                                    Dictamen de Cierre y Pruebas Realizadas <span class="text-rose-500 font-bold">*</span>
-                                </label>
-                                <textarea name="solucion" rows="3" required
-                                          placeholder="Detalle la verificación final: equipo probado bajo carga, pasta térmica cambiada, funcionamiento validado satisfactoriamente..."
-                                          class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400 transition-all">{{ old('solucion') }}</textarea>
-                            </div>
-
-                            @if($ticket->esTicketGeneral())
-                                <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
-                                    <button type="button" @click="cerrarAbierto = false" class="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-50">
-                                        Cancelar
-                                    </button>
-                                    <button type="button" onclick="confirmarResolucionGeneral()"
-                                            class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-black px-6 py-2.5 rounded-xl text-xs transition-all shadow-xs">
-                                        <span>Resolver y Cerrar Incidencia</span>
-                                    </button>
-                                </div>
-                            @else
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                                            Sala de Destino (Reincorporación)
-                                        </label>
-                                        <select name="ubicacion_id" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101]">
-                                            @php
-                                                $ubicacionSugerida = $movPrevio?->ubicacion_id ?: $ticket->ubicacion_id;
-                                            @endphp
-                                            @foreach($ubicaciones as $ub)
-                                                <option value="{{ $ub->id }}" {{ old('ubicacion_id', $ubicacionSugerida) == $ub->id ? 'selected' : '' }}>
-                                                    {{ $ub->nombre }} {{ $movPrevio && $movPrevio->ubicacion_id == $ub->id ? '(Sala Previa)' : '' }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                                            Puesto de Destino
-                                        </label>
-                                        <input type="text" name="puesto" value="{{ old('puesto', $movPrevio?->puesto ?: $ticket->puesto) }}" placeholder="Ej: Puesto 04"
-                                               class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101]">
-                                    </div>
-                                </div>
-
-                                <div class="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                                    <button type="button" onclick="confirmarBaja()" 
-                                            class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 font-bold px-4 py-2 rounded-xl text-xs transition-all">
-                                        Declarar Irreparable (Baja Patrimonial)
-                                    </button>
-
-                                    <div class="flex items-center gap-2">
-                                        <button type="button" @click="cerrarAbierto = false" class="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 text-xs font-bold hover:bg-gray-50">
-                                            Cancelar
-                                        </button>
-                                        <button type="button" onclick="confirmarResolucion()"
-                                                class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-black px-6 py-2 rounded-xl text-xs transition-all shadow-xs">
-                                            <span>Resolver y Reincorporar a Sala</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            @endif
-                        </form>
+                        <!-- Botón Reabrir Ticket (Exclusivo Asset Admin) -->
+                        @if(Auth::user()->hasRole(['asset_admin', 'item_admin', 'app_admin']))
+                            <form action="{{ route('tickets.reabrir', $ticket->id) }}" method="POST" onsubmit="return confirm('¿Desea reabrir este ticket? La propuesta de solución previa será retirada automáticamente y el ticket volverá a estar en proceso.')">
+                                @csrf
+                                <button type="submit" 
+                                        class="inline-flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-black px-5 py-2 rounded-xl text-xs transition-all shadow-2xs">
+                                    <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    <span>Reabrir Ticket</span>
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 @endif
             </div>
         </div>
     </div>
 </div>
-
-<script>
-    function confirmarResolucionGeneral() {
-        const form = document.getElementById('form_resolver_ticket');
-        const solucion = form.querySelector('textarea[name="solucion"]').value.trim();
-
-        if (solucion.length < 5) {
-            alert('Por favor detalle el dictamen técnico antes de resolver la incidencia.');
-            form.querySelector('textarea[name="solucion"]').focus();
-            return;
-        }
-
-        document.getElementById('accion_input').value = 'resolver';
-        if (confirm('¿Confirmar el cierre definitivo de esta incidencia general?')) {
-            form.submit();
-        }
-    }
-
-    function confirmarResolucion() {
-        const form = document.getElementById('form_resolver_ticket');
-        const solucion = form.querySelector('textarea[name="solucion"]').value.trim();
-
-        if (solucion.length < 5) {
-            alert('Por favor detalle el dictamen técnico antes de resolver el ticket.');
-            form.querySelector('textarea[name="solucion"]').focus();
-            return;
-        }
-
-        document.getElementById('accion_input').value = 'resolver';
-        if (confirm('¿Confirmar la resolución del ticket y el reingreso del activo a sala?')) {
-            form.submit();
-        }
-    }
-
-    function confirmarBaja() {
-        const form = document.getElementById('form_resolver_ticket');
-        const solucion = form.querySelector('textarea[name="solucion"]').value.trim();
-
-        if (solucion.length < 5) {
-            alert('Por favor detalle el motivo técnico por el cual el activo resulta irreparable.');
-            form.querySelector('textarea[name="solucion"]').focus();
-            return;
-        }
-
-        document.getElementById('accion_input').value = 'baja';
-        if (confirm('ATENCIÓN: ¿Está seguro de declarar este equipo como IRREPARABLE? El activo pasará a estado de BAJA / BASURA TECNOLÓGICA.')) {
-            form.submit();
-        }
-    }
-</script>
 @endsection

@@ -235,7 +235,12 @@ class Movimiento extends Model
 
     public function esTicketAbierto(): bool
     {
-        return $this->tipo_movimiento === 'reparacion' && in_array($this->estado_ticket, ['abierto', 'solucionado', null, '']);
+        return $this->tipo_movimiento === 'reparacion' && in_array($this->estado_ticket, ['abierto', 'en_proceso', 'solucionado', null, '']);
+    }
+
+    public function esTicketCerrado(): bool
+    {
+        return $this->tipo_movimiento === 'reparacion' && in_array($this->estado_ticket, ['cerrado', 'resuelto', 'baja']);
     }
 
     public function scopeTicketsAbiertos(Builder $query): Builder
@@ -243,7 +248,7 @@ class Movimiento extends Model
         return $query->where('tipo_movimiento', 'reparacion')
             ->where(function ($q) {
                 $q->whereNull('estado_ticket')
-                    ->orWhereIn('estado_ticket', ['abierto', 'solucionado']);
+                    ->orWhereIn('estado_ticket', ['abierto', 'en_proceso', 'solucionado']);
             });
     }
 

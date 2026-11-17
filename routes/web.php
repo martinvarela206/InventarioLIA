@@ -103,6 +103,7 @@ Route::middleware('auth')->group(function () {
         Route::middleware('role:rev,subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
             Route::get('/tickets/buscar-rapido', [TicketController::class, 'apiBuscar'])->name('tickets.buscar-rapido');
             Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+            Route::get('/tickets/{ticket}/responder', [TicketController::class, 'responderForm'])->name('tickets.responder');
             Route::get('/tickets/{ticket}/pdf', [TicketController::class, 'exportarPdf'])->name('tickets.pdf');
             Route::post('/tickets/{ticket}/comentar', [TicketController::class, 'comentar'])->name('tickets.comentar');
             Route::post('/tickets/{ticket}/area', [TicketController::class, 'agregarArea'])->name('tickets.agregarArea');
@@ -112,6 +113,8 @@ Route::middleware('auth')->group(function () {
         Route::middleware('role:subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
             Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
             Route::post('/tickets/{ticket}/solucionar', [TicketController::class, 'solucionar'])->name('tickets.solucionar');
+            Route::post('/tickets/{ticket}/cerrar', [TicketController::class, 'cerrarDirecto'])->name('tickets.cerrar');
+            Route::post('/tickets/{ticket}/reabrir', [TicketController::class, 'reabrir'])->name('tickets.reabrir');
         });
 
         // Gestión Operativa de Movimientos, Préstamos y Cierre de Tickets (exclusivo tec)
