@@ -77,9 +77,8 @@ services:
       - '--server-audit-file-path=/var/log/mysql/audit.log'
       - '--server-audit-file-rotate-size=104857600'
       - '--server-audit-file-rotations=5'
-      - '--sql-safe-updates=ON'
     healthcheck:
-      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
       retries: 5
