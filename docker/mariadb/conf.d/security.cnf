@@ -3,10 +3,7 @@
 # Exige que toda sentencia UPDATE o DELETE incluya una cláusula WHERE con clave/índice o un LIMIT explícito.
 sql_safe_updates = ON
 
-# 2. Forzar comprobación estricta de claves foráneas
-foreign_key_checks = ON
-
-# 3. Modo SQL estricto para evitar truncamientos silenciosos o coerción de tipos inválidos
+# 2. Modo SQL estricto para evitar truncamientos silenciosos o coerción de tipos inválidos
 sql_mode = "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
 
 # 4. Deshabilitar carga de archivos locales para mitigar ataques de inyección remota
