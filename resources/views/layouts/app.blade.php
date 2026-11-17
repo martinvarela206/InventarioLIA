@@ -6,6 +6,7 @@
     <title>Nexo LIA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @stack('styles')
 </head>
 <body class="{{ Request::is('/') ? 'bg-[#111] text-white' : 'bg-[#fef8e7] flex flex-col min-h-screen' }}">
     <x-toast />
