@@ -18,16 +18,6 @@
         </div>
     </div>
 
-    <!-- Alert Success -->
-    @if(session('success'))
-        <div class="bg-emerald-50 border border-emerald-300 text-emerald-900 text-sm font-semibold px-4 py-3 rounded-xl shadow-sm flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                <span>{{ session('success') }}</span>
-            </div>
-        </div>
-    @endif
-
     <!-- KPI / Accesos Rápidos -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
         <!-- Carreras -->
