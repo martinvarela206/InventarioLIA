@@ -138,7 +138,8 @@ class TicketController extends Controller
         if ($request->filled('search')) {
             $term = trim($request->search);
             $query->where(function ($q) use ($term) {
-                $q->where('comentario', 'like', "%{$term}%")
+                $q->where('titulo', 'like', "%{$term}%")
+                    ->orWhere('comentario', 'like', "%{$term}%")
                     ->orWhere('solicitante', 'like', "%{$term}%")
                     ->orWhereHas('ambitoTicket', function ($aq) use ($term) {
                         $aq->where('nombre', 'like', "%{$term}%")
@@ -184,7 +185,8 @@ class TicketController extends Controller
                 if (is_numeric($cleanId) && (int) $cleanId > 0) {
                     $q->orWhere('id', (int) $cleanId);
                 }
-                $q->orWhere('comentario', 'like', "%{$term}%")
+                $q->orWhere('titulo', 'like', "%{$term}%")
+                    ->orWhere('comentario', 'like', "%{$term}%")
                     ->orWhere('solicitante', 'like', "%{$term}%")
                     ->orWhereHas('ambitoTicket', function ($aq) use ($term) {
                         $aq->where('nombre', 'like', "%{$term}%")
@@ -222,7 +224,7 @@ class TicketController extends Controller
             return [
                 'id' => $t->id,
                 'codigo' => '#'.str_pad((string) $t->id, 4, '0', STR_PAD_LEFT),
-                'asunto' => Str::limit($t->comentario, 65),
+                'asunto' => $t->titulo ?: Str::limit($t->comentario, 65),
                 'solicitante' => $t->solicitante ?: 'Sin solicitante',
                 'estado' => $t->estado_ticket ?: 'abierto',
                 'estado_label' => $estadoLabel,
@@ -354,13 +356,14 @@ class TicketController extends Controller
     public function comentar(Request $request, int $id): RedirectResponse
     {
         $validated = $request->validate([
-            'mensaje' => 'required|string|min:3',
+            'mensaje' => 'required|string|min:2',
             'nueva_area_id' => 'nullable|exists:areas,id',
+            'es_solucion' => 'nullable|boolean',
             'generar_movimiento' => 'nullable|boolean',
             'ubicacion_id' => 'nullable|exists:ubicaciones,id',
             'puesto' => 'nullable|string|max:50',
-            'fotos' => 'nullable|array|max:5',
-            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'fotos' => 'nullable|array|max:10',
+            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
         ]);
 
         $ticket = Movimiento::findOrFail($id);
@@ -368,6 +371,8 @@ class TicketController extends Controller
             abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
         }
         $user = Auth::user();
+
+        $esSolucion = $request->boolean('es_solucion');
 
         $movimientoGenerado = null;
         if ($user->hasRole('tec') && $request->boolean('generar_movimiento') && ! empty($validated['ubicacion_id'])) {
@@ -388,8 +393,14 @@ class TicketController extends Controller
             'user_id' => $user->id,
             'movimiento_id' => $movimientoGenerado?->id,
             'mensaje' => $validated['mensaje'],
-            'tipo' => 'comentario',
+            'tipo' => $esSolucion ? 'solucion_propuesta' : 'comentario',
+            'es_solucion' => $esSolucion,
         ]);
+
+        if ($esSolucion && $ticket->estado_ticket === 'abierto') {
+            $ticket->estado_ticket = 'solucionado';
+            $ticket->save();
+        }
 
         if ($request->hasFile('fotos')) {
             foreach ($request->file('fotos') as $foto) {
@@ -414,9 +425,11 @@ class TicketController extends Controller
             ]);
         }
 
-        $msg = $movimientoGenerado
-            ? 'Mensaje publicado y movimiento de inventario registrado con éxito.'
-            : 'Mensaje registrado en la bitácora del ticket.';
+        $msg = $esSolucion
+            ? 'Respuesta registrada con propuesta de solución. El ticket queda a la espera de cierre formal por Asset Admin.'
+            : ($movimientoGenerado
+                ? 'Respuesta publicada y movimiento de inventario registrado con éxito.'
+                : 'Respuesta registrada en el seguimiento del ticket.');
 
         return redirect()->route('tickets.show', $ticket->id)->with('success', $msg);
     }

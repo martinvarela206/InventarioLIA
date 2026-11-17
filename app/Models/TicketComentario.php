@@ -19,6 +19,11 @@ class TicketComentario extends Model
         'movimiento_id',
         'mensaje',
         'tipo',
+        'es_solucion',
+    ];
+
+    protected $casts = [
+        'es_solucion' => 'boolean',
     ];
 
     public function ticket(): BelongsTo
