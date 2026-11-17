@@ -92,14 +92,32 @@
             </label>
         </div>
 
-        <!-- Adjuntar Fotos -->
-        <div>
-            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Adjuntar Fotografías o Evidencias (Opcional)
-            </label>
-            <input type="file" name="fotos[]" multiple accept="image/*"
-                   class="block w-full text-xs text-gray-500 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-amber-100 hover:file:text-amber-900 cursor-pointer border border-gray-200 rounded-xl p-1">
-            <span class="text-[11px] text-gray-400 mt-1 block">Puede seleccionar múltiples imágenes (PNG, JPG o WebP hasta 10 MB).</span>
+        <!-- Evidencia Fotográfica / Adjuntar Fotos -->
+        <div class="space-y-3 pt-2 border-t border-gray-100">
+            <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Evidencia Fotográfica / Adjuntos (Opcional)
+                </label>
+                <span class="text-xs text-gray-400">Cámara en vivo o selección desde galería</span>
+            </div>
+
+            <div>
+                <label for="fotos_input" class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 hover:border-amber-400 hover:bg-amber-50/20 rounded-2xl p-6 cursor-pointer transition-all">
+                    <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mb-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <span class="text-sm font-bold text-gray-800">Tomar foto con la cámara o seleccionar imágenes</span>
+                    <span class="text-xs text-gray-400 mt-1">PNG, JPG, WebP hasta 10MB por imagen. Puede seleccionar varias fotos.</span>
+                    <input type="file" name="fotos[]" id="fotos_input" accept="image/*;capture=camera" multiple class="hidden" onchange="previewFotos(event)">
+                </label>
+            </div>
+
+            <!-- Contenedor de miniaturas previsualizadas -->
+            <div id="preview_fotos_container" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            </div>
         </div>
 
         <!-- Opciones Técnicas opcionales si es técnico -->
@@ -129,4 +147,31 @@
         </div>
     </form>
 </div>
+
+<script>
+    function previewFotos(event) {
+        const container = document.getElementById('preview_fotos_container');
+        container.innerHTML = '';
+        const files = event.target.files;
+
+        if (files && files.length > 0) {
+            container.classList.remove('hidden');
+            Array.from(files).forEach((file, idx) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'relative rounded-xl overflow-hidden border border-gray-200 shadow-2xs aspect-video bg-gray-100 flex items-center justify-center';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" class="w-full h-full object-cover">
+                        <span class="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded font-mono font-bold">#${idx+1}</span>
+                    `;
+                    container.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            });
+        } else {
+            container.classList.add('hidden');
+        }
+    }
+</script>
 @endsection
