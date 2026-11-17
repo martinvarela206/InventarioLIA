@@ -17,6 +17,19 @@ class StoreTicketRequest extends FormRequest
     }
 
     /**
+     * Prepara los datos antes de la validación formal.
+     * Si no se envía un título explícito pero sí una descripción, se auto-extrae el título para retrocompatibilidad.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (empty($this->titulo) && ! empty($this->comentario)) {
+            $this->merge([
+                'titulo' => \Illuminate\Support\Str::limit(trim(strip_tags((string) $this->comentario)), 60),
+            ]);
+        }
+    }
+
+    /**
      * Reglas de validación para la creación de tickets.
      *
      * @return array<string, mixed>
@@ -28,13 +41,14 @@ class StoreTicketRequest extends FormRequest
             'elemento_id' => ['nullable', 'required_without:ambito_ticket_id', 'exists:elementos,id'],
             'ambito_ticket_id' => ['nullable', 'required_without:elemento_id', 'exists:ambitos_tickets,id'],
             'area_id' => ['nullable', 'exists:areas,id'],
-            'comentario' => ['required', 'string', 'min:5'],
+            'titulo' => ['required_without:comentario', 'nullable', 'string', 'min:3', 'max:255'],
+            'comentario' => ['nullable', 'string'],
             'solicitante' => ['nullable', 'string', 'max:150'],
             'tipo_traslado' => ['nullable', 'in:insitu,taller'],
             'ubicacion_id' => ['nullable', 'exists:ubicaciones,id'],
             'puesto' => ['nullable', 'string', 'max:50'],
-            'fotos' => ['nullable', 'array', 'max:5'],
-            'fotos.*' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'fotos' => ['nullable', 'array', 'max:10'],
+            'fotos.*' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
         ];
     }
 
@@ -46,14 +60,14 @@ class StoreTicketRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'titulo.required' => 'El título del ticket es obligatorio.',
+            'titulo.min' => 'El título debe contener al menos 3 caracteres.',
             'elemento_id.required_without' => 'Debe seleccionar un activo de inventario o un ámbito de infraestructura general.',
             'elemento_id.exists' => 'El activo patrimonial seleccionado no existe en el sistema.',
             'ambito_ticket_id.required_without' => 'Debe seleccionar un ámbito general si la incidencia no está asociada a un activo patrimonial.',
             'ambito_ticket_id.exists' => 'El ámbito seleccionado no es válido o ha sido dado de baja.',
-            'comentario.required' => 'La descripción detallada del problema es obligatoria.',
-            'comentario.min' => 'La descripción del problema debe contener al menos 5 caracteres.',
-            'fotos.max' => 'No puede adjuntar más de 5 fotografías de evidencia.',
-            'fotos.*.max' => 'Cada imagen adjunta no debe superar los 5 MB de tamaño.',
+            'fotos.max' => 'No puede adjuntar más de 10 fotografías de evidencia.',
+            'fotos.*.max' => 'Cada imagen adjunta no debe superar los 10 MB de tamaño.',
             'fotos.*.image' => 'Los archivos adjuntos deben ser imágenes válidas (JPG, PNG o WebP).',
         ];
     }

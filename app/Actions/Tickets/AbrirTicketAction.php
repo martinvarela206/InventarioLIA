@@ -27,11 +27,17 @@ class AbrirTicketAction
         }
 
         return DB::transaction(function () use ($elementoId, $datos, $user, $fotos) {
+            $titulo = trim((string) ($datos['titulo'] ?? ''));
             $comentario = trim((string) ($datos['comentario'] ?? ''));
-            if (strlen($comentario) < 5) {
+
+            if ($titulo === '' && strlen($comentario) < 5) {
                 throw ValidationException::withMessages([
                     'comentario' => 'La descripción del problema técnico debe contener al menos 5 caracteres.',
                 ]);
+            }
+
+            if ($titulo === '') {
+                $titulo = \Illuminate\Support\Str::limit($comentario, 60);
             }
 
             $solicitante = trim((string) ($datos['solicitante'] ?? ''));
@@ -52,12 +58,13 @@ class AbrirTicketAction
                     'ambito_ticket_id' => (int) $datos['ambito_ticket_id'],
                     'tipo_movimiento' => 'reparacion',
                     'estado_ticket' => 'abierto',
+                    'titulo' => $titulo,
                     'ubicacion_id' => ! empty($datos['ubicacion_id']) ? (int) $datos['ubicacion_id'] : null,
                     'puesto' => $datos['puesto'] ?? null,
                     'user_id' => $user->id,
                     'fecha' => now(),
                     'solicitante' => $solicitante,
-                    'comentario' => $comentario,
+                    'comentario' => $comentario ?: null,
                 ]);
 
                 if (! empty($datos['area_id'])) {
@@ -134,12 +141,13 @@ class AbrirTicketAction
                 'elemento_id' => $el->id,
                 'tipo_movimiento' => 'reparacion',
                 'estado_ticket' => 'abierto',
+                'titulo' => $titulo,
                 'ubicacion_id' => $ubicacionId,
                 'puesto' => $puesto,
                 'user_id' => $user->id,
                 'fecha' => now(),
                 'solicitante' => $solicitante,
-                'comentario' => $comentario,
+                'comentario' => $comentario ?: null,
             ]);
 
             if (! empty($datos['area_id'])) {
