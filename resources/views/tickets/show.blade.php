@@ -302,25 +302,27 @@
             <!-- ZONA DE ACCIONES INMEDIATAS (Bosquejo 2: [RESPONDER] y [CERRAR TICKET])    -->
             <!-- ========================================================================= -->
             <div class="space-y-4 pt-2">
-                <!-- Botonera Principal -->
-                <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
-                    <!-- Botón Responder (Accesible para roles técnicos y revisores) -->
+                <!-- Botonera Principal según Bosquejo 2 -->
+                <div class="flex flex-wrap items-center justify-end gap-3 pt-2">
+                    <!-- Botón Responder -->
                     @if($ticket->esTicketAbierto())
                         <button type="button" 
                                 @click="responderAbierto = !responderAbierto; if(responderAbierto) cerrarAbierto = false"
-                                class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-black px-5 py-2.5 rounded-xl text-xs transition-all shadow-xs">
+                                class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-black px-6 py-2.5 rounded-xl text-sm transition-all shadow-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
-                            <span x-text="responderAbierto ? 'Ocultar Formulario de Respuesta' : 'Responder Ticket'"></span>
+                            <span x-show="!responderAbierto">Responder</span>
+                            <span x-show="responderAbierto">Ocultar Respuesta</span>
                         </button>
                     @endif
 
-                    <!-- Botón Cerrar Ticket (Exclusivo Asset Admin / Técnico facultado) -->
+                    <!-- Botón Cerrar Ticket (Exclusivo Asset Admin) -->
                     @if($ticket->esTicketAbierto() && Auth::user()->canCloseTickets())
                         <button type="button" 
                                 @click="cerrarAbierto = !cerrarAbierto; if(cerrarAbierto) responderAbierto = false"
-                                class="inline-flex items-center gap-2 bg-gray-900 hover:bg-black text-white font-extrabold px-5 py-2.5 rounded-xl text-xs transition-all shadow-xs ml-auto">
+                                class="inline-flex items-center gap-2 bg-gray-900 hover:bg-black text-white font-black px-6 py-2.5 rounded-xl text-sm transition-all shadow-sm">
                             <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                            <span x-text="cerrarAbierto ? 'Cancelar Cierre' : 'Cerrar Ticket (Asset Admin)'"></span>
+                            <span x-show="!cerrarAbierto">Cerrar Ticket</span>
+                            <span x-show="cerrarAbierto">Cancelar Cierre</span>
                         </button>
                     @endif
                 </div>
