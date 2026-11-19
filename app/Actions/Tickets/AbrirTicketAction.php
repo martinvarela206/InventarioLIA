@@ -9,6 +9,7 @@ use App\Models\MovimientoAdjunto;
 use App\Models\Usuario;
 use App\Services\ImageSanitizer;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AbrirTicketAction
@@ -37,7 +38,7 @@ class AbrirTicketAction
             }
 
             if ($titulo === '') {
-                $titulo = \Illuminate\Support\Str::limit($comentario, 60);
+                $titulo = Str::limit($comentario, 60);
             }
 
             $solicitante = trim((string) ($datos['solicitante'] ?? ''));

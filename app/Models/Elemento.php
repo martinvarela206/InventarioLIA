@@ -36,7 +36,6 @@ class Elemento extends Model
         'anio_compra',
         'puesto',
         'observaciones',
-        'descripcion',
         'cantidad',
         'fecha_adquisicion',
         'fecha_vencimiento_garantia',
@@ -46,7 +45,6 @@ class Elemento extends Model
     protected $casts = [
         'fecha_adquisicion' => 'date',
         'fecha_vencimiento_garantia' => 'date',
-        'descripcion' => 'array',
         'anio_compra' => 'integer',
         'cantidad' => 'integer',
         'deleted_at' => 'datetime',
@@ -72,20 +70,28 @@ class Elemento extends Model
     }
 
     /**
-     * Transforma arrays paralelos de claves y valores de formulario en un array asociativo limpio.
+     * Transforma arrays paralelos de claves y valores de formulario en un array asociativo limpio para campos ad-hoc.
      */
-    public static function parsearDescripcion(array $keys = [], array $values = []): ?array
+    public static function parsearAtributosAdHoc(array $keys = [], array $values = []): array
     {
-        $descripcion = [];
+        $adHoc = [];
         foreach ($keys as $i => $k) {
             $k = trim((string) $k);
             $v = isset($values[$i]) ? trim((string) $values[$i]) : '';
             if ($k !== '' && $v !== '') {
-                $descripcion[$k] = $v;
+                $adHoc[$k] = $v;
             }
         }
 
-        return ! empty($descripcion) ? $descripcion : null;
+        return $adHoc;
+    }
+
+    /**
+     * Alias de compatibilidad transicional hacia parsearAtributosAdHoc.
+     */
+    public static function parsearDescripcion(array $keys = [], array $values = []): array
+    {
+        return static::parsearAtributosAdHoc($keys, $values);
     }
 
     protected static function booted(): void
@@ -94,77 +100,55 @@ class Elemento extends Model
             $elemento->nro_lia = static::normalizarIdentificador($elemento->nro_lia);
             $elemento->nro_unsj = static::normalizarIdentificador($elemento->nro_unsj);
         });
-
-        static::saved(function ($elemento) {
-            $elemento->sincronizarDescripcionHaciaAtributos();
-        });
     }
 
     /**
-     * Sincroniza los atributos técnicos en la tabla normalizada elemento_atributo_valor
-     * y mantiene actualizada la columna de compatibilidad descripcion (JSON).
+     * Sincroniza los atributos técnicos en la tabla relacional normalizada elemento_atributo_valor,
+     * soportando tanto atributos predefinidos por ID como campos dinámicos ad-hoc por nombre.
      *
      * @param  array<int|string, string|null>  $atributos  [atributo_id => valor]
+     * @param  array<string, string|null>  $atributosAdHoc  [nombre_atributo => valor]
      */
-    public function sincronizarAtributosTecnicos(array $atributos): void
+    public function sincronizarAtributosTecnicos(array $atributos = [], array $atributosAdHoc = []): void
     {
-        $descripcionActual = is_array($this->descripcion) ? $this->descripcion : [];
-
+        // 1. Atributos predefinidos por ID de catálogo
         foreach ($atributos as $attrId => $valor) {
             $valLimpio = trim((string) $valor);
-            $atributo = Atributo::find($attrId);
 
             if ($valLimpio !== '') {
                 ElementoAtributoValor::updateOrCreate(
                     ['elemento_id' => $this->id, 'atributo_id' => $attrId],
                     ['valor' => $valLimpio]
                 );
-                if ($atributo) {
-                    $descripcionActual[$atributo->nombre] = $valLimpio;
-                }
             } else {
                 ElementoAtributoValor::where('elemento_id', $this->id)
                     ->where('atributo_id', $attrId)
                     ->delete();
-                if ($atributo && array_key_exists($atributo->nombre, $descripcionActual)) {
-                    unset($descripcionActual[$atributo->nombre]);
+            }
+        }
+
+        // 2. Atributos ad-hoc dinámicos por nombre
+        foreach ($atributosAdHoc as $nombre => $valor) {
+            $nombreLimpio = trim((string) $nombre);
+            $valLimpio = trim((string) $valor);
+
+            if ($nombreLimpio !== '') {
+                $attr = Atributo::firstOrCreateNormalizado($nombreLimpio);
+
+                if ($valLimpio !== '') {
+                    ElementoAtributoValor::updateOrCreate(
+                        ['elemento_id' => $this->id, 'atributo_id' => $attr->id],
+                        ['valor' => $valLimpio]
+                    );
+                } else {
+                    ElementoAtributoValor::where('elemento_id', $this->id)
+                        ->where('atributo_id', $attr->id)
+                        ->delete();
                 }
             }
         }
 
-        $this->descripcion = ! empty($descripcionActual) ? $descripcionActual : null;
-        $this->saveQuietly();
         $this->unsetRelation('valoresAtributos');
-    }
-
-    /**
-     * Propaga valores de atributos desde descripcion (JSON) hacia la tabla
-     * normalizada elemento_atributo_valor si el Tipo define atributos correspondientes.
-     */
-    public function sincronizarDescripcionHaciaAtributos(): void
-    {
-        if (! is_array($this->descripcion) || empty($this->descripcion) || ! $this->tipo_id) {
-            return;
-        }
-
-        $tipo = Tipo::with('atributos')->find($this->tipo_id);
-        if (! $tipo || $tipo->atributos->isEmpty()) {
-            return;
-        }
-
-        $atributosPorNombre = $tipo->atributos->keyBy(fn ($a) => mb_strtolower(trim($a->nombre)));
-
-        foreach ($this->descripcion as $key => $val) {
-            $keyLower = mb_strtolower(trim((string) $key));
-            $valLimpio = trim((string) $val);
-            if ($valLimpio !== '' && $valLimpio !== '-' && isset($atributosPorNombre[$keyLower])) {
-                $attr = $atributosPorNombre[$keyLower];
-                ElementoAtributoValor::updateOrCreate(
-                    ['elemento_id' => $this->id, 'atributo_id' => $attr->id],
-                    ['valor' => $valLimpio]
-                );
-            }
-        }
     }
 
     public function tipo(): BelongsTo
@@ -208,17 +192,6 @@ class Elemento extends Model
                         }
 
                         return $val.$unidad;
-                    }
-                }
-            }
-        }
-
-        if (is_array($this->descripcion)) {
-            foreach ($this->descripcion as $key => $val) {
-                if (mb_strtolower(trim((string) $key)) === $nomLower) {
-                    $v = trim((string) $val);
-                    if ($v !== '') {
-                        return $v;
                     }
                 }
             }
@@ -334,18 +307,7 @@ class Elemento extends Model
             })->implode(' | ');
         }
 
-        if (is_array($this->descripcion)) {
-            $parts = [];
-            foreach ($this->descripcion as $key => $val) {
-                if (! empty($val)) {
-                    $parts[] = is_string($key) ? "{$key}: {$val}" : $val;
-                }
-            }
-
-            return implode(' | ', $parts);
-        }
-
-        return (string) ($this->descripcion ?? '');
+        return '';
     }
 
     /**

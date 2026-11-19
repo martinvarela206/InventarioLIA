@@ -1260,8 +1260,8 @@ class InventarioDevTest extends TestCase
         // Ver detalle del ticket
         $resShowTicket = $this->actingAs($tec)->get(route('tickets.show', $ticketMov->id));
         $resShowTicket->assertStatus(200);
-        $resShowTicket->assertSee('Resolución Técnica del Ticket');
         $resShowTicket->assertSee('Mesa 04'); // Ubicación previa heredada
+        $resShowTicket->assertSee('Responder');
 
         // Resolución de Ticket por el Técnico
         $resResolver = $this->actingAs($tec)->post(route('tickets.resolver', $ticketMov->id), [
@@ -1356,10 +1356,10 @@ class InventarioDevTest extends TestCase
             'tipo_id' => $tipoPc->id,
             'marca' => 'HP',
             'modelo' => 'Z240',
-            'descripcion' => [
-                'Procesador' => 'Intel Core i7-7700',
-                'RAM' => '16GB',
-            ],
+        ]);
+        $pc->sincronizarAtributosTecnicos([], [
+            'Procesador' => 'Intel Core i7-7700',
+            'RAM' => '16GB',
         ]);
 
         $mouse = Elemento::create([
@@ -1367,7 +1367,6 @@ class InventarioDevTest extends TestCase
             'tipo_id' => $tipoPeriferico->id,
             'marca' => 'Logitech',
             'modelo' => 'M90',
-            'descripcion' => null,
         ]);
 
         $resShow = $this->actingAs($rev)->get(route('reportes.show', 'inventario-completo'));
@@ -1781,9 +1780,9 @@ class InventarioDevTest extends TestCase
         $this->assertEquals(0, $countLiaHeaders, 'No deben existir activos cuyo Nro LIA sea un nombre de encabezado ODS.');
 
         // 2. Verificar que no existan activos con especificaciones redundantes de cabecera
-        $countSpecsHeaders = Elemento::whereJsonContains('descripcion->Procesador', 'Procesador')
-            ->whereJsonContains('descripcion->RAM', 'RAM')
-            ->count();
+        $countSpecsHeaders = ElementoAtributoValor::where(function ($q) {
+            $q->where('valor', 'Procesador')->orWhere('valor', 'RAM');
+        })->whereHas('atributo', fn ($q) => $q->whereIn('nombre', ['Procesador', 'RAM']))->count();
         $this->assertEquals(0, $countSpecsHeaders, 'No deben existir activos con especificaciones técnicas que dupliquen nombres de columnas.');
     }
 
@@ -2513,7 +2512,7 @@ class InventarioDevTest extends TestCase
         // 4. Verificación en la vista de detalle
         $resShow = $this->actingAs($tec)->get(route('tickets.show', $ticket->id));
         $resShow->assertStatus(200);
-        $resShow->assertSee('Áreas Involucradas (Multidisciplinario)');
+        $resShow->assertSee('Áreas Involucradas');
         $resShow->assertSee('Hardware');
         $resShow->assertSee('Software');
     }
@@ -2604,7 +2603,7 @@ class InventarioDevTest extends TestCase
         // 4. Renderizado del foro en la vista tickets.show
         $resShow = $this->actingAs($tec)->get(route('tickets.show', $ticket->id));
         $resShow->assertStatus(200);
-        $resShow->assertSee('Hilo de Seguimiento y Discusión Técnica');
+        $resShow->assertSee('Respuestas y Seguimiento');
         $resShow->assertSee('Revisor Foro');
         $resShow->assertSee('Tecnico Foro');
         $resShow->assertSee('Adjunto foto del fusible');
@@ -2681,10 +2680,10 @@ class InventarioDevTest extends TestCase
         // 4. Verificar renderizado en la vista tickets.show
         $resShow = $this->actingAs($tec)->get(route('tickets.show', $ticket->id));
         $resShow->assertStatus(200);
-        $resShow->assertSee('📦 Traslado Físico Vinculado');
+        $resShow->assertSee('📦 Traslado registrado hacia:');
         $resShow->assertSee('Taller de Hardware');
         $resShow->assertSee('Banco 03');
-        $resShow->assertSee('Movimiento #'.$movimientoGenerado->id);
+        $resShow->assertSee('Mov #'.$movimientoGenerado->id);
     }
 
     public function test_arquitectura_datos_y_persistencia_incremental_de_auditorias(): void

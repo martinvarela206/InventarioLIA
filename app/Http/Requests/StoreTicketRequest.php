@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 
 class StoreTicketRequest extends FormRequest
 {
@@ -24,7 +25,7 @@ class StoreTicketRequest extends FormRequest
     {
         if (empty($this->titulo) && ! empty($this->comentario)) {
             $this->merge([
-                'titulo' => \Illuminate\Support\Str::limit(trim(strip_tags((string) $this->comentario)), 60),
+                'titulo' => Str::limit(trim(strip_tags((string) $this->comentario)), 60),
             ]);
         }
     }

@@ -18,10 +18,11 @@ else
     echo "ℹ️  El archivo .env ya existe. Omitiendo copia."
 fi
 
-# 2. Base de datos SQLite (si el .env lo requiere y no existe)
-if grep -q "^DB_CONNECTION=sqlite" .env && [ ! -f database/database.sqlite ]; then
-    echo "🗄️  Creando archivo database/database.sqlite..."
+# 2. Base de datos SQLite (purga física previa y recreación limpia)
+if grep -q "^DB_CONNECTION=sqlite" .env; then
+    echo "🗄️  Purgando base de datos SQLite previa y creando una limpia..."
     mkdir -p database
+    rm -f database/database.sqlite
     touch database/database.sqlite
 fi
 
