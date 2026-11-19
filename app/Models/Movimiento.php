@@ -24,6 +24,7 @@ class Movimiento extends Model
         'elemento_id',
         'tipo_movimiento',
         'estado_ticket',
+        'titulo',
         'ambito_ticket_id',
         'ubicacion_id',
         'puesto',
@@ -208,6 +209,25 @@ class Movimiento extends Model
         return $this->esTicket() && is_null($this->elemento_id);
     }
 
+    public function getTituloDisplayAttribute(): string
+    {
+        if (! empty($this->titulo)) {
+            return $this->titulo;
+        }
+
+        if ($this->esTicketGeneral()) {
+            return 'Incidencia en ' . ($this->ambitoTicket?->nombre ?? 'Infraestructura General');
+        }
+
+        if ($this->elemento) {
+            $nro = $this->elemento->nro_lia ?: ($this->elemento->nro_unsj ?: 'Activo #' . $this->elemento->id);
+            $tipo = $this->elemento->tipo?->nombre ? ucfirst($this->elemento->tipo->nombre) : 'Equipo';
+            return "Avería en {$tipo} {$nro} ({$this->elemento->marca} {$this->elemento->modelo})";
+        }
+
+        return 'Ticket #' . $this->id;
+    }
+
     public function esBaja(): bool
     {
         return $this->tipo_movimiento === 'baja';
@@ -215,7 +235,12 @@ class Movimiento extends Model
 
     public function esTicketAbierto(): bool
     {
-        return $this->tipo_movimiento === 'reparacion' && in_array($this->estado_ticket, ['abierto', 'solucionado', null, '']);
+        return $this->tipo_movimiento === 'reparacion' && in_array($this->estado_ticket, ['abierto', 'en_proceso', 'solucionado', null, '']);
+    }
+
+    public function esTicketCerrado(): bool
+    {
+        return $this->tipo_movimiento === 'reparacion' && in_array($this->estado_ticket, ['cerrado', 'resuelto', 'baja']);
     }
 
     public function scopeTicketsAbiertos(Builder $query): Builder
@@ -223,7 +248,7 @@ class Movimiento extends Model
         return $query->where('tipo_movimiento', 'reparacion')
             ->where(function ($q) {
                 $q->whereNull('estado_ticket')
-                    ->orWhereIn('estado_ticket', ['abierto', 'solucionado']);
+                    ->orWhereIn('estado_ticket', ['abierto', 'en_proceso', 'solucionado']);
             });
     }
 

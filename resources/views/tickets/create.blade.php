@@ -148,6 +148,17 @@
                 <span class="text-xs text-gray-400">Detalle el problema observado</span>
             </div>
 
+            <!-- Título Obligatorio del Ticket -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Título del Ticket <span class="text-rose-500 font-bold">*</span>
+                </label>
+                <input type="text" name="titulo" value="{{ old('titulo') }}" required maxlength="255"
+                       placeholder="Ej: Monitor parpadea y se apaga solo / Extrusor bloqueado en impresora 3D / Toma de red sin conexión"
+                       class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400 transition-all">
+                <span class="text-[11px] text-gray-400 mt-1 block">Resumen directo de la falla (único campo estrictamente obligatorio).</span>
+            </div>
+
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                     Área o Especialidad Inicial Involucrada
@@ -164,11 +175,14 @@
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Detalle de los Síntomas y Anomalías <span class="text-rose-500 font-bold">*</span>
-                </label>
-                <textarea name="comentario" rows="4" required
-                          placeholder="Describa el comportamiento anómalo detectado: reinicios espontáneos, código de error en pantalla, capacitor inflado, artefactos visuales, daño físico, ruido en ventilador, etc."
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Texto Detallado y Observaciones <span class="text-gray-400 font-normal">(Opcional)</span>
+                    </label>
+                    <span class="text-[11px] text-amber-700 font-semibold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">Soporta Markdown (**negrita**, *cursiva*, listas, `código`)</span>
+                </div>
+                <textarea name="comentario" rows="5"
+                          placeholder="Detalle los síntomas observados, pruebas realizadas, códigos de error en pantalla, comportamiento errático, etc. (Opcional si el título es suficiente)."
                           class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400 transition-all">{{ old('comentario') }}</textarea>
             </div>
         </div>

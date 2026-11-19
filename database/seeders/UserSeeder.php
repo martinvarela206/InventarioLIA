@@ -46,7 +46,7 @@ class UserSeeder extends Seeder
                 'dni' => '28333444',
                 'cargo_actual' => 'Coordinador de Área',
                 'carrera' => 'Licenciatura en Sistemas de Información',
-                'foto_path' => '/assets/manuel.png',
+                'foto_path' => '/assets/marcelo.png',
                 'activo' => true,
                 'roles' => ['registered', 'rev', 'subtec', 'tec'],
             ],

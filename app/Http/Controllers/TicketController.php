@@ -119,8 +119,8 @@ class TicketController extends Controller
 
         $query = Movimiento::tickets()->with(['elemento.tipo', 'ambitoTicket', 'ubicacion', 'usuario', 'adjuntos', 'areas']);
 
-        if ($estado === 'resuelto') {
-            $query->where('estado_ticket', 'resuelto');
+        if ($estado === 'resuelto' || $estado === 'cerrado') {
+            $query->whereIn('estado_ticket', ['resuelto', 'cerrado']);
         } elseif ($estado === 'baja') {
             $query->where('estado_ticket', 'baja');
         } elseif ($estado === 'todos') {
@@ -138,7 +138,8 @@ class TicketController extends Controller
         if ($request->filled('search')) {
             $term = trim($request->search);
             $query->where(function ($q) use ($term) {
-                $q->where('comentario', 'like', "%{$term}%")
+                $q->where('titulo', 'like', "%{$term}%")
+                    ->orWhere('comentario', 'like', "%{$term}%")
                     ->orWhere('solicitante', 'like', "%{$term}%")
                     ->orWhereHas('ambitoTicket', function ($aq) use ($term) {
                         $aq->where('nombre', 'like', "%{$term}%")
@@ -157,7 +158,7 @@ class TicketController extends Controller
 
         $areas = Area::where('activo', true)->orderBy('nombre')->get();
         $conteoAbiertos = Movimiento::ticketsAbiertos()->count();
-        $conteoResueltos = Movimiento::tickets()->where('estado_ticket', 'resuelto')->count();
+        $conteoResueltos = Movimiento::tickets()->whereIn('estado_ticket', ['resuelto', 'cerrado'])->count();
         $conteoBajas = Movimiento::tickets()->where('estado_ticket', 'baja')->count();
         $conteoTodos = Movimiento::tickets()->count();
 
@@ -184,7 +185,8 @@ class TicketController extends Controller
                 if (is_numeric($cleanId) && (int) $cleanId > 0) {
                     $q->orWhere('id', (int) $cleanId);
                 }
-                $q->orWhere('comentario', 'like', "%{$term}%")
+                $q->orWhere('titulo', 'like', "%{$term}%")
+                    ->orWhere('comentario', 'like', "%{$term}%")
                     ->orWhere('solicitante', 'like', "%{$term}%")
                     ->orWhereHas('ambitoTicket', function ($aq) use ($term) {
                         $aq->where('nombre', 'like', "%{$term}%")
@@ -222,7 +224,7 @@ class TicketController extends Controller
             return [
                 'id' => $t->id,
                 'codigo' => '#'.str_pad((string) $t->id, 4, '0', STR_PAD_LEFT),
-                'asunto' => Str::limit($t->comentario, 65),
+                'asunto' => $t->titulo ?: Str::limit($t->comentario, 65),
                 'solicitante' => $t->solicitante ?: 'Sin solicitante',
                 'estado' => $t->estado_ticket ?: 'abierto',
                 'estado_label' => $estadoLabel,
@@ -348,26 +350,109 @@ class TicketController extends Controller
     }
 
     /**
+     * Formulario en página dedicada para responder al ticket con Markdown, fotos y selector de solución.
+     */
+    public function responderForm(int $id): View|RedirectResponse
+    {
+        $ticket = Movimiento::with(['elemento.tipo', 'ambitoTicket', 'ubicacion'])->findOrFail($id);
+
+        if (! $ticket->esTicket()) {
+            abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
+        }
+
+        if ($ticket->esTicketCerrado()) {
+            return redirect()->route('tickets.show', $ticket->id)
+                ->with('error', 'El ticket se encuentra cerrado y no admite nuevas respuestas.');
+        }
+
+        $areas = Area::where('activo', true)->orderBy('nombre')->get();
+
+        return view('tickets.responder', compact('ticket', 'areas'));
+    }
+
+    /**
+     * Cierre formal directo del ticket exclusivo para Asset Admin.
+     */
+    public function cerrarDirecto(Request $request, int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (! $user->hasRole(['asset_admin', 'item_admin', 'app_admin'])) {
+            abort(403, 'Únicamente el Administrador de Activos (Asset Admin) tiene facultades para cerrar formalmente el ticket.');
+        }
+
+        $ticket = Movimiento::findOrFail($id);
+        if (! $ticket->esTicket()) {
+            abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
+        }
+
+        $ticket->estado_ticket = 'cerrado';
+        $ticket->save();
+
+        return redirect()->route('tickets.show', $ticket->id)
+            ->with('success', "Ticket #{$ticket->id} cerrado formalmente.");
+    }
+
+    /**
+     * Reabre un ticket cerrado, retirando automáticamente la solución previa y pasándolo a 'en_proceso'.
+     * Exclusivo para Asset Admin.
+     */
+    public function reabrir(Request $request, int $id): RedirectResponse
+    {
+        $user = Auth::user();
+        if (! $user->hasRole(['asset_admin', 'item_admin', 'app_admin'])) {
+            abort(403, 'Únicamente el Administrador de Activos (Asset Admin) tiene facultades para reabrir un ticket cerrado.');
+        }
+
+        $ticket = Movimiento::findOrFail($id);
+        if (! $ticket->esTicket()) {
+            abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
+        }
+
+        // Retirar la marca de solución de las respuestas previas
+        TicketComentario::where('ticket_id', $ticket->id)
+            ->where('es_solucion', true)
+            ->update([
+                'es_solucion' => false,
+                'tipo' => 'comentario',
+            ]);
+
+        // Máquina de estados: retorna a 'en_proceso' si hay comentarios, o 'abierto'
+        $ticket->estado_ticket = $ticket->comentarios()->exists() ? 'en_proceso' : 'abierto';
+        $ticket->save();
+
+        return redirect()->route('tickets.show', $ticket->id)
+            ->with('success', "Ticket #{$ticket->id} reabierto con éxito. La propuesta de solución previa ha sido retirada del seguimiento.");
+    }
+
+    /**
      * Añade un mensaje o respuesta al hilo de discusión y seguimiento del ticket.
      * Accesible para Revisor (rev), SubTécnico (subtec) y Técnico (tec).
      */
     public function comentar(Request $request, int $id): RedirectResponse
     {
         $validated = $request->validate([
-            'mensaje' => 'required|string|min:3',
+            'mensaje' => 'required|string|min:2',
             'nueva_area_id' => 'nullable|exists:areas,id',
+            'es_solucion' => 'nullable|boolean',
             'generar_movimiento' => 'nullable|boolean',
             'ubicacion_id' => 'nullable|exists:ubicaciones,id',
             'puesto' => 'nullable|string|max:50',
-            'fotos' => 'nullable|array|max:5',
-            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'fotos' => 'nullable|array|max:10',
+            'fotos.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
         ]);
 
         $ticket = Movimiento::findOrFail($id);
         if (! $ticket->esTicket()) {
             abort(404, 'El movimiento patrimonial indicado no corresponde a un ticket de soporte técnico.');
         }
+
+        if ($ticket->esTicketCerrado()) {
+            return redirect()->route('tickets.show', $ticket->id)
+                ->with('error', 'El ticket se encuentra cerrado y no admite nuevas respuestas.');
+        }
+
         $user = Auth::user();
+        $esSolucion = $request->boolean('es_solucion');
 
         $movimientoGenerado = null;
         if ($user->hasRole('tec') && $request->boolean('generar_movimiento') && ! empty($validated['ubicacion_id'])) {
@@ -388,8 +473,19 @@ class TicketController extends Controller
             'user_id' => $user->id,
             'movimiento_id' => $movimientoGenerado?->id,
             'mensaje' => $validated['mensaje'],
-            'tipo' => 'comentario',
+            'tipo' => $esSolucion ? 'solucion_propuesta' : 'comentario',
+            'es_solucion' => $esSolucion,
         ]);
+
+        // MÁQUINA DE ESTADOS / PIPELINE:
+        // Si se marca como solución -> 'solucionado'
+        // Si es una respuesta ordinaria y estaba 'abierto' -> pasa a 'en_proceso'
+        if ($esSolucion) {
+            $ticket->estado_ticket = 'solucionado';
+        } elseif ($ticket->estado_ticket === 'abierto' || empty($ticket->estado_ticket)) {
+            $ticket->estado_ticket = 'en_proceso';
+        }
+        $ticket->save();
 
         if ($request->hasFile('fotos')) {
             foreach ($request->file('fotos') as $foto) {
@@ -414,9 +510,11 @@ class TicketController extends Controller
             ]);
         }
 
-        $msg = $movimientoGenerado
-            ? 'Mensaje publicado y movimiento de inventario registrado con éxito.'
-            : 'Mensaje registrado en la bitácora del ticket.';
+        $msg = $esSolucion
+            ? 'Respuesta registrada con propuesta de solución. El ticket queda a la espera de cierre formal por Asset Admin.'
+            : ($movimientoGenerado
+                ? 'Respuesta publicada y movimiento de inventario registrado con éxito.'
+                : 'Respuesta registrada en el seguimiento del ticket.');
 
         return redirect()->route('tickets.show', $ticket->id)->with('success', $msg);
     }
