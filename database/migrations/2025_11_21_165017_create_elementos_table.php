@@ -22,7 +22,6 @@ return new class extends Migration
             $table->smallInteger('anio_compra')->nullable();
             $table->string('puesto', 50)->nullable();
             $table->text('observaciones')->nullable();
-            $table->text('descripcion')->nullable(); // JSON formatted or text
             $table->integer('cantidad')->default(1);
             $table->date('fecha_adquisicion')->nullable();
             $table->date('fecha_vencimiento_garantia')->nullable();

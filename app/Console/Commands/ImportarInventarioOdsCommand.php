@@ -255,7 +255,6 @@ class ImportarInventarioOdsCommand extends Command
                     'anio_compra' => $anio,
                     'puesto' => $puesto,
                     'observaciones' => ($rawComentarios !== '' && $rawComentarios !== '-') ? $rawComentarios : null,
-                    'descripcion' => ! empty($specs) ? $specs : null,
                     'cantidad' => $rawCantidad > 0 ? $rawCantidad : 1,
                     'fecha_adquisicion' => $fechaMovimiento->toDateString(),
                 ]);

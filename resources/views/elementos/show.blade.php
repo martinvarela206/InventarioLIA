@@ -227,15 +227,6 @@
                                 </div>
                             @endforeach
                         </div>
-                    @elseif(is_array($elemento->descripcion) && count($elemento->descripcion) > 0)
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @foreach($elemento->descripcion as $specKey => $specVal)
-                                <div class="bg-white p-3.5 rounded-lg border border-gray-200 shadow-2xs">
-                                    <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider block">{{ $specKey }}</span>
-                                    <span class="text-sm font-bold text-gray-900 mt-1 block">{{ $specVal }}</span>
-                                </div>
-                            @endforeach
-                        </div>
                     @else
                         <div class="py-12 text-center text-gray-400 text-sm">
                             <p>No se cargaron especificaciones de hardware detalladas para este dispositivo.</p>

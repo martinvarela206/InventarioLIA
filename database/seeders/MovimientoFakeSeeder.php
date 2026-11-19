@@ -51,7 +51,7 @@ class MovimientoFakeSeeder extends Seeder
         $discoOptions = ['SSD 240GB Kingston', 'SSD 480GB Crucial', 'SSD 512GB NVMe M.2', 'SSD 1TB Western Digital Blue', 'HDD 1TB Seagate Barracuda'];
 
         foreach ($pcs as $idx => $pc) {
-            $specs = is_array($pc->descripcion) ? $pc->descripcion : [];
+            $specs = [];
 
             // Si le falta RAM o CPU, agregarlo para probar el filtro de GB
             if (! isset($specs['RAM']) && ! isset($specs['Memoria RAM'])) {
@@ -67,7 +67,6 @@ class MovimientoFakeSeeder extends Seeder
             // Asignar fechas de adquisición y garantía si están vacías
             $anio = $pc->anio_compra ?: (2020 + ($idx % 5));
             $pc->update([
-                'descripcion' => $specs,
                 'anio_compra' => $anio,
                 'fecha_adquisicion' => Carbon::createFromDate($anio, 3, 15),
                 'fecha_vencimiento_garantia' => ($idx % 3 === 0)

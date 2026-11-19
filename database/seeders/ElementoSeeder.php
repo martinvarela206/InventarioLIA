@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Atributo;
 use App\Models\Elemento;
+use App\Models\ElementoAtributoValor;
 use App\Models\Movimiento;
 use App\Models\Tipo;
 use Carbon\Carbon;
@@ -105,7 +107,18 @@ class ElementoSeeder extends Seeder
         ];
 
         foreach ($elementosSample as $data) {
-            Elemento::create($data);
+            $specs = $data['descripcion'] ?? [];
+            unset($data['descripcion']);
+            $el = Elemento::create($data);
+
+            foreach ($specs as $attrNom => $attrVal) {
+                $attr = Atributo::firstOrCreateNormalizado($attrNom);
+                ElementoAtributoValor::create([
+                    'elemento_id' => $el->id,
+                    'atributo_id' => $attr->id,
+                    'valor' => (string) $attrVal,
+                ]);
+            }
         }
     }
 }

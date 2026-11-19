@@ -79,11 +79,8 @@ class ElementoController extends Controller
 
         if ($request->filled('gb')) {
             $gb = $request->input('gb');
-            $query->where(function ($q) use ($gb) {
-                $q->where('descripcion', 'like', "%{$gb}%")
-                    ->orWhereHas('valoresAtributos', function ($vaq) use ($gb) {
-                        $vaq->where('valor', 'like', "%{$gb}%");
-                    });
+            $query->whereHas('valoresAtributos', function ($vaq) use ($gb) {
+                $vaq->where('valor', 'like', "%{$gb}%");
             });
         }
 
@@ -277,9 +274,9 @@ class ElementoController extends Controller
             $cleanLia = Elemento::normalizarIdentificador($validated['nro_lia'] ?? null);
             $cleanUnsj = Elemento::normalizarIdentificador($validated['nro_unsj'] ?? null);
 
-            $descripcion = Elemento::parsearDescripcion(
-                $request->input('descripcion_keys', []),
-                $request->input('descripcion_values', [])
+            $atributosAdHoc = Elemento::parsearAtributosAdHoc(
+                $request->input('ad_hoc_keys', $request->input('descripcion_keys', [])),
+                $request->input('ad_hoc_values', $request->input('descripcion_values', []))
             );
 
             $elemento = Elemento::create([
@@ -292,16 +289,14 @@ class ElementoController extends Controller
                 'anio_compra' => $validated['anio_compra'] ?? null,
                 'puesto' => $validated['puesto'] ?? null,
                 'observaciones' => $validated['observaciones'] ?? null,
-                'descripcion' => $descripcion,
                 'cantidad' => $validated['cantidad'],
                 'fecha_adquisicion' => $validated['fecha_adquisicion'] ?? now()->toDateString(),
                 'fecha_vencimiento_garantia' => $validated['fecha_vencimiento_garantia'] ?? null,
             ]);
 
-            // Sincronizar atributos técnicos dinámicos y tabla pivot
-            if ($request->has('atributos') && is_array($request->atributos)) {
-                $elemento->sincronizarAtributosTecnicos($request->atributos);
-            }
+            // Sincronizar atributos técnicos dinámicos y ad-hoc en tabla pivot relacional
+            $atributos = (array) $request->input('atributos', []);
+            $elemento->sincronizarAtributosTecnicos($atributos, $atributosAdHoc);
 
             // GARANTIZAR MOVIMIENTO INICIAL AUTOMÁTICO
             $defaultUbicacion = Ubicacion::where('nombre', 'Armario de HW')->first() ?? Ubicacion::first();
@@ -369,9 +364,9 @@ class ElementoController extends Controller
         $cleanLia = Elemento::normalizarIdentificador($validated['nro_lia'] ?? null);
         $cleanUnsj = Elemento::normalizarIdentificador($validated['nro_unsj'] ?? null);
 
-        $descripcion = Elemento::parsearDescripcion(
-            $request->input('descripcion_keys', []),
-            $request->input('descripcion_values', [])
+        $atributosAdHoc = Elemento::parsearAtributosAdHoc(
+            $request->input('ad_hoc_keys', $request->input('descripcion_keys', [])),
+            $request->input('ad_hoc_values', $request->input('descripcion_values', []))
         );
 
         $elemento->update([
@@ -384,16 +379,14 @@ class ElementoController extends Controller
             'anio_compra' => $validated['anio_compra'] ?? null,
             'puesto' => $validated['puesto'] ?? null,
             'observaciones' => $validated['observaciones'] ?? null,
-            'descripcion' => $descripcion,
             'cantidad' => $validated['cantidad'],
             'fecha_adquisicion' => $validated['fecha_adquisicion'] ?? null,
             'fecha_vencimiento_garantia' => $validated['fecha_vencimiento_garantia'] ?? null,
         ]);
 
-        // Sincronizar atributos técnicos dinámicos y tabla pivot
-        if ($request->has('atributos') && is_array($request->atributos)) {
-            $elemento->sincronizarAtributosTecnicos($request->atributos);
-        }
+        // Sincronizar atributos técnicos dinámicos y ad-hoc en tabla pivot relacional
+        $atributos = (array) $request->input('atributos', []);
+        $elemento->sincronizarAtributosTecnicos($atributos, $atributosAdHoc);
 
         return redirect()->route('elementos.show', $elemento->id)
             ->with('success', 'Ficha del elemento actualizada con éxito.');

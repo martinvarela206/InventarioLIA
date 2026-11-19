@@ -216,16 +216,17 @@ class Movimiento extends Model
         }
 
         if ($this->esTicketGeneral()) {
-            return 'Incidencia en ' . ($this->ambitoTicket?->nombre ?? 'Infraestructura General');
+            return 'Incidencia en '.($this->ambitoTicket?->nombre ?? 'Infraestructura General');
         }
 
         if ($this->elemento) {
-            $nro = $this->elemento->nro_lia ?: ($this->elemento->nro_unsj ?: 'Activo #' . $this->elemento->id);
+            $nro = $this->elemento->nro_lia ?: ($this->elemento->nro_unsj ?: 'Activo #'.$this->elemento->id);
             $tipo = $this->elemento->tipo?->nombre ? ucfirst($this->elemento->tipo->nombre) : 'Equipo';
+
             return "Avería en {$tipo} {$nro} ({$this->elemento->marca} {$this->elemento->modelo})";
         }
 
-        return 'Ticket #' . $this->id;
+        return 'Ticket #'.$this->id;
     }
 
     public function esBaja(): bool

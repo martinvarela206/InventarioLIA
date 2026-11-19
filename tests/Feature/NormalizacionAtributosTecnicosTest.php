@@ -21,7 +21,7 @@ class NormalizacionAtributosTecnicosTest extends TestCase
         Rol::firstOrCreate(['rol' => 'tec']);
     }
 
-    public function test_sincronizacion_bidireccional_de_atributos_tecnicos(): void
+    public function test_sincronizacion_relacional_de_atributos_tecnicos(): void
     {
         $tipo = Tipo::firstOrCreate(['nombre' => 'Servidor'], ['slug' => 'servidor', 'icono' => 'server']);
         $attrCpu = Atributo::create([
@@ -40,10 +40,9 @@ class NormalizacionAtributosTecnicosTest extends TestCase
 
         $elemento = Elemento::factory()->create([
             'tipo_id' => $tipo->id,
-            'descripcion' => null,
         ]);
 
-        // 1. Sincronizar atributos técnicos
+        // 1. Sincronizar atributos técnicos tipados
         $elemento->sincronizarAtributosTecnicos([
             $attrCpu->id => 'AMD EPYC 7742',
             $attrRam->id => '128',
@@ -61,14 +60,11 @@ class NormalizacionAtributosTecnicosTest extends TestCase
             'valor' => '128',
         ]);
 
-        // Verificar sincronización en columna JSON descripcion
+        // 2. getValorAtributo formatea con unidad de medida y descripcion_texto concatena
         $elemento->refresh();
-        $this->assertEquals('AMD EPYC 7742', $elemento->descripcion['Procesador']);
-        $this->assertEquals('128', $elemento->descripcion['Memoria RAM']);
-
-        // 2. getValorAtributo formatea con unidad de medida
         $this->assertEquals('128 GB', $elemento->getValorAtributo('Memoria RAM'));
         $this->assertEquals('AMD EPYC 7742', $elemento->getValorAtributo('Procesador'));
+        $this->assertStringContainsString('AMD EPYC 7742', $elemento->descripcion_texto);
 
         // 3. Remover un atributo pasándolo vacío
         $elemento->sincronizarAtributosTecnicos([
@@ -81,11 +77,10 @@ class NormalizacionAtributosTecnicosTest extends TestCase
         ]);
 
         $elemento->refresh();
-        $this->assertArrayNotHasKey('Procesador', $elemento->descripcion ?? []);
         $this->assertEquals('-', $elemento->getValorAtributo('Procesador'));
     }
 
-    public function test_creacion_con_descripcion_json_propaga_a_tabla_normalizada(): void
+    public function test_soporte_campos_ad_hoc_en_modelo_relacional(): void
     {
         $tipo = Tipo::firstOrCreate(['nombre' => 'PC'], ['slug' => 'pc', 'icono' => 'pc']);
         $attrGpu = Atributo::create([
@@ -96,26 +91,37 @@ class NormalizacionAtributosTecnicosTest extends TestCase
         ]);
         $tipo->atributos()->attach($attrGpu->id);
 
-        // Crear elemento directamente con array descripcion
         $elemento = Elemento::create([
             'nro_lia' => 'LIA-NORM-01',
             'tipo_id' => $tipo->id,
             'marca' => 'Dell',
             'cantidad' => 1,
-            'descripcion' => [
-                'Placa de Video' => 'NVIDIA RTX 4070',
-                'Color' => 'Negro', // Atributo no estructurado
-            ],
         ]);
 
-        // Debe haberse propagado automáticamente a elemento_atributo_valor
+        // Sincronizar atributo estructurado + atributo ad-hoc dinámico
+        $elemento->sincronizarAtributosTecnicos(
+            [$attrGpu->id => 'NVIDIA RTX 4070'],
+            ['Color' => 'Negro Mate']
+        );
+
+        // Debe haberse propagado a elemento_atributo_valor
         $this->assertDatabaseHas('elemento_atributo_valor', [
             'elemento_id' => $elemento->id,
             'atributo_id' => $attrGpu->id,
             'valor' => 'NVIDIA RTX 4070',
         ]);
 
-        // Atributo no estructurado se consulta por fallback
-        $this->assertEquals('Negro', $elemento->getValorAtributo('Color'));
+        // El campo ad-hoc debe existir en catalogo atributos y en tabla de valores
+        $this->assertDatabaseHas('atributos', [
+            'nombre' => 'Color',
+        ]);
+        $attrColor = Atributo::where('nombre', 'Color')->first();
+        $this->assertDatabaseHas('elemento_atributo_valor', [
+            'elemento_id' => $elemento->id,
+            'atributo_id' => $attrColor->id,
+            'valor' => 'Negro Mate',
+        ]);
+
+        $this->assertEquals('Negro Mate', $elemento->getValorAtributo('Color'));
     }
 }
