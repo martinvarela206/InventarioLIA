@@ -10,10 +10,10 @@
 
 ### Pregunta 1: Arquitectura de Persistencia e Integridad (Trazabilidad)
 **Enunciado:**  
-En el sistema de inventario, cuando un equipo cambia de laboratorio o pasa a mantenimiento, ¿por qué la arquitectura registra una nueva fila en `Movimientos` en lugar de simplemente actualizar los campos de ubicación y estado en la tabla `elementos`?
+En el sistema de inventario, cuando un equipo cambia de laboratorio o pasa a mantenimiento, ¿para qué se registra una nueva fila en `Movimientos`, en lugar de simplemente actualizar la ubicación del activo en `Elementos`?
 
 - **A)** Para acelerar las consultas de lectura en el servidor y evitar bloqueos de concurrencia en la base de datos.
-- **B) (Correcta)** Para mantener un registro histórico inalterable de auditoría que permita saber quién, cuándo y por qué trasladó el equipo.
+- **B) (Correcta)** Para auditar los movimientos y saber quién, cuándo y por qué trasladó el equipo.
 - **C)** Porque el motor SQL relacional impide modificar claves foráneas una vez que el registro fue insertado en la tabla.
 - **D)** Para permitir que dos usuarios administradores modifiquen la ficha técnica del equipo en paralelo sin generar colisiones.
 
@@ -21,12 +21,12 @@ En el sistema de inventario, cuando un equipo cambia de laboratorio o pasa a man
 
 ### Pregunta 2: Modelado Relacional (Especificaciones Técnicas Heterogéneas)
 **Enunciado:**  
-El laboratorio administra activos muy diversos (servidores, monitores, switches, memorias RAM). Para almacenar sus características técnicas particulares sin crear decenas de columnas vacías en la tabla principal, el sistema implementó un catálogo maestro y tablas intermedias (`atributos`, `tipo_atributo`, `elemento_atributo_valor`). ¿Cómo se denomina y justifica este patrón relacional?
+El laboratorio administra activos muy diversos (servidores, monitores, switches, memorias RAM). Para almacenar sus características técnicas particulares como se solucionó?
 
-- **A)** Es una desnormalización controlada para optimizar operaciones matemáticas masivas de hardware.
-- **B)** Es una partición horizontal de base de datos diseñada para balancear el tráfico entre servidores.
-- **C)** Es una arquitectura de réplicas de solo lectura implementada para garantizar alta disponibilidad.
-- **D) (Correcta)** Es el patrón Entidad-Atributo-Valor (EAV), que permite definir esquemas técnicos flexibles mediante tablas pivot en SQL puro.
+- **A)** Por medio de una desnormalizacion de la tabla, reuniendo varias caracteristicas sobre una generica.
+- **B)** Se utilizo una base de datos NoSQL, con atributos clave-valor.
+- **C)** Cada tipo de activo cuenta con una tabla con todas las carecteristicas definidas para el mismo.
+- **D) (Correcta)** Por medio del patrón Entidad-Atributo-Valor (EAV), usando tablas pivot.
 
 ---
 
