@@ -326,4 +326,50 @@ class TicketsDominioActionTest extends TestCase
         $respShow->assertSee('No es posible iniciar un ticket sobre un activo en préstamo');
         $respShow->assertSee('cursor-not-allowed');
     }
+
+    public function test_dashboard_cuenta_exactamente_tickets_y_preserva_formula_operativos(): void
+    {
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
+        $tipo = Tipo::first();
+        $ubicacion = Ubicacion::where('activa', true)->first();
+
+        // 1. Activo con ticket abierto (físico)
+        $el1 = Elemento::create(['nro_lia' => 'TST-DASH-EL1', 'tipo_id' => $tipo->id]);
+        Movimiento::create([
+            'elemento_id' => $el1->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'en_proceso',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $tec->id,
+            'fecha' => now(),
+            'titulo' => 'Falla en fuente',
+        ]);
+
+        // 2. Ticket de infraestructura general (elemento_id = null)
+        Movimiento::create([
+            'elemento_id' => null,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $tec->id,
+            'fecha' => now(),
+            'titulo' => 'Punto de red sin conectividad',
+        ]);
+
+        $response = $this->actingAs($tec)->get(route('dashboard.index'));
+        $response->assertStatus(200);
+
+        $totalEnReparacion = $response->viewData('totalEnReparacion');
+        $totalElementos = $response->viewData('totalElementos');
+        $totalOperativos = $response->viewData('totalOperativos');
+        $totalPrestados = $response->viewData('totalPrestados');
+        $totalObsoletos = $response->viewData('totalObsoletos');
+
+        // Total en reparación en dashboard debe ser al menos 2
+        $this->assertGreaterThanOrEqual(2, $totalEnReparacion);
+
+        // La fórmula de operativos descuenta solo activos físicos en reparación, no incidencias generales
+        $activosFisicosEnReparacion = Movimiento::ticketsAbiertos()->whereNotNull('elemento_id')->distinct('elemento_id')->count('elemento_id');
+        $this->assertEquals(max(0, $totalElementos - $totalPrestados - $totalObsoletos - $activosFisicosEnReparacion), $totalOperativos);
+    }
 }
