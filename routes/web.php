@@ -101,6 +101,7 @@ Route::middleware('auth')->group(function () {
 
         // Hilo y Seguimiento de Tickets (apertura, consulta y comentarios: rev, subtec, tec)
         Route::middleware('role:rev,subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
+            Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
             Route::get('/tickets/buscar-rapido', [TicketController::class, 'apiBuscar'])->name('tickets.buscar-rapido');
             Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
             Route::get('/tickets/{ticket}/responder', [TicketController::class, 'responderForm'])->name('tickets.responder');
@@ -109,9 +110,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/tickets/{ticket}/area', [TicketController::class, 'agregarArea'])->name('tickets.agregarArea');
         });
 
-        // Bandeja y Solución Técnica de Tickets (subtec, tec)
+        // Solución Técnica, Cierre y Reapertura de Tickets (subtec, tec, asset_admin)
         Route::middleware('role:subtec,tec,asset_admin,user_admin,app_admin')->group(function () {
-            Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
             Route::post('/tickets/{ticket}/solucionar', [TicketController::class, 'solucionar'])->name('tickets.solucionar');
             Route::post('/tickets/{ticket}/cerrar', [TicketController::class, 'cerrarDirecto'])->name('tickets.cerrar');
             Route::post('/tickets/{ticket}/reabrir', [TicketController::class, 'reabrir'])->name('tickets.reabrir');

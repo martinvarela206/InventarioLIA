@@ -257,4 +257,40 @@ class TicketsDominioActionTest extends TestCase
             $this->assertArrayHasKey('ticket_id', $e->errors());
         }
     }
+
+    public function test_revisor_puede_acceder_a_tickets_index_pero_no_solucionar_ticket(): void
+    {
+        $rev = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'rev'))
+            ->whereDoesntHave('roles', fn ($q) => $q->whereIn('rol', ['subtec', 'tec', 'asset_admin', 'user_admin', 'app_admin']))
+            ->first();
+
+        // 1. Acceso exitoso a la bandeja de tickets para el rol revisor
+        $response = $this->actingAs($rev)->get(route('tickets.index'));
+        $response->assertStatus(200);
+
+        // 2. Comentar no puede marcar solución técnica si es revisor puro
+        $ticket = Movimiento::where('tipo_movimiento', 'reparacion')->where('estado_ticket', 'abierto')->first();
+        if (! $ticket) {
+            $tipo = Tipo::first();
+            $el = Elemento::create(['nro_lia' => 'TST-REV-01', 'tipo_id' => $tipo->id]);
+            $ticket = Movimiento::create([
+                'elemento_id' => $el->id,
+                'tipo_movimiento' => 'reparacion',
+                'estado_ticket' => 'abierto',
+                'titulo' => 'Ticket de prueba para revisor',
+                'user_id' => $rev->id,
+                'fecha' => now(),
+            ]);
+        }
+
+        $comentarResp = $this->actingAs($rev)->post(route('tickets.comentar', $ticket->id), [
+            'mensaje' => 'Aporte y aclaración sobre la falla',
+            'es_solucion' => true,
+        ]);
+
+        $comentarResp->assertRedirect();
+        $ticket->refresh();
+        // El ticket debe pasar a 'en_proceso' pero NUNCA a 'solucionado' por un revisor
+        $this->assertEquals('en_proceso', $ticket->estado_ticket);
+    }
 }

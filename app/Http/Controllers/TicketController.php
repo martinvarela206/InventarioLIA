@@ -452,7 +452,7 @@ class TicketController extends Controller
         }
 
         $user = Auth::user();
-        $esSolucion = $request->boolean('es_solucion');
+        $esSolucion = ($user && $user->canSolveTickets()) ? $request->boolean('es_solucion') : false;
 
         $movimientoGenerado = null;
         if ($user->hasRole('tec') && $request->boolean('generar_movimiento') && ! empty($validated['ubicacion_id'])) {

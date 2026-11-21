@@ -76,21 +76,23 @@
                       class="w-full bg-gray-50 border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400 transition-all">{{ old('mensaje') }}</textarea>
         </div>
 
-        <!-- Selector de Propuesta de Solución -->
-        <div class="p-4 bg-amber-50/70 border border-amber-300 rounded-xl">
-            <label class="flex items-start gap-3 cursor-pointer">
-                <input type="checkbox" name="es_solucion" value="1" {{ old('es_solucion') ? 'checked' : '' }}
-                       class="mt-0.5 w-4 h-4 rounded text-amber-600 focus:ring-amber-500">
-                <div>
-                    <span class="text-sm font-black text-amber-950 block">
-                        Marcar esta respuesta como propuesta de solución técnica
-                    </span>
-                    <span class="text-xs text-amber-800 leading-relaxed block mt-0.5">
-                        Indica que el problema ha sido subsanado técnicamente. El ticket pasará a estado de <strong class="font-bold">Solucionado</strong> a la espera de que el Administrador de Activos (Asset Admin) realice el cierre formal.
-                    </span>
-                </div>
-            </label>
-        </div>
+        @if(Auth::user()->canSolveTickets())
+            <!-- Selector de Propuesta de Solución (exclusivo subtécnico y técnico) -->
+            <div class="p-4 bg-amber-50/70 border border-amber-300 rounded-xl">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" name="es_solucion" value="1" {{ old('es_solucion') ? 'checked' : '' }}
+                           class="mt-0.5 w-4 h-4 rounded text-amber-600 focus:ring-amber-500">
+                    <div>
+                        <span class="text-sm font-black text-amber-950 block">
+                            Marcar esta respuesta como propuesta de solución técnica
+                        </span>
+                        <span class="text-xs text-amber-800 leading-relaxed block mt-0.5">
+                            Indica que el problema ha sido subsanado técnicamente. El ticket pasará a estado de <strong class="font-bold">Solucionado</strong> a la espera de que el Administrador de Activos (Asset Admin) realice el cierre formal.
+                        </span>
+                    </div>
+                </label>
+            </div>
+        @endif
 
         <!-- Evidencia Fotográfica / Adjuntar Fotos -->
         <div class="space-y-3 pt-2 border-t border-gray-100">

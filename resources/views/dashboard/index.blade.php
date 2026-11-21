@@ -80,7 +80,7 @@
         </a>
 
         <!-- En Reparación / Tickets -->
-        <a href="{{ Auth::user()->hasRole('tec') ? route('tickets.index') : route('reportes.show', 'historial-reparaciones') }}" title="Ver tickets y reparaciones técnicas" class="bg-white rounded-2xl p-5 border border-amber-200 shadow-sm relative overflow-hidden block hover:-translate-y-1 hover:shadow-md hover:border-amber-400 transition-all group cursor-pointer">
+        <a href="{{ route('tickets.index') }}" title="Ver tickets y reparaciones técnicas" class="bg-white rounded-2xl p-5 border border-amber-200 shadow-sm relative overflow-hidden block hover:-translate-y-1 hover:shadow-md hover:border-amber-400 transition-all group cursor-pointer">
             <div class="absolute right-3 top-3 text-amber-100 group-hover:text-amber-200 transition-colors -z-0">
                 <svg class="w-16 h-16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
