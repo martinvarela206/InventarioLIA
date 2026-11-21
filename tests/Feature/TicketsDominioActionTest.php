@@ -287,4 +287,43 @@ class TicketsDominioActionTest extends TestCase
         // El ticket debe pasar a 'en_proceso' pero NUNCA a 'solucionado' por un revisor
         $this->assertEquals('en_proceso', $ticket->estado_ticket);
     }
+
+    public function test_api_buscar_excluye_activos_prestados_cuando_se_solicita_y_vista_bloquea_boton(): void
+    {
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
+        $tipo = Tipo::first();
+        $ubicacion = Ubicacion::where('activa', true)->first();
+
+        $elementoPrestado = Elemento::create([
+            'nro_lia' => 'TST-PRESTADO-SEARCH',
+            'tipo_id' => $tipo->id,
+            'modelo' => 'Laptop Prestada',
+        ]);
+
+        Movimiento::create([
+            'elemento_id' => $elementoPrestado->id,
+            'tipo_movimiento' => 'externo_prestamo',
+            'fecha' => now(),
+            'fecha_prestamo' => now(),
+            'solicitante' => 'Profesor Juan Perez',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $tec->id,
+        ]);
+
+        // 1. Búsqueda normal incluye el elemento (para devolución rápida)
+        $respNormal = $this->actingAs($tec)->getJson(route('movimientos.buscar-rapido', ['q' => 'TST-PRESTADO-SEARCH']));
+        $respNormal->assertStatus(200);
+        $respNormal->assertJsonFragment(['nro_lia' => 'TST-PRESTADO-SEARCH']);
+
+        // 2. Búsqueda con excluir_prestados=1 NO incluye el elemento prestado
+        $respFiltrado = $this->actingAs($tec)->getJson(route('movimientos.buscar-rapido', ['q' => 'TST-PRESTADO-SEARCH', 'excluir_prestados' => 1]));
+        $respFiltrado->assertStatus(200);
+        $respFiltrado->assertJsonMissing(['nro_lia' => 'TST-PRESTADO-SEARCH']);
+
+        // 3. Vista show de elemento prestado muestra el botón bloqueado
+        $respShow = $this->actingAs($tec)->get(route('elementos.show', $elementoPrestado->id));
+        $respShow->assertStatus(200);
+        $respShow->assertSee('No es posible iniciar un ticket sobre un activo en préstamo');
+        $respShow->assertSee('cursor-not-allowed');
+    }
 }

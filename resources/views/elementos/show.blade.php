@@ -10,10 +10,18 @@
             <span class="text-black font-semibold">{{ $elemento->presenter()->identificadorCompleto() }}</span>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('tickets.create', ['elemento_id' => $elemento->id]) }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
-                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                <span>Iniciar Ticket</span>
-            </a>
+            @if($elemento->estado === \App\Enums\EstadoElemento::PRESTADO)
+                <button type="button" disabled title="No es posible iniciar un ticket sobre un activo en préstamo. Registre la devolución primero." class="inline-flex items-center gap-2 bg-gray-100 border border-gray-300 text-gray-400 font-bold py-2.5 px-4 rounded-xl cursor-not-allowed text-sm shadow-xs opacity-80" aria-disabled="true">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <span>Iniciar Ticket</span>
+                    <span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">Prestado</span>
+                </button>
+            @else
+                <a href="{{ route('tickets.create', ['elemento_id' => $elemento->id]) }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
+                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    <span>Iniciar Ticket</span>
+                </a>
+            @endif
             @if(Auth::user()->canManageMovimientos())
                 <a href="{{ route('movimientos.rapido', ['elemento_id' => $elemento->id]) }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>

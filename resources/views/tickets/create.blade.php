@@ -102,6 +102,7 @@
                         hiddenName="elemento_id"
                         hiddenValue="{{ old('elemento_id', $elemento?->id) }}"
                         onSelect="seleccionarActivoTicket"
+                        :searchUrl="route('movimientos.buscar-rapido', ['excluir_prestados' => 1])"
                     />
                     <p class="text-xs text-gray-400">Escriba al menos 2 caracteres para desplegar sugerencias con ubicación en vivo.</p>
                 </div>
