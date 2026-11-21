@@ -982,13 +982,12 @@ class InventarioDevTest extends TestCase
         $responseUpdate->assertRedirect(route('ubicaciones.index'));
 
         $this->assertDatabaseHas('ubicaciones', [
+            'id' => $nuevaSala->id,
             'nombre' => 'Laboratorio Delta IA - Planta Alta',
             'activa' => true,
         ]);
-        $this->assertDatabaseHas('ubicaciones', [
-            'id' => $nuevaSala->id,
+        $this->assertDatabaseMissing('ubicaciones', [
             'nombre' => 'Laboratorio Delta IA',
-            'activa' => false,
         ]);
 
         $salaRenombrada = Ubicacion::where('nombre', 'Laboratorio Delta IA - Planta Alta')->firstOrFail();
@@ -1219,8 +1218,13 @@ class InventarioDevTest extends TestCase
         $resFormRev->assertSee('LIA-TICKET-01');
         $resFormRev->assertSee('Revisor Auditor');
         $resFormRev->assertSee('Ubicación Actual Detectada (Origen)');
-        $resFormRev->assertSee('Permanece en su sala para inspección in situ');
-        $resFormRev->assertSee('Trasladar físicamente a Taller de Hardware / Depósito');
+        $resFormRev->assertDontSee('Trasladar físicamente a Taller de Hardware / Depósito');
+
+        // Técnico dispone de opciones operativas de traslado
+        $resFormTec = $this->actingAs($tec)->get(route('tickets.create', ['elemento_id' => $pcReparar->id]));
+        $resFormTec->assertStatus(200);
+        $resFormTec->assertSee('Permanece en su sala para inspección in situ');
+        $resFormTec->assertSee('Trasladar físicamente a Taller de Hardware / Depósito');
 
         // Registro de Ticket con imagen adjunta
         $fotoFake = UploadedFile::fake()->image('falla_fuente.jpg', 600, 600);
@@ -1245,11 +1249,11 @@ class InventarioDevTest extends TestCase
         $this->assertTrue(Elemento::enReparacion()->where('id', $pcReparar->id)->exists());
 
         // -------------------------------------------------------------
-        // 3. BANDEJA Y GESTIÓN DE TICKETS PARA TÉCNICOS
+        // 3. BANDEJA Y GESTIÓN DE TICKETS
         // -------------------------------------------------------------
-        // Revisor bloqueado de la bandeja de gestión de tickets
+        // Revisor puede acceder a la bandeja de tickets para aportar aclaraciones y consultar seguimiento
         $resRevBandeja = $this->actingAs($rev)->get(route('tickets.index'));
-        $resRevBandeja->assertStatus(403);
+        $resRevBandeja->assertStatus(200);
 
         // Técnico accede y ve el ticket abierto
         $resTecBandeja = $this->actingAs($tec)->get(route('tickets.index'));

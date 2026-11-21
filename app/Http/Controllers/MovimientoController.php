@@ -108,9 +108,17 @@ class MovimientoController extends Controller
             return response()->json([]);
         }
 
-        $elementos = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion'])
-            ->buscarIdentificador($term)
-            ->limit(10)
+        $query = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion'])
+            ->buscarIdentificador($term);
+
+        if ($request->boolean('excluir_prestados') || $request->boolean('para_ticket')) {
+            $query->whereDoesntHave('ultimoMovimiento', function ($mq) {
+                $mq->whereNotNull('fecha_prestamo')
+                    ->whereNull('fecha_devolucion');
+            });
+        }
+
+        $elementos = $query->limit(10)
             ->get()
             ->map(function ($el) {
                 /** @var Movimiento|null $ultimo */

@@ -57,7 +57,7 @@ class TicketsDominioActionTest extends TestCase
         $this->assertEquals(EstadoElemento::EN_REPARACION, $elemento->estado);
     }
 
-    public function test_apertura_ticket_sobre_activo_prestado_cierra_prestamo_formalmente(): void
+    public function test_apertura_ticket_sobre_activo_prestado_es_rechazada_con_excepcion(): void
     {
         $tipo = Tipo::first();
         $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
@@ -80,19 +80,13 @@ class TicketsDominioActionTest extends TestCase
 
         $this->assertEquals(EstadoElemento::PRESTADO, $elemento->fresh()->estado);
 
-        // Al abrir ticket por avería durante el préstamo:
-        $ticket = app(AbrirTicketAction::class)->execute($elemento, [
+        // Al intentar abrir ticket por avería durante el préstamo, debe ser rechazado
+        $this->expectException(ValidationException::class);
+
+        app(AbrirTicketAction::class)->execute($elemento, [
             'comentario' => 'Teclado no responde tras derrame de cafe durante prestamo',
             'tipo_traslado' => 'taller',
         ], $tec);
-
-        $prestamo->refresh();
-        // El préstamo original debe quedar con fecha de devolución registrada, eliminando el préstamo fantasma
-        $this->assertNotNull($prestamo->fecha_devolucion);
-        $this->assertEquals(now()->toDateString(), $prestamo->fecha_devolucion->toDateString());
-
-        $elemento->refresh();
-        $this->assertEquals(EstadoElemento::EN_REPARACION, $elemento->estado);
     }
 
     public function test_rechaza_abrir_ticket_sobre_activo_en_baja_o_con_ticket_abierto(): void
@@ -256,5 +250,177 @@ class TicketsDominioActionTest extends TestCase
         } catch (ValidationException $e) {
             $this->assertArrayHasKey('ticket_id', $e->errors());
         }
+    }
+
+    public function test_revisor_puede_acceder_a_tickets_index_pero_no_solucionar_ticket(): void
+    {
+        $rev = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'rev'))
+            ->whereDoesntHave('roles', fn ($q) => $q->whereIn('rol', ['subtec', 'tec', 'asset_admin', 'user_admin', 'app_admin']))
+            ->first();
+
+        // 1. Acceso exitoso a la bandeja de tickets para el rol revisor
+        $response = $this->actingAs($rev)->get(route('tickets.index'));
+        $response->assertStatus(200);
+
+        // 2. Comentar no puede marcar solución técnica si es revisor puro
+        $ticket = Movimiento::where('tipo_movimiento', 'reparacion')->where('estado_ticket', 'abierto')->first();
+        if (! $ticket) {
+            $tipo = Tipo::first();
+            $el = Elemento::create(['nro_lia' => 'TST-REV-01', 'tipo_id' => $tipo->id]);
+            $ticket = Movimiento::create([
+                'elemento_id' => $el->id,
+                'tipo_movimiento' => 'reparacion',
+                'estado_ticket' => 'abierto',
+                'titulo' => 'Ticket de prueba para revisor',
+                'user_id' => $rev->id,
+                'fecha' => now(),
+            ]);
+        }
+
+        $comentarResp = $this->actingAs($rev)->post(route('tickets.comentar', $ticket->id), [
+            'mensaje' => 'Aporte y aclaración sobre la falla',
+            'es_solucion' => true,
+        ]);
+
+        $comentarResp->assertRedirect();
+        $ticket->refresh();
+        // El ticket debe pasar a 'en_proceso' pero NUNCA a 'solucionado' por un revisor
+        $this->assertEquals('en_proceso', $ticket->estado_ticket);
+    }
+
+    public function test_api_buscar_excluye_activos_prestados_cuando_se_solicita_y_vista_bloquea_boton(): void
+    {
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
+        $tipo = Tipo::first();
+        $ubicacion = Ubicacion::where('activa', true)->first();
+
+        $elementoPrestado = Elemento::create([
+            'nro_lia' => 'TST-PRESTADO-SEARCH',
+            'tipo_id' => $tipo->id,
+            'modelo' => 'Laptop Prestada',
+        ]);
+
+        Movimiento::create([
+            'elemento_id' => $elementoPrestado->id,
+            'tipo_movimiento' => 'externo_prestamo',
+            'fecha' => now(),
+            'fecha_prestamo' => now(),
+            'solicitante' => 'Profesor Juan Perez',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $tec->id,
+        ]);
+
+        // 1. Búsqueda normal incluye el elemento (para devolución rápida)
+        $respNormal = $this->actingAs($tec)->getJson(route('movimientos.buscar-rapido', ['q' => 'TST-PRESTADO-SEARCH']));
+        $respNormal->assertStatus(200);
+        $respNormal->assertJsonFragment(['nro_lia' => 'TST-PRESTADO-SEARCH']);
+
+        // 2. Búsqueda con excluir_prestados=1 NO incluye el elemento prestado
+        $respFiltrado = $this->actingAs($tec)->getJson(route('movimientos.buscar-rapido', ['q' => 'TST-PRESTADO-SEARCH', 'excluir_prestados' => 1]));
+        $respFiltrado->assertStatus(200);
+        $respFiltrado->assertJsonMissing(['nro_lia' => 'TST-PRESTADO-SEARCH']);
+
+        // 3. Vista show de elemento prestado muestra el botón bloqueado
+        $respShow = $this->actingAs($tec)->get(route('elementos.show', $elementoPrestado->id));
+        $respShow->assertStatus(200);
+        $respShow->assertSee('No es posible iniciar un ticket sobre un activo en préstamo');
+        $respShow->assertSee('cursor-not-allowed');
+    }
+
+    public function test_dashboard_cuenta_exactamente_tickets_y_preserva_formula_operativos(): void
+    {
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
+        $tipo = Tipo::first();
+        $ubicacion = Ubicacion::where('activa', true)->first();
+
+        // 1. Activo con ticket abierto (físico)
+        $el1 = Elemento::create(['nro_lia' => 'TST-DASH-EL1', 'tipo_id' => $tipo->id]);
+        Movimiento::create([
+            'elemento_id' => $el1->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'en_proceso',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $tec->id,
+            'fecha' => now(),
+            'titulo' => 'Falla en fuente',
+        ]);
+
+        // 2. Ticket de infraestructura general (elemento_id = null)
+        Movimiento::create([
+            'elemento_id' => null,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'abierto',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $tec->id,
+            'fecha' => now(),
+            'titulo' => 'Punto de red sin conectividad',
+        ]);
+
+        $response = $this->actingAs($tec)->get(route('dashboard.index'));
+        $response->assertStatus(200);
+
+        $totalEnReparacion = $response->viewData('totalEnReparacion');
+        $totalElementos = $response->viewData('totalElementos');
+        $totalOperativos = $response->viewData('totalOperativos');
+        $totalPrestados = $response->viewData('totalPrestados');
+        $totalObsoletos = $response->viewData('totalObsoletos');
+
+        // Total en reparación en dashboard debe ser al menos 2
+        $this->assertGreaterThanOrEqual(2, $totalEnReparacion);
+
+        // La fórmula de operativos descuenta solo activos físicos en reparación, no incidencias generales
+        $activosFisicosEnReparacion = Movimiento::ticketsAbiertos()->whereNotNull('elemento_id')->distinct('elemento_id')->count('elemento_id');
+        $this->assertEquals(max(0, $totalElementos - $totalPrestados - $totalObsoletos - $activosFisicosEnReparacion), $totalOperativos);
+    }
+
+    public function test_linea_de_tiempo_diferencia_tickets_de_movimientos_y_contiene_filtros(): void
+    {
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
+        $tipo = Tipo::first();
+        $ubicacion = Ubicacion::where('activa', true)->first();
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'TST-TIMELINE-01',
+            'tipo_id' => $tipo->id,
+            'modelo' => 'Monitor Dell 24',
+        ]);
+
+        // 1. Movimiento físico
+        $mov = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $tec->id,
+            'fecha' => now()->subDay(),
+        ]);
+
+        // 2. Ticket de reparación
+        $ticket = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'en_proceso',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $tec->id,
+            'fecha' => now(),
+            'titulo' => 'Panel parpadea y tiene líneas verticales',
+            'comentario' => 'Posible falla en cable LVDS o fuente interna',
+        ]);
+
+        $response = $this->actingAs($tec)->get(route('elementos.show', $elemento->id));
+        $response->assertStatus(200);
+
+        // Verifica filtros interactivos
+        $response->assertSee('filter-btn-todos');
+        $response->assertSee('filter-btn-movimiento');
+        $response->assertSee('filter-btn-ticket');
+
+        // Verifica badge y diferenciación visual del ticket
+        $response->assertSee('Ticket de Avería');
+        $response->assertSee('Panel parpadea y tiene líneas verticales');
+        $response->assertSee('Ver / Gestionar Ticket');
+        $response->assertSee(route('tickets.show', $ticket->id));
+
+        // Verifica botón de enmendar en el movimiento físico
+        $response->assertSee('Enmendar Error');
     }
 }

@@ -10,10 +10,18 @@
             <span class="text-black font-semibold">{{ $elemento->presenter()->identificadorCompleto() }}</span>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('tickets.create', ['elemento_id' => $elemento->id]) }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
-                <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                <span>Iniciar Ticket</span>
-            </a>
+            @if($elemento->estado === \App\Enums\EstadoElemento::PRESTADO)
+                <button type="button" disabled title="No es posible iniciar un ticket sobre un activo en préstamo. Registre la devolución primero." class="inline-flex items-center gap-2 bg-gray-100 border border-gray-300 text-gray-400 font-bold py-2.5 px-4 rounded-xl cursor-not-allowed text-sm shadow-xs opacity-80" aria-disabled="true">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <span>Iniciar Ticket</span>
+                    <span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">Prestado</span>
+                </button>
+            @else
+                <a href="{{ route('tickets.create', ['elemento_id' => $elemento->id]) }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
+                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    <span>Iniciar Ticket</span>
+                </a>
+            @endif
             @if(Auth::user()->canManageMovimientos())
                 <a href="{{ route('movimientos.rapido', ['elemento_id' => $elemento->id]) }}" class="inline-flex items-center gap-2 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold py-2.5 px-4 rounded-xl shadow-sm transition-all text-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -137,73 +145,167 @@
 
             <!-- Tab Content 1: Timeline -->
             <div id="tab-content-timeline" class="tab-pane">
+                @php
+                    $conteoTickets = $elemento->movimientos->filter(fn($m) => $m->esTicket())->count();
+                    $conteoFisicos = $elemento->movimientos->count() - $conteoTickets;
+                @endphp
+
+                <!-- Filtros Interactivos de la Línea de Tiempo -->
+                <div class="flex items-center gap-2 mb-6 pb-3 border-b border-gray-100 flex-wrap">
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">Filtrar:</span>
+                    <button type="button" onclick="filtrarLineaTiempo('todos')" id="filter-btn-todos" class="filter-timeline-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-100 text-amber-950 border border-[#fbc101] shadow-2xs transition-all flex items-center gap-1.5">
+                        <span>Todos</span>
+                        <span class="px-1.5 py-0.2 bg-white/80 rounded-md text-[10px]">{{ $elemento->movimientos->count() }}</span>
+                    </button>
+                    <button type="button" onclick="filtrarLineaTiempo('movimiento')" id="filter-btn-movimiento" class="filter-timeline-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 shadow-2xs transition-all flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                        <span>Solo Movimientos</span>
+                        <span class="px-1.5 py-0.2 bg-gray-100 rounded-md text-[10px]">{{ $conteoFisicos }}</span>
+                    </button>
+                    <button type="button" onclick="filtrarLineaTiempo('ticket')" id="filter-btn-ticket" class="filter-timeline-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 shadow-2xs transition-all flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        <span>Solo Tickets</span>
+                        <span class="px-1.5 py-0.2 bg-amber-50 text-amber-900 border border-amber-200 rounded-md text-[10px]">{{ $conteoTickets }}</span>
+                    </button>
+                </div>
+
                 <div class="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-amber-200">
                     @forelse($elemento->movimientos as $index => $m)
-                        <div class="relative group">
+                        @php
+                            $esTicket = $m->esTicket();
+                            $eventoTipo = $esTicket ? 'ticket' : 'movimiento';
+                        @endphp
+                        <div class="relative group timeline-item" data-evento-tipo="{{ $eventoTipo }}">
                             <!-- Bullet -->
-                            <div class="absolute -left-[29px] top-1.5 w-3.5 h-3.5 rounded-full {{ $index === 0 ? 'bg-[#fbc101] ring-4 ring-amber-200 border border-[#aa8301]' : 'bg-amber-400 border border-amber-600' }}"></div>
+                            @if($esTicket)
+                                <div class="absolute -left-[29px] top-1.5 w-4 h-4 rounded-full bg-amber-500 border-2 border-white ring-2 ring-amber-400 flex items-center justify-center text-white" title="Ticket de Avería Técnica">
+                                    <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
+                                </div>
+                            @else
+                                <div class="absolute -left-[29px] top-1.5 w-3.5 h-3.5 rounded-full {{ $index === 0 ? 'bg-[#fbc101] ring-4 ring-amber-200 border border-[#aa8301]' : 'bg-amber-400 border border-amber-600' }}"></div>
+                            @endif
                             
                             <!-- Card -->
-                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200/80 hover:border-amber-300 transition-colors">
-                                <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-                                    <div class="flex items-center gap-2">
-                                        {!! $m->presenter()->tipoBadge() !!}
-                                        @if($index === 0)
-                                            <span class="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-xl bg-amber-100 text-amber-950 border border-[#fbc101]">Último Movimiento</span>
-                                        @endif
+                            @if($esTicket)
+                                <div class="bg-amber-50/40 rounded-xl p-4 border-l-4 border-l-amber-500 border border-amber-200/80 shadow-xs hover:border-amber-300 transition-colors">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="inline-flex items-center gap-1.5 text-xs font-black px-2.5 py-1 rounded-xl bg-amber-500 text-white shadow-2xs">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                <span>Ticket de Avería</span>
+                                            </span>
+                                            @php
+                                                $est = $m->estado_ticket ?? 'abierto';
+                                                $claseEstado = match($est) {
+                                                    'cerrado', 'resuelto' => 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                                                    'solucionado' => 'bg-sky-100 text-sky-800 border-sky-300',
+                                                    'en_proceso' => 'bg-amber-100 text-amber-900 border-amber-300',
+                                                    'baja' => 'bg-rose-100 text-rose-800 border-rose-300',
+                                                    default => 'bg-amber-100 text-amber-800 border-amber-300',
+                                                };
+                                            @endphp
+                                            <span class="inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-lg border {{ $claseEstado }}">
+                                                {{ ucfirst($est) }}
+                                            </span>
+                                            @if($index === 0)
+                                                <span class="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-xl bg-amber-100 text-amber-950 border border-[#fbc101]">Último Evento</span>
+                                            @endif
+                                        </div>
+                                        <span class="text-xs text-gray-500 font-mono">
+                                            {{ $m->fecha ? $m->fecha->format('d/m/Y H:i') : '-' }}
+                                        </span>
                                     </div>
-                                    <span class="text-xs text-gray-500 font-mono">
-                                        {{ $m->fecha ? $m->fecha->format('d/m/Y H:i') : '-' }}
-                                    </span>
-                                </div>
 
-                                <div class="text-sm space-y-1.5 text-gray-700">
-                                    <p>
-                                        <span class="text-gray-500 text-xs uppercase font-semibold">Destino:</span>
-                                        <strong class="text-gray-900">{{ $m->presenter()->destinoTexto() }}</strong>
-                                    </p>
-                                    @if($m->esPrestamo())
-                                        <p class="text-amber-900 bg-amber-50/80 p-2 rounded border border-amber-200 text-xs">
-                                            <strong>Docente / Solicitante:</strong> {{ $m->solicitante ?: 'No registrado' }}
-                                            @if($m->fecha_devolucion)
-                                                <br><span class="text-emerald-700 font-semibold">Devuelto el: {{ Carbon\Carbon::parse($m->fecha_devolucion)->format('d/m/Y') }}</span>
-                                            @else
-                                                <br><span class="text-amber-700 font-semibold">En curso ({{ $m->diasPrestado() }} días)</span>
-                                            @endif
-                                        </p>
-                                    @endif
-                                    @if($m->comentario)
-                                        <p class="text-xs text-gray-600 italic bg-white p-2 rounded border border-gray-100">
-                                            "{{ $m->comentario }}"
-                                        </p>
-                                    @endif
-                                    
-                                    <div class="flex items-center justify-between text-[11px] text-gray-500 pt-1.5 border-t border-gray-100">
-                                        <div>
-                                            @if($m->correccion_de_id)
-                                                <span class="text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-                                                    Subsanación del Movimiento #{{ $m->correccion_de_id }}
-                                                </span>
-                                            @else
-                                                <span>Movimiento #{{ $m->id }}</span>
-                                            @endif
+                                    <div class="text-sm space-y-2 text-gray-700">
+                                        <h4 class="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                                            {{ $m->titulo_display }}
+                                        </h4>
+                                        @if($m->comentario)
+                                            <p class="text-xs text-gray-600 italic bg-white p-2.5 rounded-lg border border-amber-200/60">
+                                                "{{ $m->comentario }}"
+                                            </p>
+                                        @endif
+                                        <div class="text-xs text-gray-500">
+                                            <span>Espacio / Sala al registrar: <strong class="text-gray-800">{{ $m->presenter()->destinoTexto() }}</strong></span>
                                         </div>
-                                        <div class="flex items-center gap-3">
-                                            <span>Registrado por: <strong class="text-gray-800">{{ $m->usuario?->nombre ?? 'Sistema' }}</strong></span>
-                                            <button type="button" onclick="abrirModalCorreccion({{ $m->id }}, '{{ $m->ubicacion_id }}', '{{ $m->puesto }}', '{{ addslashes($m->solicitante ?? '') }}')" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-all">
-                                                <svg class="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                                <span>Enmendar Error</span>
-                                            </button>
+                                        
+                                        <div class="flex items-center justify-between text-[11px] text-gray-500 pt-2 border-t border-amber-200/60">
+                                            <span>Ticket Técnico #{{ $m->id }} • Reportado por: <strong class="text-gray-800">{{ $m->usuario?->nombre ?? 'Sistema' }}</strong></span>
+                                            <a href="{{ route('tickets.show', $m->id) }}" class="inline-flex items-center gap-1 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-all">
+                                                <span>Ver / Gestionar Ticket</span>
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            @else
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200/80 hover:border-amber-300 transition-colors">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                        <div class="flex items-center gap-2">
+                                            {!! $m->presenter()->tipoBadge() !!}
+                                            @if($index === 0)
+                                                <span class="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-xl bg-amber-100 text-amber-950 border border-[#fbc101]">Último Movimiento</span>
+                                            @endif
+                                        </div>
+                                        <span class="text-xs text-gray-500 font-mono">
+                                            {{ $m->fecha ? $m->fecha->format('d/m/Y H:i') : '-' }}
+                                        </span>
+                                    </div>
+
+                                    <div class="text-sm space-y-1.5 text-gray-700">
+                                        <p>
+                                            <span class="text-gray-500 text-xs uppercase font-semibold">Destino:</span>
+                                            <strong class="text-gray-900">{{ $m->presenter()->destinoTexto() }}</strong>
+                                        </p>
+                                        @if($m->esPrestamo())
+                                            <p class="text-amber-900 bg-amber-50/80 p-2 rounded border border-amber-200 text-xs">
+                                                <strong>Docente / Solicitante:</strong> {{ $m->solicitante ?: 'No registrado' }}
+                                                @if($m->fecha_devolucion)
+                                                    <br><span class="text-emerald-700 font-semibold">Devuelto el: {{ Carbon\Carbon::parse($m->fecha_devolucion)->format('d/m/Y') }}</span>
+                                                @else
+                                                    <br><span class="text-amber-700 font-semibold">En curso ({{ $m->diasPrestado() }} días)</span>
+                                                @endif
+                                            </p>
+                                        @endif
+                                        @if($m->comentario)
+                                            <p class="text-xs text-gray-600 italic bg-white p-2 rounded border border-gray-100">
+                                                "{{ $m->comentario }}"
+                                            </p>
+                                        @endif
+                                        
+                                        <div class="flex items-center justify-between text-[11px] text-gray-500 pt-1.5 border-t border-gray-100">
+                                            <div>
+                                                @if($m->correccion_de_id)
+                                                    <span class="text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                                                        Subsanación del Movimiento #{{ $m->correccion_de_id }}
+                                                    </span>
+                                                @else
+                                                    <span>Movimiento #{{ $m->id }}</span>
+                                                @endif
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <span>Registrado por: <strong class="text-gray-800">{{ $m->usuario?->nombre ?? 'Sistema' }}</strong></span>
+                                                @if(Auth::user()->canManageMovimientos())
+                                                    <button type="button" onclick="abrirModalCorreccion({{ $m->id }}, '{{ $m->ubicacion_id }}', '{{ $m->puesto }}', '{{ addslashes($m->solicitante ?? '') }}')" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-all">
+                                                        <svg class="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                        <span>Enmendar Error</span>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     @empty
                         <div class="py-8 text-center text-gray-400 text-sm">
                             No existen movimientos registrados para este activo.
                         </div>
                     @endforelse
+
+                    <div id="timeline-empty-filter" class="hidden py-8 text-center text-gray-400 text-sm bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                        No se encontraron eventos para el filtro seleccionado.
+                    </div>
                 </div>
             </div>
 
@@ -363,6 +465,38 @@
     function cerrarModalCorreccion() {
         document.getElementById('modal-correccion').classList.add('hidden');
         document.getElementById('form-correccion').reset();
+    }
+
+    function filtrarLineaTiempo(filtro) {
+        document.querySelectorAll('.filter-timeline-btn').forEach(btn => {
+            btn.classList.remove('bg-amber-100', 'text-amber-950', 'border-[#fbc101]', 'font-bold');
+            btn.classList.add('bg-white', 'text-gray-600', 'border-gray-200', 'hover:bg-gray-50');
+        });
+        const activeBtn = document.getElementById('filter-btn-' + filtro);
+        if (activeBtn) {
+            activeBtn.classList.remove('bg-white', 'text-gray-600', 'border-gray-200', 'hover:bg-gray-50');
+            activeBtn.classList.add('bg-amber-100', 'text-amber-950', 'border-[#fbc101]', 'font-bold');
+        }
+
+        let visibles = 0;
+        document.querySelectorAll('.timeline-item').forEach(item => {
+            const tipo = item.getAttribute('data-evento-tipo');
+            if (filtro === 'todos' || tipo === filtro) {
+                item.classList.remove('hidden');
+                visibles++;
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+
+        const emptyMsg = document.getElementById('timeline-empty-filter');
+        if (emptyMsg) {
+            if (visibles === 0) {
+                emptyMsg.classList.remove('hidden');
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+        }
     }
 </script>
 @endsection

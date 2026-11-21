@@ -24,7 +24,7 @@ class CicloVidaUbicacionesActionTest extends TestCase
         $this->seed();
     }
 
-    public function test_renombrar_sala_crea_nueva_entidad_archiva_original_y_pasa_activos_a_limbo(): void
+    public function test_renombrar_sala_actualiza_nombre_in_place_preserva_id_y_mantiene_activos_operativos(): void
     {
         $tipo = Tipo::first();
         $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
@@ -51,29 +51,24 @@ class CicloVidaUbicacionesActionTest extends TestCase
 
         $this->assertEquals(EstadoElemento::OPERATIVO, $activo1->fresh()->estado);
 
-        // 2. Renombrar la sala
+        // 2. Renombrar la sala in-place
         $action = app(RenombrarUbicacionAction::class);
         $res = $action->execute($salaOriginal, 'Laboratorio Ciberseguridad e IoT', 'Sala actualizada');
 
         $this->assertTrue($res['renombro']);
-        $this->assertEquals(1, $res['activos_en_limbo']);
+        $this->assertEquals(0, $res['activos_en_limbo']);
 
-        // Sala original ahora es histórica/inactiva
+        // Sala preserva ID, sigue activa con nuevo nombre y descripción
         $salaOriginal->refresh();
-        $this->assertFalse($salaOriginal->activa);
-        $this->assertEquals('Laboratorio Redes 1', $salaOriginal->nombre); // Preserva nombre histórico!
+        $this->assertTrue($salaOriginal->activa);
+        $this->assertEquals('Laboratorio Ciberseguridad e IoT', $salaOriginal->nombre);
+        $this->assertEquals('Sala actualizada', $salaOriginal->descripcion);
+        $this->assertEquals($salaOriginal->id, $res['nueva_ubicacion']->id);
 
-        // Nueva sala creada y activa
-        $nuevaSala = $res['nueva_ubicacion'];
-        $this->assertTrue($nuevaSala->activa);
-        $this->assertEquals('Laboratorio Ciberseguridad e IoT', $nuevaSala->nombre);
-        $this->assertNotEquals($salaOriginal->id, $nuevaSala->id);
-
-        // Activo pasa canónicamente a limbo
+        // Activo sigue operativo en la misma sala
         $activo1->refresh();
-        $this->assertEquals(EstadoElemento::EN_LIMBO_REUBICACION, $activo1->estado);
-        $this->assertTrue(Elemento::enLimbo()->where('id', $activo1->id)->exists());
-        $this->assertFalse(Elemento::disponibles()->where('id', $activo1->id)->exists());
+        $this->assertEquals(EstadoElemento::OPERATIVO, $activo1->estado);
+        $this->assertEquals($salaOriginal->id, $activo1->ultimoMovimiento->ubicacion_id);
     }
 
     public function test_renombrar_sin_modificar_nombre_solo_actualiza_descripcion(): void
@@ -149,5 +144,23 @@ class CicloVidaUbicacionesActionTest extends TestCase
         $this->expectExceptionMessage('ya se encuentra archivada e inactiva');
 
         app(ArchivarUbicacionAction::class)->execute($sala);
+    }
+
+    public function test_resolver_ubicacion_canonica_tolerante_y_dinamica(): void
+    {
+        // 1. Resuelve coincidencia exacta y heurística
+        $fs = Ubicacion::resolverUbicacionCanonica('fs');
+        $this->assertNotNull($fs);
+        $this->assertStringContainsString('Federico Sanchez', $fs->nombre);
+
+        // 2. Resuelve sala personalizada o renombrada
+        $salaCustom = Ubicacion::create(['nombre' => 'Sala de Servidores IA', 'activa' => true]);
+        $resCustom = Ubicacion::resolverUbicacionCanonica('Servidores IA');
+        $this->assertEquals($salaCustom->id, $resCustom->id);
+
+        // 3. Fallback armónico a sala activa existente cuando no hay coincidencia
+        $fallback = Ubicacion::resolverUbicacionCanonica('Espacio Desconocido No Mapeado');
+        $this->assertNotNull($fallback);
+        $this->assertTrue($fallback->activa);
     }
 }

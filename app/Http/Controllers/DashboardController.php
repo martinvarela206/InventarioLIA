@@ -22,7 +22,7 @@ class DashboardController extends Controller
             $q->select(DB::raw('MAX(id)'))->from('movimientos')->groupBy('elemento_id');
         })->with(['elemento.tipo', 'ubicacion'])->get();
 
-        // 1. KPI Cards Principales (procesamiento instantáneo en memoria)
+        // 1. KPI Cards Principales
         $totalElementos = Elemento::count();
 
         $totalPrestados = $ultimosMovimientos->filter(function ($m) {
@@ -33,11 +33,16 @@ class DashboardController extends Controller
             return $m->tipo_movimiento === 'baja' || $m->elemento?->tipo?->nombre === 'basura tecnologica';
         })->count();
 
-        $totalEnReparacion = $ultimosMovimientos->filter(function ($m) {
-            return $m->tipo_movimiento === 'reparacion' && ($m->estado_ticket === 'abierto' || empty($m->estado_ticket));
-        })->count();
+        // Conteo integral de todos los tickets abiertos (activos e infraestructura) para el KPI
+        $totalEnReparacion = Movimiento::ticketsAbiertos()->count();
 
-        $totalOperativos = max(0, $totalElementos - $totalPrestados - $totalObsoletos - $totalEnReparacion);
+        // Para la fórmula patrimonial de activos operativos, restar únicamente activos físicos con ticket abierto
+        $activosEnReparacion = Movimiento::ticketsAbiertos()
+            ->whereNotNull('elemento_id')
+            ->distinct('elemento_id')
+            ->count('elemento_id');
+
+        $totalOperativos = max(0, $totalElementos - $totalPrestados - $totalObsoletos - $activosEnReparacion);
 
         // 2. Widget de Préstamos Activos con cálculo de días y acción de devolución
         $prestamosActivos = Movimiento::prestadosActivos()

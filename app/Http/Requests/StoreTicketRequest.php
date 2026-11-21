@@ -48,7 +48,7 @@ class StoreTicketRequest extends FormRequest
             'tipo_traslado' => ['nullable', 'in:insitu,taller'],
             'ubicacion_id' => ['nullable', 'exists:ubicaciones,id'],
             'puesto' => ['nullable', 'string', 'max:50'],
-            'fotos' => ['nullable', 'array', 'max:10'],
+            'fotos' => ['nullable', 'array', 'max:5'],
             'fotos.*' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
         ];
     }

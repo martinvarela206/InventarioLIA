@@ -34,13 +34,15 @@
                 </select>
             </form>
 
-            <form action="{{ route('auditorias.finalizar', $auditoria->id) }}" method="POST">
-                @csrf
-                <button type="submit" onclick="return confirm('¿Confirma que desea cerrar formalmente esta sesión de auditoría?')" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-4 py-2 rounded-xl text-xs shadow-sm transition-all">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    <span>Finalizar Sesión</span>
-                </button>
-            </form>
+            @if($auditoria->user_id === Auth::id() || Auth::user()->hasRole(['app_admin', 'asset_admin', 'user_admin']))
+                <form action="{{ route('auditorias.finalizar', $auditoria->id) }}" method="POST">
+                    @csrf
+                    <button type="submit" onclick="return confirm('¿Confirma que desea cerrar formalmente esta sesión de auditoría?')" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-4 py-2 rounded-xl text-xs shadow-sm transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span>Finalizar Sesión</span>
+                    </button>
+                </form>
+            @endif
         </div>
     </div>
 

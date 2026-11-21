@@ -81,7 +81,8 @@
         spinner.classList.remove('hidden');
 
         debounceTimer = setTimeout(() => {
-            fetch(`${searchUrl}?q=${encodeURIComponent(query)}`)
+            const separator = searchUrl.includes('?') ? '&' : '?';
+            fetch(`${searchUrl}${separator}q=${encodeURIComponent(query)}`)
                 .then(res => {
                     if (!res.ok) throw new Error('Error de conexión');
                     return res.json();
