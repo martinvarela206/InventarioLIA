@@ -372,4 +372,55 @@ class TicketsDominioActionTest extends TestCase
         $activosFisicosEnReparacion = Movimiento::ticketsAbiertos()->whereNotNull('elemento_id')->distinct('elemento_id')->count('elemento_id');
         $this->assertEquals(max(0, $totalElementos - $totalPrestados - $totalObsoletos - $activosFisicosEnReparacion), $totalOperativos);
     }
+
+    public function test_linea_de_tiempo_diferencia_tickets_de_movimientos_y_contiene_filtros(): void
+    {
+        $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
+        $tipo = Tipo::first();
+        $ubicacion = Ubicacion::where('activa', true)->first();
+
+        $elemento = Elemento::create([
+            'nro_lia' => 'TST-TIMELINE-01',
+            'tipo_id' => $tipo->id,
+            'modelo' => 'Monitor Dell 24',
+        ]);
+
+        // 1. Movimiento físico
+        $mov = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'interno',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $tec->id,
+            'fecha' => now()->subDay(),
+        ]);
+
+        // 2. Ticket de reparación
+        $ticket = Movimiento::create([
+            'elemento_id' => $elemento->id,
+            'tipo_movimiento' => 'reparacion',
+            'estado_ticket' => 'en_proceso',
+            'ubicacion_id' => $ubicacion->id,
+            'user_id' => $tec->id,
+            'fecha' => now(),
+            'titulo' => 'Panel parpadea y tiene líneas verticales',
+            'comentario' => 'Posible falla en cable LVDS o fuente interna',
+        ]);
+
+        $response = $this->actingAs($tec)->get(route('elementos.show', $elemento->id));
+        $response->assertStatus(200);
+
+        // Verifica filtros interactivos
+        $response->assertSee('filter-btn-todos');
+        $response->assertSee('filter-btn-movimiento');
+        $response->assertSee('filter-btn-ticket');
+
+        // Verifica badge y diferenciación visual del ticket
+        $response->assertSee('Ticket de Avería');
+        $response->assertSee('Panel parpadea y tiene líneas verticales');
+        $response->assertSee('Ver / Gestionar Ticket');
+        $response->assertSee(route('tickets.show', $ticket->id));
+
+        // Verifica botón de enmendar en el movimiento físico
+        $response->assertSee('Enmendar Error');
+    }
 }
