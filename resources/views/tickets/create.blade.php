@@ -259,52 +259,65 @@
                 </div>
 
                 <!-- Decisión de Traslado / Destino Físico -->
-                <div class="space-y-3">
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        Decisión de Traslado Físico durante la Reparación
-                    </label>
-
-                    <div class="space-y-2">
-                        <!-- Opción 1: In Situ -->
-                        <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50/20 cursor-pointer transition-all has-checked:border-amber-500 has-checked:bg-amber-50/40">
-                            <input type="radio" name="tipo_traslado" value="insitu" id="traslado_insitu" 
-                                   {{ old('tipo_traslado', 'insitu') === 'insitu' && !old('ubicacion_id') ? 'checked' : '' }}
-                                   onchange="toggleTrasladoFisico(false)"
-                                   class="mt-1 text-amber-500 focus:ring-amber-400">
-                            <div>
-                                <span class="text-sm font-bold text-gray-900 block">Permanece en su sala para inspección in situ</span>
-                                <span class="text-xs text-gray-500 leading-snug block mt-0.5">El equipo no se traslada; el equipo técnico asistirá a su sala de origen a revisarlo.</span>
-                            </div>
+                @if($isTec)
+                    <div class="space-y-3">
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Decisión de Traslado Físico durante la Reparación
                         </label>
 
-                        <!-- Opción 2: Traslado a Taller / Depósito -->
-                        <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50/20 cursor-pointer transition-all has-checked:border-amber-500 has-checked:bg-amber-50/40">
-                            <input type="radio" name="tipo_traslado" value="taller" id="traslado_taller"
-                                   {{ old('tipo_traslado') === 'taller' || old('ubicacion_id') ? 'checked' : '' }}
-                                   onchange="toggleTrasladoFisico(true)"
-                                   class="mt-1 text-amber-500 focus:ring-amber-400">
-                            <div class="flex-1">
-                                <span class="text-sm font-bold text-gray-900 block">Trasladar físicamente a Taller de Hardware / Depósito</span>
-                                <span class="text-xs text-gray-500 leading-snug block mt-0.5">El activo se retira de la sala y se mueve a un espacio técnico para reparación de banco.</span>
-                            </div>
-                        </label>
+                        <div class="space-y-2">
+                            <!-- Opción 1: In Situ -->
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50/20 cursor-pointer transition-all has-checked:border-amber-500 has-checked:bg-amber-50/40">
+                                <input type="radio" name="tipo_traslado" value="insitu" id="traslado_insitu" 
+                                       {{ old('tipo_traslado', 'insitu') === 'insitu' && !old('ubicacion_id') ? 'checked' : '' }}
+                                       onchange="toggleTrasladoFisico(false)"
+                                       class="mt-1 text-amber-500 focus:ring-amber-400">
+                                <div>
+                                    <span class="text-sm font-bold text-gray-900 block">Permanece en su sala para inspección in situ</span>
+                                    <span class="text-xs text-gray-500 leading-snug block mt-0.5">El equipo no se traslada; el equipo técnico asistirá a su sala de origen a revisarlo.</span>
+                                </div>
+                            </label>
+
+                            <!-- Opción 2: Traslado a Taller / Depósito -->
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50/20 cursor-pointer transition-all has-checked:border-amber-500 has-checked:bg-amber-50/40">
+                                <input type="radio" name="tipo_traslado" value="taller" id="traslado_taller"
+                                       {{ old('tipo_traslado') === 'taller' || old('ubicacion_id') ? 'checked' : '' }}
+                                       onchange="toggleTrasladoFisico(true)"
+                                       class="mt-1 text-amber-500 focus:ring-amber-400">
+                                <div class="flex-1">
+                                    <span class="text-sm font-bold text-gray-900 block">Trasladar físicamente a Taller de Hardware / Depósito</span>
+                                    <span class="text-xs text-gray-500 leading-snug block mt-0.5">El activo se retira de la sala y se mueve a un espacio técnico para reparación de banco.</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Selector condicional de Destino Físico si se traslada -->
+                        <div id="selector_destino_container" class="{{ old('tipo_traslado') === 'taller' || old('ubicacion_id') ? '' : 'hidden' }} pt-2">
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                Seleccionar Sala de Destino Técnico <span class="text-rose-500">*</span>
+                            </label>
+                            <select name="ubicacion_id" id="ubicacion_destino_select" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400">
+                                <option value="">Seleccione sala o taller...</option>
+                                @foreach($ubicaciones as $ub)
+                                    <option value="{{ $ub->id }}" {{ old('ubicacion_id') == $ub->id || (!old('ubicacion_id') && str_contains(strtolower($ub->nombre), 'hardware')) ? 'selected' : '' }}>
+                                        {{ $ub->nombre }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
-
-                    <!-- Selector condicional de Destino Físico si se traslada -->
-                    <div id="selector_destino_container" class="{{ old('tipo_traslado') === 'taller' || old('ubicacion_id') ? '' : 'hidden' }} pt-2">
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                            Seleccionar Sala de Destino Técnico <span class="text-rose-500">*</span>
-                        </label>
-                        <select name="ubicacion_id" id="ubicacion_destino_select" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#fbc101] focus:border-amber-400">
-                            <option value="">Seleccione sala o taller...</option>
-                            @foreach($ubicaciones as $ub)
-                                <option value="{{ $ub->id }}" {{ old('ubicacion_id') == $ub->id || (!old('ubicacion_id') && str_contains(strtolower($ub->nombre), 'hardware')) ? 'selected' : '' }}>
-                                    {{ $ub->nombre }}
-                                </option>
-                            @endforeach
-                        </select>
+                @else
+                    <input type="hidden" name="tipo_traslado" value="insitu">
+                    <div class="space-y-2 bg-amber-50/50 border border-[#fbc101] rounded-xl p-3.5 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div class="text-xs text-amber-950">
+                            <strong class="font-bold block">Inspección In Situ</strong>
+                            <span>Como revisor, el ticket se registra para inspección técnica in situ en la ubicación actual del activo.</span>
+                        </div>
                     </div>
-                </div>
+                @endif
             </div>
         </div>
 

@@ -190,10 +190,12 @@
                                         </div>
                                         <div class="flex items-center gap-3">
                                             <span>Registrado por: <strong class="text-gray-800">{{ $m->usuario?->nombre ?? 'Sistema' }}</strong></span>
-                                            <button type="button" onclick="abrirModalCorreccion({{ $m->id }}, '{{ $m->ubicacion_id }}', '{{ $m->puesto }}', '{{ addslashes($m->solicitante ?? '') }}')" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-all">
-                                                <svg class="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                                <span>Enmendar Error</span>
-                                            </button>
+                                            @if(Auth::user()->canManageMovimientos())
+                                                <button type="button" onclick="abrirModalCorreccion({{ $m->id }}, '{{ $m->ubicacion_id }}', '{{ $m->puesto }}', '{{ addslashes($m->solicitante ?? '') }}')" class="inline-flex items-center gap-1.5 bg-[#fbc101] hover:bg-amber-400 text-black font-extrabold px-3 py-1.5 rounded-xl text-xs shadow-2xs transition-all">
+                                                    <svg class="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                                    <span>Enmendar Error</span>
+                                                </button>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>

@@ -8,7 +8,7 @@ class StoreEnmiendaRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return (bool) (auth()->check() && auth()->user()->canManageMovimientos());
     }
 
     public function rules(): array
