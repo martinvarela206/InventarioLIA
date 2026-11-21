@@ -69,6 +69,7 @@ services:
       - 'mariadbd'
       - '--character-set-server=utf8mb4'
       - '--collation-server=utf8mb4_unicode_ci'
+      - '--sql-safe-updates=ON'
       - '--plugin-load-add=server_audit'
       - '--server-audit=FORCE_PLUS_PERMANENT'
       - '--server-audit-logging=ON'
