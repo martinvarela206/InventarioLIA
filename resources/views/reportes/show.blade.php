@@ -24,6 +24,20 @@
                 Restaurar todas las columnas
             </button>
 
+            <!-- Selector Orientación de Impresión -->
+            <div class="inline-flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl p-1 text-xs">
+                <span class="text-gray-500 font-semibold px-1 text-[11px]">Diseño:</span>
+                <button type="button" onclick="setOrientacionImpresion('auto')" id="btn-orientacion-auto" title="Permite elegir libremente en el diálogo de impresión del navegador" class="btn-orientacion px-2 py-1 rounded-lg font-bold bg-white text-gray-800 shadow-2xs">
+                    Auto
+                </button>
+                <button type="button" onclick="setOrientacionImpresion('portrait')" id="btn-orientacion-portrait" title="Fuerza orientación vertical en la hoja A4" class="btn-orientacion px-2 py-1 rounded-lg text-gray-600 hover:text-gray-900">
+                    Vertical
+                </button>
+                <button type="button" onclick="setOrientacionImpresion('landscape')" id="btn-orientacion-landscape" title="Fuerza orientación horizontal en la hoja A4" class="btn-orientacion px-2 py-1 rounded-lg text-gray-600 hover:text-gray-900">
+                    Horizontal
+                </button>
+            </div>
+
             <!-- Botón Imprimir / PDF -->
             <button type="button" onclick="window.print()" class="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50/50 border border-gray-300 text-gray-700 font-bold px-4 py-2 rounded-xl text-xs shadow-2xs transition-all">
                 <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
@@ -268,13 +282,39 @@
         }
     }
 
+    function setOrientacionImpresion(modo) {
+        document.querySelectorAll('.btn-orientacion').forEach(btn => {
+            btn.classList.remove('bg-white', 'text-gray-800', 'font-bold', 'shadow-2xs');
+            btn.classList.add('text-gray-600');
+        });
+        const active = document.getElementById('btn-orientacion-' + modo);
+        if (active) {
+            active.classList.add('bg-white', 'text-gray-800', 'font-bold', 'shadow-2xs');
+            active.classList.remove('text-gray-600');
+        }
+
+        let styleTag = document.getElementById('dynamic-print-orientation');
+        if (!styleTag) {
+            styleTag = document.createElement('style');
+            styleTag.id = 'dynamic-print-orientation';
+            document.head.appendChild(styleTag);
+        }
+        if (modo === 'portrait') {
+            styleTag.innerHTML = '@page { size: portrait; margin: 8mm 6mm; }';
+        } else if (modo === 'landscape') {
+            styleTag.innerHTML = '@page { size: landscape; margin: 8mm 6mm; }';
+        } else {
+            styleTag.innerHTML = '@page { size: auto; margin: 8mm 6mm; }';
+        }
+    }
+
     // Inicializar estado reactivo inicial en carga
     actualizarEstadoGlobal();
 </script>
 
 <style>
 @page {
-    size: landscape;
+    size: auto;
     margin: 8mm 6mm;
 }
 
@@ -282,7 +322,7 @@
     body {
         background-color: #fff !important;
         color: #000 !important;
-        font-size: 8pt !important;
+        font-size: 7.5pt !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
@@ -295,7 +335,8 @@
     table {
         page-break-inside: auto;
         width: 100% !important;
-        font-size: 8pt !important;
+        max-width: 100% !important;
+        font-size: 7.5pt !important;
         border-collapse: collapse !important;
         table-layout: auto !important;
     }
@@ -307,13 +348,13 @@
         display: table-header-group;
     }
     th, td {
-        font-size: 8pt !important;
+        font-size: 7.5pt !important;
         padding: 2.5px 3.5px !important;
         line-height: 1.15 !important;
         word-break: break-word;
     }
     th {
-        font-size: 8pt !important;
+        font-size: 7.5pt !important;
         font-weight: 800 !important;
         background-color: #f3f4f6 !important;
         text-transform: uppercase !important;

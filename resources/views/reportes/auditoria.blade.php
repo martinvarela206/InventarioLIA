@@ -14,6 +14,20 @@
         </div>
 
         <div class="flex items-center gap-3">
+            <!-- Selector Orientación de Impresión -->
+            <div class="inline-flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl p-1 text-xs">
+                <span class="text-gray-500 font-semibold px-1 text-[11px]">Diseño:</span>
+                <button type="button" onclick="setOrientacionImpresion('auto')" id="btn-orientacion-auto" title="Permite elegir libremente en el diálogo de impresión del navegador" class="btn-orientacion px-2 py-1 rounded-lg font-bold bg-white text-gray-800 shadow-2xs">
+                    Auto
+                </button>
+                <button type="button" onclick="setOrientacionImpresion('portrait')" id="btn-orientacion-portrait" title="Fuerza orientación vertical en la hoja A4" class="btn-orientacion px-2 py-1 rounded-lg text-gray-600 hover:text-gray-900">
+                    Vertical
+                </button>
+                <button type="button" onclick="setOrientacionImpresion('landscape')" id="btn-orientacion-landscape" title="Fuerza orientación horizontal en la hoja A4" class="btn-orientacion px-2 py-1 rounded-lg text-gray-600 hover:text-gray-900">
+                    Horizontal
+                </button>
+            </div>
+
             <button type="button" onclick="window.print()" class="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-lg text-xs shadow transition-all">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                 Imprimir Planilla A4
@@ -106,7 +120,7 @@
         </table>
 
         <!-- RECUADRO DE CONFORMIDAD -->
-        <div class="mt-8 pt-4 border-t-2 border-gray-800 grid grid-cols-2 gap-8 text-[9pt] text-gray-800">
+        <div class="firmas-container mt-8 pt-4 border-t-2 border-gray-800 grid grid-cols-2 gap-8 text-[9pt] text-gray-800">
             <div class="border-t border-gray-800 pt-2 text-center mt-10">
                 <span class="block font-bold">Firma del Revisor / Auditor de Sala</span>
                 <span class="block text-gray-500 text-[8pt]">Aclaración y DNI</span>
@@ -119,16 +133,44 @@
     </div>
 </div>
 
+<script>
+function setOrientacionImpresion(modo) {
+    document.querySelectorAll('.btn-orientacion').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-gray-800', 'font-bold', 'shadow-2xs');
+        btn.classList.add('text-gray-600');
+    });
+    const active = document.getElementById('btn-orientacion-' + modo);
+    if (active) {
+        active.classList.add('bg-white', 'text-gray-800', 'font-bold', 'shadow-2xs');
+        active.classList.remove('text-gray-600');
+    }
+
+    let styleTag = document.getElementById('dynamic-print-orientation');
+    if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'dynamic-print-orientation';
+        document.head.appendChild(styleTag);
+    }
+    if (modo === 'portrait') {
+        styleTag.innerHTML = '@page { size: portrait; margin: 8mm 6mm; }';
+    } else if (modo === 'landscape') {
+        styleTag.innerHTML = '@page { size: landscape; margin: 8mm 6mm; }';
+    } else {
+        styleTag.innerHTML = '@page { size: auto; margin: 8mm 6mm; }';
+    }
+}
+</script>
+
 <style>
 @page {
-    size: landscape;
+    size: auto;
     margin: 8mm 6mm;
 }
 
 @media print {
     body {
         background-color: #fff !important;
-        font-size: 8pt !important;
+        font-size: 7.5pt !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
@@ -138,16 +180,22 @@
     table {
         page-break-inside: auto;
         width: 100% !important;
-        font-size: 8pt !important;
+        max-width: 100% !important;
+        font-size: 7.5pt !important;
         border-collapse: collapse !important;
+        table-layout: auto !important;
     }
     tr {
         page-break-inside: avoid;
     }
     th, td {
-        font-size: 8pt !important;
+        font-size: 7.5pt !important;
         padding: 2.5px 3.5px !important;
         line-height: 1.15 !important;
+        word-break: break-word;
+    }
+    .firmas-container {
+        page-break-inside: avoid !important;
     }
 }
 </style>
