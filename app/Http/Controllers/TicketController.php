@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Tickets\AbrirTicketAction;
 use App\Actions\Tickets\ResolverTicketAction;
+use App\Enums\EstadoElemento;
 use App\Http\Requests\StoreTicketRequest;
 use App\Models\AmbitoTicket;
 use App\Models\Area;
@@ -42,6 +43,11 @@ class TicketController extends Controller
             $elemento = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion'])->find($request->elemento_id);
         } elseif ($request->filled('nro_lia')) {
             $elemento = Elemento::with(['tipo', 'ultimoMovimiento.ubicacion'])->where('nro_lia', trim($request->nro_lia))->first();
+        }
+
+        if ($elemento && $elemento->estado === EstadoElemento::PRESTADO) {
+            return redirect()->route('elementos.show', $elemento->id)
+                ->with('error', "El activo {$elemento->presenter()->identificadorCompleto()} se encuentra prestado actualmente. Debe registrarse formalmente la devolución antes de abrir un ticket de avería.");
         }
 
         $ubicaciones = Ubicacion::orderBy('nombre')->get();

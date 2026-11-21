@@ -114,19 +114,10 @@ class AbrirTicketAction
                 ]);
             }
 
-            // Si el activo estaba prestado, cerrar formalmente el préstamo para evitar préstamo fantasma (I5)
             if ($estado === EstadoElemento::PRESTADO) {
-                $prestamoAbierto = Movimiento::where('elemento_id', $el->id)
-                    ->whereNotNull('fecha_prestamo')
-                    ->whereNull('fecha_devolucion')
-                    ->lockForUpdate()
-                    ->first();
-
-                if ($prestamoAbierto) {
-                    $prestamoAbierto->update([
-                        'fecha_devolucion' => now()->toDateString(),
-                    ]);
-                }
+                throw ValidationException::withMessages([
+                    'elemento_id' => 'No es posible abrir un ticket de avería sobre un activo actualmente prestado. Debe registrarse previamente la devolución formal del equipo antes de iniciar el ticket.',
+                ]);
             }
 
             // Ubicación del ticket

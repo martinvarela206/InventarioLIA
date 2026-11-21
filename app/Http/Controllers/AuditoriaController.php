@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoElemento;
 use App\Models\Auditoria;
 use App\Models\AuditoriaDetalle;
 use App\Models\Elemento;
@@ -329,6 +330,12 @@ class AuditoriaController extends Controller
         }
 
         $elemento = Elemento::with('ultimoMovimiento')->findOrFail($validated['elemento_id']);
+        if ($elemento->estado === EstadoElemento::PRESTADO) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El activo se encuentra registrado como prestado fuera del laboratorio. Debe registrarse formalmente su devolución antes de abrir un ticket de avería o anomalía.',
+            ], 422);
+        }
         $isTec = $user && $user->hasRole(['tec', 'subtec', 'user_admin', 'item_admin', 'asset_admin']);
 
         $ticket = DB::transaction(function () use ($auditoria, $user, $elemento, $validated, $isTec) {

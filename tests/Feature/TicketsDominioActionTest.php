@@ -57,7 +57,7 @@ class TicketsDominioActionTest extends TestCase
         $this->assertEquals(EstadoElemento::EN_REPARACION, $elemento->estado);
     }
 
-    public function test_apertura_ticket_sobre_activo_prestado_cierra_prestamo_formalmente(): void
+    public function test_apertura_ticket_sobre_activo_prestado_es_rechazada_con_excepcion(): void
     {
         $tipo = Tipo::first();
         $tec = Usuario::whereHas('roles', fn ($q) => $q->where('rol', 'tec'))->first();
@@ -80,19 +80,13 @@ class TicketsDominioActionTest extends TestCase
 
         $this->assertEquals(EstadoElemento::PRESTADO, $elemento->fresh()->estado);
 
-        // Al abrir ticket por avería durante el préstamo:
-        $ticket = app(AbrirTicketAction::class)->execute($elemento, [
+        // Al intentar abrir ticket por avería durante el préstamo, debe ser rechazado
+        $this->expectException(ValidationException::class);
+
+        app(AbrirTicketAction::class)->execute($elemento, [
             'comentario' => 'Teclado no responde tras derrame de cafe durante prestamo',
             'tipo_traslado' => 'taller',
         ], $tec);
-
-        $prestamo->refresh();
-        // El préstamo original debe quedar con fecha de devolución registrada, eliminando el préstamo fantasma
-        $this->assertNotNull($prestamo->fecha_devolucion);
-        $this->assertEquals(now()->toDateString(), $prestamo->fecha_devolucion->toDateString());
-
-        $elemento->refresh();
-        $this->assertEquals(EstadoElemento::EN_REPARACION, $elemento->estado);
     }
 
     public function test_rechaza_abrir_ticket_sobre_activo_en_baja_o_con_ticket_abierto(): void
