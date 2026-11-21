@@ -97,25 +97,13 @@ class UbicacionController extends Controller
         ]);
 
         try {
-            $resultado = $renombrarAction->execute($ubicacion, $validated['nombre'], $validated['descripcion'] ?? null, auth()->user());
+            $renombrarAction->execute($ubicacion, $validated['nombre'], $validated['descripcion'] ?? null, auth()->user());
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         }
 
-        if ($resultado['renombro']) {
-            if ($resultado['activos_en_limbo'] > 0) {
-                return redirect()->route('ubicaciones.reubicar', [
-                    'origen_id' => $resultado['ubicacion_antigua']->id,
-                    'sugerido_id' => $resultado['nueva_ubicacion']->id,
-                ])->with('warning', "Se ha creado la nueva sala \"{$resultado['nueva_ubicacion']->nombre}\" y archivado \"{$resultado['ubicacion_antigua']->nombre}\". Se detectaron {$resultado['activos_en_limbo']} activos en limbo que deben ser reubicados.");
-            }
-
-            return redirect()->route('ubicaciones.index')
-                ->with('success', "Se ha creado la nueva sala \"{$resultado['nueva_ubicacion']->nombre}\" y archivado la histórica \"{$resultado['ubicacion_antigua']->nombre}\".");
-        }
-
         return redirect()->route('ubicaciones.index')
-            ->with('success', "La información del espacio \"{$ubicacion->nombre}\" ha sido actualizada.");
+            ->with('success', "La información del espacio \"{$ubicacion->fresh()->nombre}\" ha sido actualizada exitosamente.");
     }
 
     /**

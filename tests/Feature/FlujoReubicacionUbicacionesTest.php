@@ -41,7 +41,7 @@ class FlujoReubicacionUbicacionesTest extends TestCase
         $this->tipoPc = Tipo::firstOrCreate(['nombre' => 'Desktop PC'], ['categoria' => 'Informatica']);
     }
 
-    public function test_renombrar_ubicacion_con_activos_redirige_a_asistente_de_reubicacion(): void
+    public function test_renombrar_ubicacion_actualiza_in_place_y_redirige_a_index(): void
     {
         $pc = Elemento::create([
             'tipo_id' => $this->tipoPc->id,
@@ -66,21 +66,17 @@ class FlujoReubicacionUbicacionesTest extends TestCase
         ]);
 
         $this->salaA->refresh();
-        $this->assertFalse($this->salaA->activa);
+        $this->assertTrue($this->salaA->activa);
+        $this->assertEquals('Laboratorio Alfa Renovado', $this->salaA->nombre);
+        $this->assertEquals('Espacio ampliado y modernizado', $this->salaA->descripcion);
 
-        $nuevaSala = Ubicacion::where('nombre', 'Laboratorio Alfa Renovado')->first();
-        $this->assertNotNull($nuevaSala);
-        $this->assertTrue($nuevaSala->activa);
-
-        // El activo queda en estado EN_LIMBO_REUBICACION
+        // El activo sigue en estado OPERATIVO
         $pc->refresh();
-        $this->assertEquals(EstadoElemento::EN_LIMBO_REUBICACION, $pc->estado);
+        $this->assertEquals(EstadoElemento::OPERATIVO, $pc->estado);
 
-        // Debe redirigir a /ubicaciones/reubicar
-        $response->assertRedirect(route('ubicaciones.reubicar', [
-            'origen_id' => $this->salaA->id,
-            'sugerido_id' => $nuevaSala->id,
-        ]));
+        // Debe redirigir a /ubicaciones
+        $response->assertRedirect(route('ubicaciones.index'));
+        $response->assertSessionHas('success');
     }
 
     public function test_destroy_ubicacion_con_historial_archiva_sala_y_redirige_a_reubicacion(): void

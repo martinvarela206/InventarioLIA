@@ -2,7 +2,6 @@
 
 namespace App\Actions\Ubicaciones;
 
-use App\Models\Elemento;
 use App\Models\Ubicacion;
 use App\Models\Usuario;
 use Illuminate\Support\Facades\DB;
@@ -11,10 +10,10 @@ use Illuminate\Validation\ValidationException;
 class RenombrarUbicacionAction
 {
     /**
-     * Renombra un espacio físico tratando el nuevo nombre como una nueva Ubicación activa
-     * y archivando la original como histórica, pasando sus activos a estado de limbo.
+     * Actualiza el nombre y descripción de una sala o espacio físico existente in-place,
+     * preservando su identificador (ID), estado de activación y relaciones históricas.
      *
-     * @return array{ubicacion_antigua: Ubicacion, nueva_ubicacion: Ubicacion, renombro: bool, activos_en_limbo: int}
+     * @return array{ubicacion: Ubicacion, ubicacion_antigua: Ubicacion, nueva_ubicacion: Ubicacion, renombro: bool, activos_en_limbo: int}
      *
      * @throws ValidationException
      */
@@ -29,53 +28,29 @@ class RenombrarUbicacionAction
 
         return DB::transaction(function () use ($ubicacion, $nuevoNombre, $descripcion) {
             $ubicacionId = $ubicacion instanceof Ubicacion ? $ubicacion->id : $ubicacion;
-            /** @var Ubicacion $ubiAntigua */
-            $ubiAntigua = Ubicacion::where('id', $ubicacionId)->lockForUpdate()->firstOrFail();
+            /** @var Ubicacion $ubi */
+            $ubi = Ubicacion::where('id', $ubicacionId)->lockForUpdate()->firstOrFail();
 
-            // Si el nombre es exactamente igual, solo actualizar descripción
-            if ($ubiAntigua->nombre === $nuevoNombre) {
-                $ubiAntigua->update([
-                    'descripcion' => $descripcion !== null ? trim($descripcion) : $ubiAntigua->descripcion,
-                ]);
-
-                return [
-                    'ubicacion_antigua' => $ubiAntigua,
-                    'nueva_ubicacion' => $ubiAntigua,
-                    'renombro' => false,
-                    'activos_en_limbo' => 0,
-                ];
-            }
-
-            // Validar unicidad del nuevo nombre
-            if (Ubicacion::where('nombre', $nuevoNombre)->where('id', '!=', $ubiAntigua->id)->exists()) {
+            // Validar unicidad del nuevo nombre excluyendo la ubicación actual
+            if (Ubicacion::where('nombre', $nuevoNombre)->where('id', '!=', $ubi->id)->exists()) {
                 throw ValidationException::withMessages([
                     'nombre' => "Ya existe una sala o laboratorio registrado con el nombre \"{$nuevoNombre}\".",
                 ]);
             }
 
-            // Contar activos actualmente asignados a la sala antigua
-            $activosCount = Elemento::whereHas('ultimoMovimiento', function ($q) use ($ubiAntigua) {
-                $q->where('ubicacion_id', $ubiAntigua->id)
-                    ->whereNotIn('tipo_movimiento', ['baja']);
-            })->whereDoesntHave('tipo', fn ($t) => $t->where('nombre', 'basura tecnologica'))->count();
+            $renombro = $ubi->nombre !== $nuevoNombre;
 
-            // 1. Archivar la ubicación antigua como histórica
-            $ubiAntigua->update([
-                'activa' => false,
-            ]);
-
-            // 2. Crear la nueva entidad de Ubicación con el nuevo nombre
-            $nuevaUbi = Ubicacion::create([
+            $ubi->update([
                 'nombre' => $nuevoNombre,
-                'descripcion' => $descripcion !== null ? trim($descripcion) : $ubiAntigua->descripcion,
-                'activa' => true,
+                'descripcion' => $descripcion !== null ? (trim($descripcion) !== '' ? trim($descripcion) : null) : $ubi->descripcion,
             ]);
 
             return [
-                'ubicacion_antigua' => $ubiAntigua,
-                'nueva_ubicacion' => $nuevaUbi,
-                'renombro' => true,
-                'activos_en_limbo' => $activosCount,
+                'ubicacion' => $ubi,
+                'ubicacion_antigua' => $ubi,
+                'nueva_ubicacion' => $ubi,
+                'renombro' => $renombro,
+                'activos_en_limbo' => 0,
             ];
         });
     }
