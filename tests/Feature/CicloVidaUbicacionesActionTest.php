@@ -145,4 +145,22 @@ class CicloVidaUbicacionesActionTest extends TestCase
 
         app(ArchivarUbicacionAction::class)->execute($sala);
     }
+
+    public function test_resolver_ubicacion_canonica_tolerante_y_dinamica(): void
+    {
+        // 1. Resuelve coincidencia exacta y heurística
+        $fs = Ubicacion::resolverUbicacionCanonica('fs');
+        $this->assertNotNull($fs);
+        $this->assertStringContainsString('Federico Sanchez', $fs->nombre);
+
+        // 2. Resuelve sala personalizada o renombrada
+        $salaCustom = Ubicacion::create(['nombre' => 'Sala de Servidores IA', 'activa' => true]);
+        $resCustom = Ubicacion::resolverUbicacionCanonica('Servidores IA');
+        $this->assertEquals($salaCustom->id, $resCustom->id);
+
+        // 3. Fallback armónico a sala activa existente cuando no hay coincidencia
+        $fallback = Ubicacion::resolverUbicacionCanonica('Espacio Desconocido No Mapeado');
+        $this->assertNotNull($fallback);
+        $this->assertTrue($fallback->activa);
+    }
 }
