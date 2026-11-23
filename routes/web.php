@@ -20,6 +20,7 @@ use App\Models\ActividadLia;
 use App\Models\AvisoSeguridad;
 use App\Models\EspacioLia;
 use App\Models\PersonalLia;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // Autenticación
@@ -86,7 +87,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/atributos', [TipoController::class, 'storeAtributo'])->name('atributos.store');
             Route::get('/ubicaciones/reubicar', [ReubicacionController::class, 'show'])->name('ubicaciones.reubicar');
             Route::post('/ubicaciones/reubicar', [ReubicacionController::class, 'reubicar'])->name('ubicaciones.reubicar.store');
-            Route::resource('ubicaciones', UbicacionController::class);
+            Route::resource('ubicaciones', UbicacionController::class)->except(['show']);
         });
 
         Route::get('/elementos/{elemento}', [ElementoController::class, 'show'])->name('elementos.show');
