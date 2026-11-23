@@ -144,14 +144,6 @@ class MovimientoController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create(Request $request): View
-    {
-        return $this->rapido($request);
-    }
-
-    /**
      * Store a newly created movement in storage.
      */
     public function store(StoreMovimientoRequest $request, RegistrarPrestamoAction $registrarPrestamoAction): RedirectResponse
