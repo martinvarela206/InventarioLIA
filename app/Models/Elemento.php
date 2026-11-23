@@ -235,21 +235,6 @@ class Elemento extends Model
             }
         }
 
-        if (is_array($this->descripcion)) {
-            foreach ($this->descripcion as $key => $val) {
-                $valStr = trim((string) $val);
-                if ($valStr !== '' && $valStr !== '-') {
-                    $keyLower = mb_strtolower(trim((string) $key));
-                    if (! isset($datos[$keyLower])) {
-                        $datos[$keyLower] = [
-                            'label' => is_string($key) ? trim((string) $key) : '',
-                            'valor' => $valStr,
-                        ];
-                    }
-                }
-            }
-        }
-
         // Ordenar según ordenClaves prioritario y luego las restantes
         $clavesOrdenadas = [];
         foreach ($ordenClaves as $k) {
@@ -463,7 +448,6 @@ class Elemento extends Model
                 ->orWhere('nro_serie', 'LIKE', "%{$term}%")
                 ->orWhere('puesto', 'LIKE', "%{$term}%")
                 ->orWhere('observaciones', 'LIKE', "%{$term}%")
-                ->orWhere('descripcion', 'LIKE', "%{$term}%")
                 ->orWhere('anio_compra', 'LIKE', "%{$term}%")
                 ->orWhereHas('tipo', function ($tq) use ($term) {
                     $tq->where('nombre', 'LIKE', "%{$term}%");
