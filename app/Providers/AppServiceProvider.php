@@ -28,15 +28,15 @@ class AppServiceProvider extends ServiceProvider
                 : Password::min(4);
         });
         Gate::define('write-data', function ($user) {
-            return $user->hasRole('user_admin') || $user->hasRole('coordinador') || $user->hasRole('tecnico');
+            return $user->hasRole(['user_admin', 'asset_admin', 'tec']);
         });
 
         Gate::define('delete-data', function ($user) {
-            return $user->hasRole('user_admin') || $user->hasRole('coordinador');
+            return $user->hasRole(['user_admin', 'asset_admin']);
         });
 
         Gate::define('manage-movements', function ($user) {
-            return $user->hasRole('user_admin') || $user->hasRole('coordinador');
+            return $user->hasRole(['user_admin', 'asset_admin', 'tec']);
         });
     }
 }
