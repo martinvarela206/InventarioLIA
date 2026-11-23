@@ -32,7 +32,7 @@ class TicketController extends Controller
      * Formulario de apertura de nuevo ticket de reparación.
      * Accesible tanto para Técnicos (tec) como Revisores (rev).
      */
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
         $user = Auth::user();
         $informante = $user->nombre ?: $user->email;
