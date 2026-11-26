@@ -53,7 +53,7 @@ class ImportarInventarioOdsCommand extends Command
             }
         }
 
-        $filePath = $this->option('file') ?: base_path('DocsSistemaLia/material/Inventario LIA.ods');
+        $filePath = $this->option('file') ?: base_path('Docs/Inventario LIA.ods');
 
         if (! file_exists($filePath)) {
             $this->error("El archivo ODS no fue encontrado en: {$filePath}");
