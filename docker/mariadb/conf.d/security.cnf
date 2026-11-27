@@ -2,13 +2,7 @@
 # 1. Modo SQL estricto para evitar truncamientos silenciosos o coerción de tipos inválidos
 sql_mode = "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
 
-# 2. Forzar uso de índices en actualizaciones y borrados masivos
-sql_safe_updates = ON
-
-# 3. Forzar integridad referencial de claves foráneas
-foreign_key_checks = ON
-
-# 4. Deshabilitar carga de archivos locales para mitigar ataques de inyección remota
+# 2. Deshabilitar carga de archivos locales para mitigar ataques de inyección remota
 local_infile = 0
 
 # 5. Auditoría forense permanente de operaciones DML y DDL
