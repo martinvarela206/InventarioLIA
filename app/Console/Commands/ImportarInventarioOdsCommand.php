@@ -163,12 +163,13 @@ class ImportarInventarioOdsCommand extends Command
                 $rawCantidad = $colMap['cantidad'] !== null && isset($rowVals[$colMap['cantidad']]) ? (int) $rowVals[$colMap['cantidad']] : 1;
                 $rawComentarios = $colMap['comentarios'] !== null && isset($rowVals[$colMap['comentarios']]) ? trim($rowVals[$colMap['comentarios']]) : null;
 
-                // Filtro estricto anti-cabeceras intermedias: descartar filas que repiten nombres de columnas ODS
+                // Filtro estricto anti-cabeceras intermedias y notas libres de planilla
                 $headerKeywords = ['disco', 'ram', 'cpu', 'procesador', 'modelo', 'nro lia', 'nro_lia', 'nro unsj', 'nro_unsj', 'marca', 'año', 'anio', 'cantidad', 'ubicacion'];
                 if (
                     ($rawLia !== null && in_array(mb_strtolower($rawLia), $headerKeywords)) ||
                     ($rawMarca !== null && in_array(mb_strtolower($rawMarca), ['marca', 'fabricante'])) ||
-                    ($rawModelo !== null && in_array(mb_strtolower($rawModelo), ['modelo', 'descripcion', 'disco', 'procesador']))
+                    ($rawModelo !== null && in_array(mb_strtolower($rawModelo), ['modelo', 'descripcion', 'disco', 'procesador'])) ||
+                    ($rawLia !== null && mb_strlen($rawLia) > 50 && empty($rawUnsj) && empty($rawMarca) && empty($rawModelo))
                 ) {
                     continue;
                 }
@@ -245,15 +246,17 @@ class ImportarInventarioOdsCommand extends Command
                 // Fecha del movimiento
                 $fechaMovimiento = $this->parsearFecha($rawFecha);
 
-                // Crear activo
+                // Crear activo (respetando longitudes máximas VARCHAR de MariaDB en modo estricto)
+                $marcaFinal = ($rawMarca !== '' && $rawMarca !== '-') ? mb_substr((string) $rawMarca, 0, 100) : null;
+                $modeloFinal = ($rawModelo !== '' && $rawModelo !== '-') ? mb_substr((string) $rawModelo, 0, 100) : null;
                 $elemento = Elemento::create([
-                    'nro_lia' => $nroLia,
-                    'nro_unsj' => $nroUnsj,
+                    'nro_lia' => $nroLia !== null ? mb_substr($nroLia, 0, 50) : null,
+                    'nro_unsj' => $nroUnsj !== null ? mb_substr($nroUnsj, 0, 50) : null,
                     'tipo_id' => $tipoModel->id,
-                    'marca' => ($rawMarca !== '' && $rawMarca !== '-') ? $rawMarca : null,
-                    'modelo' => ($rawModelo !== '' && $rawModelo !== '-') ? $rawModelo : null,
+                    'marca' => $marcaFinal,
+                    'modelo' => $modeloFinal,
                     'anio_compra' => $anio,
-                    'puesto' => $puesto,
+                    'puesto' => $puesto !== null ? mb_substr($puesto, 0, 50) : null,
                     'observaciones' => ($rawComentarios !== '' && $rawComentarios !== '-') ? $rawComentarios : null,
                     'cantidad' => $rawCantidad > 0 ? $rawCantidad : 1,
                     'fecha_adquisicion' => $fechaMovimiento->toDateString(),
