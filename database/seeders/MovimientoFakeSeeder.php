@@ -457,7 +457,7 @@ class MovimientoFakeSeeder extends Seeder
             'tipo_movimiento' => 'reparacion',
             'estado_ticket' => 'resuelto',
             'ubicacion_id' => null,
-            'puesto' => 'Laboratorio A - Luminarias sector docente y pizarrón',
+            'puesto' => 'Lab A - Luminarias sector docente y pizarrón',
             'user_id' => $revUser->id,
             'fecha' => Carbon::now()->subDays(9),
             'solicitante' => 'Dra. Andrea Giménez (Docencia LIA)',
